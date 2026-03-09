@@ -9,4 +9,3 @@ namespace PROYJHOME2026.Models
         public string? tipo{set;get;}
     }
 }
-
