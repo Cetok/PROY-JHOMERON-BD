@@ -1,0 +1,28 @@
+# Build results
+bin/
+obj/
+*.dll
+*.exe
+
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Entity Framework
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets
+appsettings.Development.json
+appsettings.Local.json
+
+# Dependencies
+node_modules/
+packages/
+
+# OS
+.DS_Store
+Thumbs.db

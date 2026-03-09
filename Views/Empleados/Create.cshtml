@@ -1,0 +1,37 @@
+@model PROYJHOME2026.Models.Empleado
+
+<h2>Registrar Empleado</h2>
+
+<form asp-action="Create" method="post">
+
+    DNI
+    <input asp-for="dni" />
+    <br />
+
+    Nombre
+    <input asp-for="nombre" />
+    <br />
+
+    Apellido Paterno
+    <input asp-for="paterno" />
+    <br />
+
+    Apellido Materno
+    <input asp-for="materno" />
+    <br />
+
+    Correo
+    <input asp-for="correo" />
+    <br />
+
+    Dirección
+    <input asp-for="direccion" />
+    <br />
+
+    Estado
+    <input asp-for="estado" />
+    <br />
+
+    <button type="submit">Guardar</button>
+
+</form>

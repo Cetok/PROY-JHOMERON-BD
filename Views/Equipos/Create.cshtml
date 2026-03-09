@@ -1,0 +1,45 @@
+@model PROYJHOME2026.Models.Equipo
+
+<h2>Registrar Equipo</h2>
+
+<form asp-action="Create" method="post">
+
+Tipo Equipo
+<input asp-for="idTipoEquipo" />
+<br>
+
+Marca
+<input asp-for="marca" />
+<br>
+
+Modelo
+<input asp-for="modelo" />
+<br>
+
+Sistema Operativo
+<input asp-for="sistema_operativo" />
+<br>
+
+Versión
+<input asp-for="version" />
+<br>
+
+Número Serie
+<input asp-for="numero_serie" />
+<br>
+
+Estado
+<input asp-for="estado_equipo" />
+<br>
+
+Fecha Compra
+<input asp-for="fecha_compra" type="date" />
+<br>
+
+Correo Equipo
+<input asp-for="correo_equipo" />
+<br>
+
+<button type="submit">Guardar</button>
+
+</form>

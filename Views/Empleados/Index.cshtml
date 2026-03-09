@@ -1,0 +1,23 @@
+@model IEnumerable<PROYJHOME2026.Models.Empleado>
+
+<h2>Lista de Empleados</h2>
+
+<a href="/Empleados/Create">Nuevo Empleado</a>
+
+<table border="1">
+    <tr>
+        <th>DNI</th>
+        <th>Nombre</th>
+        <th>Correo</th>
+    </tr>
+
+@foreach (var item in Model)
+{
+    <tr>
+        <td>@item.dni</td>
+        <td>@item.nombre</td>
+        <td>@item.correo</td>
+    </tr>
+}
+
+</table>
