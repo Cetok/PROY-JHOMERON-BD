@@ -1,0 +1,94 @@
+@model PROYJHOME2026.Models.Empleado
+@{
+    ViewData["Title"]      = "Eliminar Empleado";
+    ViewData["Breadcrumb"] = "Empleados / Eliminar";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Recursos Humanos</div>
+        <h1 class="page-header__title">Eliminar Empleado</h1>
+        <p class="page-header__subtitle">Esta acción no se puede deshacer</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Cancelar
+        </a>
+    </div>
+</div>
+
+<div style="max-width:560px;">
+
+    <!-- Advertencia -->
+    <div class="alert alert--danger" style="margin-bottom:20px;">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>
+            Estás a punto de eliminar permanentemente a este empleado. Si tiene asignaciones, seguros u otros registros asociados, la operación será bloqueada.
+        </span>
+    </div>
+
+    <!-- Card del empleado a eliminar -->
+    <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--gris-200);">
+            <div class="emp-avatar-lg">
+                @((Model.nombre?.Length > 0 ? Model.nombre[0].ToString() : "?").ToUpper())@((Model.paterno?.Length > 0 ? Model.paterno[0].ToString() : "").ToUpper())
+            </div>
+            <div>
+                <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--azul-dark);">
+                    @Model.nombre @Model.paterno @Model.materno
+                </div>
+                <div style="font-size:0.78rem; color:var(--gris-500); margin-top:2px;">
+                    DNI: @(Model.dni ?? "No registrado")
+                </div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.84rem;">
+            <div>
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:2px;">Correo</div>
+                <div style="color:var(--gris-700);">@(Model.correo ?? "—")</div>
+            </div>
+            <div>
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:2px;">Estado</div>
+                @{
+                    var bc = Model.estado == "Activo" ? "badge--verde"
+                           : Model.estado == "Inactivo" ? "badge--rojo"
+                           : "badge--gris";
+                }
+                <span class="badge @bc">@(Model.estado ?? "—")</span>
+            </div>
+            <div style="grid-column:1/-1;">
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:2px;">Dirección</div>
+                <div style="color:var(--gris-700);">@(Model.direccion ?? "—")</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de confirmación -->
+    <form asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="idEmpleado" />
+        <div style="display:flex; gap:10px;">
+            <button type="submit" class="btn btn--danger btn--lg">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                Sí, eliminar definitivamente
+            </button>
+            <a asp-action="Details" asp-route-id="@Model.idEmpleado" class="btn btn--secondary btn--lg">
+                No, conservar
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+<style>
+.emp-avatar-lg {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--azul-mid), var(--celeste));
+    display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 800;
+    font-size: 1rem; color: var(--blanco); flex-shrink: 0;
+}
+</style>
+}

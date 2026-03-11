@@ -1,16 +1,20 @@
 @model PROYJHOME2026.Models.Empleado
 @{
-    ViewData["Title"]      = "Nuevo Empleado";
-    ViewData["Breadcrumb"] = "Empleados / Nuevo";
+    ViewData["Title"]      = "Editar Empleado";
+    ViewData["Breadcrumb"] = "Empleados / Editar";
 }
 
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Recursos Humanos</div>
-        <h1 class="page-header__title">Nuevo Empleado</h1>
-        <p class="page-header__subtitle">Complete los datos del nuevo colaborador</p>
+        <h1 class="page-header__title">Editar Empleado</h1>
+        <p class="page-header__subtitle">@Model.nombre @Model.paterno @Model.materno</p>
     </div>
     <div class="page-header__actions">
+        <a asp-action="Details" asp-route-id="@Model.idEmpleado" class="btn btn--ghost btn--sm">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Ver detalle
+        </a>
         <a asp-action="Index" class="btn btn--secondary">
             <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Volver
@@ -20,9 +24,9 @@
 
 <div style="max-width:760px;">
     <div class="card">
-
-        <form asp-action="Create" method="post">
+        <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
+            <input asp-for="idEmpleado" type="hidden" />
 
             <!-- Datos personales -->
             <div style="margin-bottom:24px;">
@@ -47,8 +51,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">DNI <span class="req">*</span></label>
-                        <input asp-for="dni" class="form-control" placeholder="Ej: 12345678"
-                               maxlength="8" inputmode="numeric" />
+                        <input asp-for="dni" class="form-control" maxlength="8" inputmode="numeric" />
                         <span asp-validation-for="dni" class="form-error"></span>
                     </div>
                 </div>
@@ -93,13 +96,12 @@
 
             <!-- Acciones -->
             <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
-                <button type="submit" class="btn btn--celeste btn--lg">
-                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    Registrar empleado
+                <button type="submit" class="btn btn--primary btn--lg">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Guardar cambios
                 </button>
                 <a asp-action="Index" class="btn btn--secondary btn--lg">Cancelar</a>
             </div>
-
         </form>
     </div>
 </div>

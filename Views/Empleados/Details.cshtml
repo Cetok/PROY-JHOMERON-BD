@@ -1,0 +1,133 @@
+@model PROYJHOME2026.Models.Empleado
+@{
+    ViewData["Title"]      = "Detalle Empleado";
+    ViewData["Breadcrumb"] = "Empleados / Detalle";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Recursos Humanos</div>
+        <h1 class="page-header__title">@Model.nombre @Model.paterno @Model.materno</h1>
+        <p class="page-header__subtitle">ID: #@Model.idEmpleado</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Edit" asp-route-id="@Model.idEmpleado" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+        </a>
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div style="max-width:760px; display:flex; flex-direction:column; gap:16px;">
+
+    <!-- Tarjeta principal -->
+    <div class="card">
+        <!-- Cabecera con avatar -->
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--gris-200);">
+            <div class="emp-avatar-lg">
+                @((Model.nombre?.Length > 0 ? Model.nombre[0].ToString() : "?").ToUpper())@((Model.paterno?.Length > 0 ? Model.paterno[0].ToString() : "").ToUpper())
+            </div>
+            <div>
+                <div style="font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--azul-dark);">
+                    @Model.nombre @Model.paterno @Model.materno
+                </div>
+                <div style="font-size:0.8rem; color:var(--gris-500); margin-top:3px;">
+                    DNI: @(Model.dni ?? "No registrado")
+                </div>
+                <div style="margin-top:8px;">
+                    @{
+                        var bc = Model.estado == "Activo" ? "badge--verde"
+                               : Model.estado == "Inactivo" ? "badge--rojo"
+                               : "badge--gris";
+                    }
+                    <span class="badge @bc">@(Model.estado ?? "Sin estado")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos de detalle -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+            <div class="detail-field">
+                <div class="detail-field__label">Nombre</div>
+                <div class="detail-field__value">@(Model.nombre ?? "—")</div>
+            </div>
+
+            <div class="detail-field">
+                <div class="detail-field__label">Apellido paterno</div>
+                <div class="detail-field__value">@(Model.paterno ?? "—")</div>
+            </div>
+
+            <div class="detail-field">
+                <div class="detail-field__label">Apellido materno</div>
+                <div class="detail-field__value">@(Model.materno ?? "—")</div>
+            </div>
+
+            <div class="detail-field">
+                <div class="detail-field__label">DNI</div>
+                <div class="detail-field__value" style="font-family:monospace; letter-spacing:0.06em;">
+                    @(Model.dni ?? "—")
+                </div>
+            </div>
+
+            <div class="detail-field">
+                <div class="detail-field__label">Correo electrónico</div>
+                <div class="detail-field__value" style="color:var(--celeste);">
+                    @if (!string.IsNullOrEmpty(Model.correo))
+                    {
+                        <a href="mailto:@Model.correo" style="color:var(--celeste);">@Model.correo</a>
+                    }
+                    else { <span>—</span> }
+                </div>
+            </div>
+
+            <div class="detail-field" style="grid-column: 1 / -1;">
+                <div class="detail-field__label">Dirección</div>
+                <div class="detail-field__value">@(Model.direccion ?? "—")</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Acciones de eliminación -->
+    <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+            <div>
+                <div style="font-weight:700; color:var(--rojo); font-size:0.88rem;">Zona de peligro</div>
+                <div style="font-size:0.78rem; color:var(--gris-600); margin-top:2px;">
+                    Eliminar este empleado es irreversible si no tiene registros asociados.
+                </div>
+            </div>
+            <a asp-action="Delete" asp-route-id="@Model.idEmpleado" class="btn btn--danger">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                Eliminar empleado
+            </a>
+        </div>
+    </div>
+
+</div>
+
+@section Styles {
+<style>
+.emp-avatar-lg {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--azul-mid), var(--celeste));
+    display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 800;
+    font-size: 1.1rem; color: var(--blanco); flex-shrink: 0;
+    box-shadow: var(--shadow-cel);
+}
+.detail-field__label {
+    font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--gris-400); margin-bottom: 4px;
+}
+.detail-field__value {
+    font-size: 0.9rem; font-weight: 500; color: var(--gris-900);
+}
+</style>
+}
