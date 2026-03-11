@@ -1,4 +1,4 @@
-@model PROYJHOME2026.Models.Empleado
+@model PROYJHOME2026.Controllers.EmpleadoFormViewModel
 @{
     ViewData["Title"]      = "Nuevo Empleado";
     ViewData["Breadcrumb"] = "Empleados / Nuevo";
@@ -18,91 +18,195 @@
     </div>
 </div>
 
-<div style="max-width:760px;">
-    <div class="card">
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
 
-        <form asp-action="Create" method="post">
-            @Html.AntiForgeryToken()
+    <div style="display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start;">
+
+        <!-- ── COLUMNA IZQUIERDA: datos ── -->
+        <div class="card">
 
             <!-- Datos personales -->
             <div style="margin-bottom:24px;">
-                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Datos personales
-                </p>
+                <p class="form-section-title">Datos personales</p>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Nombre <span class="req">*</span></label>
-                        <input asp-for="nombre" class="form-control" placeholder="Ej: Juan" />
-                        <span asp-validation-for="nombre" class="form-error"></span>
+                        <input asp-for="Empleado.nombre" class="form-control" placeholder="Ej: Juan" />
+                        <span asp-validation-for="Empleado.nombre" class="form-error"></span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Apellido paterno <span class="req">*</span></label>
-                        <input asp-for="paterno" class="form-control" placeholder="Ej: García" />
-                        <span asp-validation-for="paterno" class="form-error"></span>
+                        <input asp-for="Empleado.paterno" class="form-control" placeholder="Ej: García" />
+                        <span asp-validation-for="Empleado.paterno" class="form-error"></span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Apellido materno</label>
-                        <input asp-for="materno" class="form-control" placeholder="Ej: López" />
-                        <span asp-validation-for="materno" class="form-error"></span>
+                        <input asp-for="Empleado.materno" class="form-control" placeholder="Ej: López" />
+                        <span asp-validation-for="Empleado.materno" class="form-error"></span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">DNI <span class="req">*</span></label>
-                        <input asp-for="dni" class="form-control" placeholder="Ej: 12345678"
-                               maxlength="8" inputmode="numeric" />
-                        <span asp-validation-for="dni" class="form-error"></span>
+                        <input asp-for="Empleado.dni" class="form-control"
+                               placeholder="12345678" maxlength="8" inputmode="numeric" />
+                        <span asp-validation-for="Empleado.dni" class="form-error"></span>
                     </div>
                 </div>
             </div>
 
             <!-- Contacto -->
             <div style="margin-bottom:24px;">
-                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Contacto
-                </p>
+                <p class="form-section-title">Contacto</p>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Correo electrónico</label>
-                        <input asp-for="correo" type="email" class="form-control"
+                        <input asp-for="Empleado.correo" type="email" class="form-control"
                                placeholder="correo@empresa.com" />
-                        <span asp-validation-for="correo" class="form-error"></span>
+                        <span asp-validation-for="Empleado.correo" class="form-error"></span>
                     </div>
                     <div class="form-group form-group--full">
                         <label class="form-label">Dirección</label>
-                        <input asp-for="direccion" class="form-control"
+                        <input asp-for="Empleado.direccion" class="form-control"
                                placeholder="Av. Ejemplo 123, Lima" />
-                        <span asp-validation-for="direccion" class="form-error"></span>
+                        <span asp-validation-for="Empleado.direccion" class="form-error"></span>
                     </div>
                 </div>
             </div>
 
             <!-- Estado -->
-            <div style="margin-bottom:28px;">
-                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Estado
-                </p>
+            <div>
+                <p class="form-section-title">Estado</p>
                 <div style="max-width:200px;">
                     <label class="form-label">Estado <span class="req">*</span></label>
-                    <select asp-for="estado" class="form-control">
+                    <select asp-for="Empleado.estado" class="form-control">
                         <option value="">— Seleccionar —</option>
                         <option value="Activo">Activo</option>
                         <option value="Inactivo">Inactivo</option>
                     </select>
-                    <span asp-validation-for="estado" class="form-error"></span>
+                    <span asp-validation-for="Empleado.estado" class="form-error"></span>
                 </div>
             </div>
 
-            <!-- Acciones -->
-            <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
-                <button type="submit" class="btn btn--celeste btn--lg">
+        </div>
+
+        <!-- ── COLUMNA DERECHA: grupos ── -->
+        <div style="display:flex; flex-direction:column; gap:16px;">
+
+            <div class="card">
+                <p class="form-section-title" style="margin-bottom:12px;">
+                    Grupos / Áreas
+                </p>
+                <p style="font-size:0.78rem; color:var(--gris-500); margin-bottom:14px;">
+                    Selecciona a qué áreas pertenece este empleado.
+                </p>
+
+                @if (Model.Grupos.Any())
+                {
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        @for (int i = 0; i < Model.Grupos.Count; i++)
+                        {
+                            <label class="grupo-check">
+                                <input type="checkbox"
+                                       name="Grupos[@i].Marcado"
+                                       value="true"
+                                       @(Model.Grupos[i].Marcado ? "checked" : "") />
+                                <input type="hidden" name="Grupos[@i].IdGrupo" value="@Model.Grupos[i].IdGrupo" />
+                                <input type="hidden" name="Grupos[@i].Area"    value="@Model.Grupos[i].Area" />
+                                <div class="grupo-check__box">
+                                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <span>@Model.Grupos[i].Area</span>
+                            </label>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert--warning" style="margin:0;">
+                        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <span>No hay grupos creados. <a asp-controller="Grupos" asp-action="Create" style="color:inherit; text-decoration:underline;">Crear grupo</a>.</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Botones -->
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button type="submit" class="btn btn--celeste btn--lg" style="width:100%; justify-content:center;">
                     <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Registrar empleado
                 </button>
-                <a asp-action="Index" class="btn btn--secondary btn--lg">Cancelar</a>
+                <a asp-action="Index" class="btn btn--secondary btn--lg" style="width:100%; justify-content:center;">
+                    Cancelar
+                </a>
             </div>
 
-        </form>
+        </div>
     </div>
-</div>
+</form>
+
+@section Styles {
+<style>
+.form-section-title {
+    font-family: var(--font-display);
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--celeste);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gris-200);
+    margin-bottom: 14px;
+}
+
+/* Checkbox estilizado */
+.grupo-check {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border: 1.5px solid var(--gris-300);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: border-color var(--t), background var(--t);
+    user-select: none;
+}
+.grupo-check:hover { border-color: var(--celeste); background: var(--celeste-glow); }
+
+.grupo-check input[type="checkbox"] { display: none; }
+
+.grupo-check__box {
+    width: 18px; height: 18px;
+    border: 2px solid var(--gris-300);
+    border-radius: 4px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    transition: all var(--t);
+    background: var(--blanco);
+}
+.grupo-check__box svg {
+    width: 11px; height: 11px;
+    stroke: var(--blanco); fill: none;
+    stroke-width: 3; stroke-linecap: round;
+    opacity: 0; transition: opacity var(--t);
+}
+
+/* Cuando está marcado */
+.grupo-check input[type="checkbox"]:checked ~ .grupo-check__box {
+    background: var(--celeste);
+    border-color: var(--celeste);
+}
+.grupo-check input[type="checkbox"]:checked ~ .grupo-check__box svg { opacity: 1; }
+.grupo-check input[type="checkbox"]:checked ~ span {
+    color: var(--azul-dark); font-weight: 600;
+}
+
+/* Reordenar: el checkbox va antes del box */
+.grupo-check { flex-direction: row; }
+.grupo-check input { order: -1; }
+.grupo-check .grupo-check__box { order: 0; }
+.grupo-check span { order: 1; font-size: 0.87rem; color: var(--gris-700); }
+
+@@media (max-width: 760px) {
+    form > div { grid-template-columns: 1fr !important; }
+}
+</style>
+}
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

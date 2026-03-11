@@ -1,0 +1,79 @@
+@model PROYJHOME2026.Models.Chip
+@{
+    ViewData["Title"]      = "Eliminar Chip";
+    ViewData["Breadcrumb"] = "Chips / SIM / Eliminar";
+    int totalAsignaciones = ViewBag.TotalAsignaciones ?? 0;
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Equipos TI</div>
+        <h1 class="page-header__title">Eliminar Chip</h1>
+        <p class="page-header__subtitle">Esta acción no se puede deshacer</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Cancelar
+        </a>
+    </div>
+</div>
+
+<div style="max-width:480px;">
+
+    @if (totalAsignaciones > 0)
+    {
+        <div class="alert alert--danger" style="margin-bottom:20px;">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span>No se puede eliminar. Este chip tiene <strong>@totalAsignaciones asignación(es)</strong> asociadas.</span>
+        </div>
+        <a asp-action="Details" asp-route-id="@Model.IdChip" class="btn btn--secondary btn--lg">Volver al detalle</a>
+    }
+    else
+    {
+        <div class="alert alert--warning" style="margin-bottom:20px;">
+            <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>¿Eliminar el chip <strong>@Model.NumeroCelular</strong> permanentemente?</span>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="chip-icon-lg">
+                    <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M16 2v3M8 2v3M2 8h3M2 16h3M22 8h-3M22 16h-3M16 22v-3M8 22v-3"/></svg>
+                </div>
+                <div>
+                    <div style="font-family:monospace; font-size:1.05rem; font-weight:700; color:var(--azul-dark); letter-spacing:0.05em;">
+                        @Model.NumeroCelular
+                    </div>
+                    <div style="font-size:0.78rem; color:var(--gris-500); margin-top:2px;">ID: #@Model.IdChip</div>
+                </div>
+            </div>
+        </div>
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdChip" />
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn btn--danger btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                    Sí, eliminar definitivamente
+                </button>
+                <a asp-action="Index" class="btn btn--secondary btn--lg">No, conservar</a>
+            </div>
+        </form>
+    }
+</div>
+
+@section Styles {
+<style>
+.chip-icon-lg {
+    width: 44px; height: 44px; border-radius: var(--r-md);
+    background: rgba(59,155,232,0.1); border: 1px solid rgba(59,155,232,0.2);
+    display: grid; place-items: center; flex-shrink: 0;
+}
+.chip-icon-lg svg {
+    width: 20px; height: 20px; stroke: var(--celeste);
+    fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+</style>
+}

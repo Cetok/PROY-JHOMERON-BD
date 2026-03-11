@@ -1,0 +1,100 @@
+@model PROYJHOME2026.Models.Asignacion
+@{
+    ViewData["Title"]      = "Nueva Asignación";
+    ViewData["Breadcrumb"] = "Asignaciones / Nueva";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Equipos TI</div>
+        <h1 class="page-header__title">Nueva Asignación</h1>
+        <p class="page-header__subtitle">Asigna un equipo a un empleado</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div style="max-width:680px;">
+    <div class="card">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <!-- Relación -->
+            <div style="margin-bottom:24px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Empleado y equipos
+                </p>
+                <div class="form-grid">
+                    <div class="form-group form-group--full">
+                        <label class="form-label">Empleado <span class="req">*</span></label>
+                        <select asp-for="IdEmpleado" asp-items="ViewBag.EmpleadosList" class="form-control">
+                            <option value="">— Seleccionar empleado —</option>
+                        </select>
+                        <span asp-validation-for="IdEmpleado" class="form-error"></span>
+                    </div>
+                    <div class="form-group form-group--full">
+                        <label class="form-label">Equipo <span class="req">*</span></label>
+                        <select asp-for="IdEquipo" asp-items="ViewBag.EquiposList" class="form-control">
+                            <option value="">— Seleccionar equipo disponible —</option>
+                        </select>
+                        <span asp-validation-for="IdEquipo" class="form-error"></span>
+                        <div class="form-hint">Solo se muestran equipos activos y sin asignación activa.</div>
+                    </div>
+                    <div class="form-group form-group--full">
+                        <label class="form-label">Chip / SIM <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
+                        <select asp-for="IdChip" asp-items="ViewBag.ChipsList" class="form-control">
+                            <option value="">— Sin chip —</option>
+                        </select>
+                        <span asp-validation-for="IdChip" class="form-error"></span>
+                        <div class="form-hint">Solo se muestran chips sin asignación activa.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fechas y estado -->
+            <div style="margin-bottom:28px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Fechas y estado
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Fecha de asignación <span class="req">*</span></label>
+                        <input asp-for="FechaAsignacion" type="date" class="form-control" />
+                        <span asp-validation-for="FechaAsignacion" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fecha de devolución <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
+                        <input asp-for="FechaDevolucion" type="date" class="form-control" />
+                        <span asp-validation-for="FechaDevolucion" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estado <span class="req">*</span></label>
+                        <select asp-for="EstadoAsignacion" class="form-control">
+                            <option value="">— Seleccionar —</option>
+                            <option value="Activo">Activo</option>
+                            <option value="Devuelto">Devuelto</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                        <span asp-validation-for="EstadoAsignacion" class="form-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
+                <button type="submit" class="btn btn--celeste btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Registrar asignación
+                </button>
+                <a asp-action="Index" class="btn btn--secondary btn--lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

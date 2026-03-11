@@ -1,0 +1,236 @@
+@model IEnumerable<PROYJHOME2026.Models.Equipo>
+@{
+    ViewData["Title"]      = "Equipos";
+    ViewData["Breadcrumb"] = "Equipos TI";
+    int pagina       = ViewBag.Pagina;
+    int totalPaginas = ViewBag.TotalPaginas;
+    int total        = ViewBag.Total;
+    string buscar    = ViewBag.Buscar ?? "";
+    string estado    = ViewBag.Estado ?? "";
+    int? tipoId      = ViewBag.TipoId;
+    var tipos        = ViewBag.Tipos as List<PROYJHOME2026.Models.TipoEquipo> ?? new();
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Equipos TI</div>
+        <h1 class="page-header__title">Equipos</h1>
+        <p class="page-header__subtitle">@total equipo(s) encontrado(s)</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Create" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo equipo
+        </a>
+    </div>
+</div>
+
+<!-- FILTROS -->
+<div class="card" style="margin-bottom:20px; padding:16px 20px;">
+    <form method="get" asp-action="Index" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div style="flex:1; min-width:180px;">
+            <label class="form-label">Buscar</label>
+            <div style="position:relative;">
+                <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" name="buscar" value="@buscar" class="form-control"
+                       style="padding-left:34px;" placeholder="Marca, modelo, serie..." />
+            </div>
+        </div>
+        <div style="min-width:150px;">
+            <label class="form-label">Tipo</label>
+            <select name="tipoId" class="form-control">
+                <option value="">Todos</option>
+                @foreach (var t in tipos)
+                {
+                    if (tipoId == t.idTipoEquipo)
+                    {
+                        <option value="@t.idTipoEquipo" selected>@t.tipo</option>
+                    }
+                    else
+                    {
+                        <option value="@t.idTipoEquipo">@t.tipo</option>
+                    }
+                }
+            </select>
+        </div>
+        <div style="min-width:150px;">
+            <label class="form-label">Estado</label>
+            <select name="estado" class="form-control">
+                <option value="">Todos</option>
+                @if (estado == "Activo") {
+                    <option value="Activo" selected>Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                    <option value="En reparación">En reparación</option>
+                    <option value="De baja">De baja</option>
+                } else if (estado == "Inactivo") {
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo" selected>Inactivo</option>
+                    <option value="En reparación">En reparación</option>
+                    <option value="De baja">De baja</option>
+                } else if (estado == "En reparación") {
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                    <option value="En reparación" selected>En reparación</option>
+                    <option value="De baja">De baja</option>
+                } else if (estado == "De baja") {
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                    <option value="En reparación">En reparación</option>
+                    <option value="De baja" selected>De baja</option>
+                } else {
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                    <option value="En reparación">En reparación</option>
+                    <option value="De baja">De baja</option>
+                }
+            </select>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button type="submit" class="btn btn--primary">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Buscar
+            </button>
+            @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estado) || tipoId.HasValue)
+            {
+                <a asp-action="Index" class="btn btn--secondary">Limpiar</a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- TABLA -->
+<div class="card" style="padding:0; overflow:hidden;">
+    @if (Model.Any())
+    {
+        <div class="table-wrapper" style="border:none; border-radius:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Equipo</th>
+                        <th>Tipo</th>
+                        <th>N° Serie</th>
+                        <th>S.O.</th>
+                        <th>Fecha compra</th>
+                        <th>Estado</th>
+                        <th style="text-align:center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model)
+                    {
+                        <tr>
+                            <td style="color:var(--gris-400); font-size:0.78rem; font-weight:400;">@e.idEquipo</td>
+                            <td>
+                                <div style="font-weight:600; color:var(--gris-900);">
+                                    @(e.marca ?? "—") @(e.modelo ?? "")
+                                </div>
+                                @if (!string.IsNullOrEmpty(e.correo_equipo))
+                                {
+                                    <div style="font-size:0.75rem; color:var(--celeste); font-weight:400;">
+                                        @e.correo_equipo
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (e.TipoEquipo != null)
+                                {
+                                    <span class="badge badge--azul">@e.TipoEquipo.tipo</span>
+                                }
+                                else { <span style="color:var(--gris-400);">—</span> }
+                            </td>
+                            <td style="font-family:monospace; font-size:0.82rem; letter-spacing:0.03em;">
+                                @(e.numero_serie ?? "—")
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--gris-600);">
+                                @(e.sistema_operativo ?? "—")
+                                @if (!string.IsNullOrEmpty(e.version))
+                                { <span style="color:var(--gris-400);"> @e.version</span> }
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--gris-600);">
+                                @e.fecha_compra.ToString("dd/MM/yyyy")
+                            </td>
+                            <td>
+                                @{
+                                    var bc = e.estado_equipo switch {
+                                        "Activo"        => "badge--verde",
+                                        "Inactivo"      => "badge--gris",
+                                        "En reparación" => "badge--amarillo",
+                                        "De baja"       => "badge--rojo",
+                                        _               => "badge--gris"
+                                    };
+                                }
+                                <span class="badge @bc">@(e.estado_equipo ?? "—")</span>
+                            </td>
+                            <td>
+                                <div style="display:flex; gap:6px; justify-content:center;">
+                                    <a asp-action="Details" asp-route-id="@e.idEquipo"
+                                       class="btn btn--ghost btn--icon" title="Ver detalle">
+                                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@e.idEquipo"
+                                       class="btn btn--secondary btn--icon" title="Editar">
+                                        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@e.idEquipo"
+                                       class="btn btn--danger btn--icon" title="Eliminar">
+                                        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalPaginas > 1)
+        {
+            <div class="pagination">
+                <span style="font-size:0.75rem; color:var(--gris-400); margin-right:8px;">
+                    Página @pagina de @totalPaginas
+                </span>
+                @if (pagina > 1)
+                {
+                    <a asp-action="Index" asp-route-pagina="@(pagina-1)"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-tipoId="@tipoId"
+                       class="pagination__btn">
+                        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
+                }
+                @for (int i = Math.Max(1, pagina - 2); i <= Math.Min(totalPaginas, pagina + 2); i++)
+                {
+                    <a asp-action="Index" asp-route-pagina="@i"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-tipoId="@tipoId"
+                       class="pagination__btn @(i == pagina ? "active" : "")">@i</a>
+                }
+                @if (pagina < totalPaginas)
+                {
+                    <a asp-action="Index" asp-route-pagina="@(pagina+1)"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-tipoId="@tipoId"
+                       class="pagination__btn">
+                        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <div class="empty-state__icon">
+                <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div class="empty-state__title">No se encontraron equipos</div>
+            <div class="empty-state__text">
+                @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estado) || tipoId.HasValue)
+                { <span>Intenta con otros filtros.</span> }
+                else { <span>Aún no hay equipos registrados.</span> }
+            </div>
+            <a asp-action="Create" class="btn btn--celeste" style="margin-top:8px;">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Registrar primer equipo
+            </a>
+        </div>
+    }
+</div>

@@ -1,0 +1,73 @@
+@model PROYJHOME2026.Models.Grupo
+@{
+    ViewData["Title"]      = "Eliminar Grupo";
+    ViewData["Breadcrumb"] = "Grupos / Eliminar";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Recursos Humanos</div>
+        <h1 class="page-header__title">Eliminar Grupo</h1>
+        <p class="page-header__subtitle">Esta acción no se puede deshacer</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Cancelar
+        </a>
+    </div>
+</div>
+
+<div style="max-width:480px;">
+
+    <div class="alert alert--danger" style="margin-bottom:20px;">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>
+            Si este grupo tiene empleados asignados, la eliminación será bloqueada automáticamente.
+        </span>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <div class="grupo-icon-lg">
+                <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div>
+                <div style="font-family:var(--font-display); font-size:1.05rem; font-weight:700; color:var(--azul-dark);">
+                    @(Model.area ?? "Sin nombre")
+                </div>
+                <div style="font-size:0.78rem; color:var(--gris-500); margin-top:2px;">
+                    ID: #@Model.idGrupo
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="idGrupo" />
+        <div style="display:flex; gap:10px;">
+            <button type="submit" class="btn btn--danger btn--lg">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                Sí, eliminar definitivamente
+            </button>
+            <a asp-action="Details" asp-route-id="@Model.idGrupo" class="btn btn--secondary btn--lg">
+                No, conservar
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+<style>
+.grupo-icon-lg {
+    width: 44px; height: 44px; border-radius: var(--r-md);
+    background: var(--celeste-glow); border: 1px solid var(--celeste-border);
+    display: grid; place-items: center; flex-shrink: 0;
+}
+.grupo-icon-lg svg {
+    width: 20px; height: 20px; stroke: var(--celeste);
+    fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+</style>
+}

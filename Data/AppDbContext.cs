@@ -22,6 +22,7 @@ namespace PROYJHOME2026.Data
         public DbSet<MantenimientoCarro> MantenimientosCarros { get; set; }
         public DbSet<Asesorio> Asesorios { get; set; }
         public DbSet<Modalidad> Modalidades { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }
@@ -109,6 +110,9 @@ namespace PROYJHOME2026.Data
                 .WithMany(c => c.MantenimientosCarros)
                 .HasForeignKey(m => m.IdCarro)
                 .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Usuario>()
+                .HasIndex(u => u.username)
+                .IsUnique();    
         }
     }
 }

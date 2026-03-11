@@ -1,0 +1,136 @@
+@model PROYJHOME2026.Models.Equipo
+@{
+    ViewData["Title"]      = "Detalle Equipo";
+    ViewData["Breadcrumb"] = "Equipos TI / Detalle";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Equipos TI</div>
+        <h1 class="page-header__title">@Model.marca @Model.modelo</h1>
+        <p class="page-header__subtitle">ID: #@Model.idEquipo — Serie: @(Model.numero_serie ?? "No registrada")</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Edit" asp-route-id="@Model.idEquipo" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+        </a>
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div style="max-width:780px; display:flex; flex-direction:column; gap:16px;">
+
+    <!-- Card principal -->
+    <div class="card">
+        <!-- Cabecera -->
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid var(--gris-200);">
+            <div class="equipo-icon-lg">
+                <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div>
+                <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:700; color:var(--azul-dark);">
+                    @Model.marca @Model.modelo
+                </div>
+                @if (Model.TipoEquipo != null)
+                {
+                    <span class="badge badge--azul" style="margin-top:6px; display:inline-block;">@Model.TipoEquipo.tipo</span>
+                }
+                <div style="margin-top:6px;">
+                    @{
+                        var bc = Model.estado_equipo switch {
+                            "Activo"        => "badge--verde",
+                            "Inactivo"      => "badge--gris",
+                            "En reparación" => "badge--amarillo",
+                            "De baja"       => "badge--rojo",
+                            _               => "badge--gris"
+                        };
+                    }
+                    <span class="badge @bc">@(Model.estado_equipo ?? "—")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos en grid -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div class="det-field">
+                <div class="det-label">Tipo de equipo</div>
+                <div class="det-value">@(Model.TipoEquipo?.tipo ?? "—")</div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">N° de serie</div>
+                <div class="det-value" style="font-family:monospace; letter-spacing:0.04em;">
+                    @(Model.numero_serie ?? "—")
+                </div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">Marca</div>
+                <div class="det-value">@(Model.marca ?? "—")</div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">Modelo</div>
+                <div class="det-value">@(Model.modelo ?? "—")</div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">Sistema operativo</div>
+                <div class="det-value">@(Model.sistema_operativo ?? "—")</div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">Versión</div>
+                <div class="det-value">@(Model.version ?? "—")</div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">Correo del equipo</div>
+                <div class="det-value" style="color:var(--celeste);">
+                    @if (!string.IsNullOrEmpty(Model.correo_equipo))
+                    { <a href="mailto:@Model.correo_equipo" style="color:var(--celeste);">@Model.correo_equipo</a> }
+                    else { <span style="color:var(--gris-400);">—</span> }
+                </div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">Fecha de compra</div>
+                <div class="det-value">@Model.fecha_compra.ToString("dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-PE"))</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zona peligro -->
+    <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div>
+                <div style="font-weight:700; color:var(--rojo); font-size:0.88rem;">Zona de peligro</div>
+                <div style="font-size:0.76rem; color:var(--gris-600); margin-top:2px;">
+                    Solo si no tiene asignaciones ni chips asociados.
+                </div>
+            </div>
+            <a asp-action="Delete" asp-route-id="@Model.idEquipo" class="btn btn--danger btn--sm">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                Eliminar
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+<style>
+.equipo-icon-lg {
+    width: 52px; height: 52px; border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--azul-dark), var(--azul-mid));
+    display: grid; place-items: center; flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(26,58,107,0.25);
+}
+.equipo-icon-lg svg {
+    width: 24px; height: 24px; stroke: var(--blanco);
+    fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.det-label {
+    font-size: 0.67rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gris-400); margin-bottom: 3px;
+}
+.det-value { font-size: 0.88rem; font-weight: 500; color: var(--gris-900); }
+</style>
+}

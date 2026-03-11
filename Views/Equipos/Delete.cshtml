@@ -1,0 +1,100 @@
+@model PROYJHOME2026.Models.Equipo
+@{
+    ViewData["Title"]      = "Eliminar Equipo";
+    ViewData["Breadcrumb"] = "Equipos TI / Eliminar";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Equipos TI</div>
+        <h1 class="page-header__title">Eliminar Equipo</h1>
+        <p class="page-header__subtitle">Esta acción no se puede deshacer</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Cancelar
+        </a>
+    </div>
+</div>
+
+<div style="max-width:560px;">
+
+    <div class="alert alert--danger" style="margin-bottom:20px;">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Si este equipo tiene asignaciones o chips asociados, la eliminación será bloqueada automáticamente.</span>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--gris-200);">
+            <div class="equipo-icon-lg">
+                <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div>
+                <div style="font-family:var(--font-display); font-size:1.05rem; font-weight:700; color:var(--azul-dark);">
+                    @Model.marca @Model.modelo
+                </div>
+                @if (Model.TipoEquipo != null)
+                {
+                    <span class="badge badge--azul" style="margin-top:4px; display:inline-block;">@Model.TipoEquipo.tipo</span>
+                }
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.84rem;">
+            <div>
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:2px;">N° serie</div>
+                <div style="font-family:monospace; color:var(--gris-700);">@(Model.numero_serie ?? "—")</div>
+            </div>
+            <div>
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:2px;">Estado</div>
+                @{
+                    var bc = Model.estado_equipo switch {
+                        "Activo"        => "badge--verde",
+                        "Inactivo"      => "badge--gris",
+                        "En reparación" => "badge--amarillo",
+                        "De baja"       => "badge--rojo",
+                        _               => "badge--gris"
+                    };
+                }
+                <span class="badge @bc">@(Model.estado_equipo ?? "—")</span>
+            </div>
+            <div>
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:2px;">Fecha compra</div>
+                <div style="color:var(--gris-700);">@Model.fecha_compra.ToString("dd/MM/yyyy")</div>
+            </div>
+            <div>
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:2px;">S.O.</div>
+                <div style="color:var(--gris-700);">@(Model.sistema_operativo ?? "—")</div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="idEquipo" />
+        <div style="display:flex; gap:10px;">
+            <button type="submit" class="btn btn--danger btn--lg">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                Sí, eliminar definitivamente
+            </button>
+            <a asp-action="Details" asp-route-id="@Model.idEquipo" class="btn btn--secondary btn--lg">
+                No, conservar
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Styles {
+<style>
+.equipo-icon-lg {
+    width: 48px; height: 48px; border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--azul-dark), var(--azul-mid));
+    display: grid; place-items: center; flex-shrink: 0;
+}
+.equipo-icon-lg svg {
+    width: 22px; height: 22px; stroke: var(--blanco);
+    fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+</style>
+}

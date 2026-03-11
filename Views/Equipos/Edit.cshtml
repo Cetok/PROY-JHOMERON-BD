@@ -1,16 +1,20 @@
 @model PROYJHOME2026.Models.Equipo
 @{
-    ViewData["Title"]      = "Nuevo Equipo";
-    ViewData["Breadcrumb"] = "Equipos TI / Nuevo";
+    ViewData["Title"]      = "Editar Equipo";
+    ViewData["Breadcrumb"] = "Equipos TI / Editar";
 }
 
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Equipos TI</div>
-        <h1 class="page-header__title">Nuevo Equipo</h1>
-        <p class="page-header__subtitle">Complete los datos del equipo</p>
+        <h1 class="page-header__title">Editar Equipo</h1>
+        <p class="page-header__subtitle">@Model.marca @Model.modelo</p>
     </div>
     <div class="page-header__actions">
+        <a asp-action="Details" asp-route-id="@Model.idEquipo" class="btn btn--ghost btn--sm">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Ver detalle
+        </a>
         <a asp-action="Index" class="btn btn--secondary">
             <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Volver
@@ -20,8 +24,9 @@
 
 <div style="max-width:780px;">
     <div class="card">
-        <form asp-action="Create" method="post">
+        <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
+            <input asp-for="idEquipo" type="hidden" />
 
             <!-- Identificación -->
             <div style="margin-bottom:24px;">
@@ -38,20 +43,17 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">N° de serie</label>
-                        <input asp-for="numero_serie" class="form-control"
-                               placeholder="Ej: SN-2024-001" />
+                        <input asp-for="numero_serie" class="form-control" />
                         <span asp-validation-for="numero_serie" class="form-error"></span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Marca <span class="req">*</span></label>
-                        <input asp-for="marca" class="form-control"
-                               placeholder="Ej: Dell, HP, Lenovo..." />
+                        <input asp-for="marca" class="form-control" />
                         <span asp-validation-for="marca" class="form-error"></span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Modelo <span class="req">*</span></label>
-                        <input asp-for="modelo" class="form-control"
-                               placeholder="Ej: Latitude 5540, EliteBook 840..." />
+                        <input asp-for="modelo" class="form-control" />
                         <span asp-validation-for="modelo" class="form-error"></span>
                     </div>
                 </div>
@@ -65,20 +67,17 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Sistema operativo</label>
-                        <input asp-for="sistema_operativo" class="form-control"
-                               placeholder="Ej: Windows, Linux, macOS..." />
+                        <input asp-for="sistema_operativo" class="form-control" />
                         <span asp-validation-for="sistema_operativo" class="form-error"></span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Versión</label>
-                        <input asp-for="version" class="form-control"
-                               placeholder="Ej: 11 Pro, Ubuntu 22.04..." />
+                        <input asp-for="version" class="form-control" />
                         <span asp-validation-for="version" class="form-error"></span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Correo del equipo</label>
-                        <input asp-for="correo_equipo" type="email" class="form-control"
-                               placeholder="equipo@empresa.com" />
+                        <input asp-for="correo_equipo" type="email" class="form-control" />
                         <span asp-validation-for="correo_equipo" class="form-error"></span>
                     </div>
                 </div>
@@ -110,9 +109,9 @@
             </div>
 
             <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
-                <button type="submit" class="btn btn--celeste btn--lg">
-                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    Registrar equipo
+                <button type="submit" class="btn btn--primary btn--lg">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Guardar cambios
                 </button>
                 <a asp-action="Index" class="btn btn--secondary btn--lg">Cancelar</a>
             </div>

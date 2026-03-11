@@ -3,8 +3,23 @@ using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
 using PROYJHOME2026.Models;
 
-namespace TuProyecto.Controllers
+namespace PROYJHOME2026.Controllers
 {
+     // ── ViewModel para Create y Edit ─────────────────────────────
+    public class EmpleadoFormViewModel
+    {
+        public Empleado Empleado { get; set; } = new();
+
+        // Lista de todos los grupos con un checkbox por cada uno
+        public List<GrupoCheckbox> Grupos { get; set; } = new();
+    }
+
+    public class GrupoCheckbox
+    {
+        public int    IdGrupo   { get; set; }
+        public string Area      { get; set; } = string.Empty;
+        public bool   Marcado   { get; set; }   // true = ya pertenece a este grupo
+    }
     public class EmpleadosController : Controller
     {
         private readonly AppDbContext _context;
@@ -23,10 +38,10 @@ namespace TuProyecto.Controllers
 
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(e =>
-                    (e.nombre != null && e.nombre.Contains(buscar)) ||
-                    (e.paterno != null && e.paterno.Contains(buscar)) ||
-                    (e.dni != null && e.dni.Contains(buscar)) ||
-                    (e.correo != null && e.correo.Contains(buscar)));
+                    (e.nombre    != null && e.nombre.Contains(buscar))  ||
+                    (e.paterno   != null && e.paterno.Contains(buscar)) ||
+                    (e.dni       != null && e.dni.Contains(buscar))     ||
+                    (e.correo    != null && e.correo.Contains(buscar)));
 
             if (!string.IsNullOrWhiteSpace(estado))
                 query = query.Where(e => e.estado == estado);
@@ -39,12 +54,12 @@ namespace TuProyecto.Controllers
                 .Take(porPagina)
                 .ToListAsync();
 
-            ViewBag.Buscar   = buscar;
-            ViewBag.Estado   = estado;
-            ViewBag.Pagina   = pagina;
-            ViewBag.Total    = total;
-            ViewBag.PorPagina = porPagina;
-            ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
+            ViewBag.Buscar        = buscar;
+            ViewBag.Estado        = estado;
+            ViewBag.Pagina        = pagina;
+            ViewBag.Total         = total;
+            ViewBag.PorPagina     = porPagina;
+            ViewBag.TotalPaginas  = (int)Math.Ceiling((double)total / porPagina);
 
             return View(empleados);
         }
@@ -57,39 +72,75 @@ namespace TuProyecto.Controllers
 
             if (empleado == null) return NotFound();
 
+            var grupos = await _context.EmpleadoGrupos
+                .Include(eg => eg.Grupo)
+                .Where(eg => eg.IdEmpleado == id)
+                .Select(eg => eg.Grupo)
+                .ToListAsync();
+
+            ViewBag.Grupos = grupos;
             return View(empleado);
         }
 
+       
         // ── CREATE GET ───────────────────────────────────────────
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View();
+            var vm = new EmpleadoFormViewModel
+            {
+                Grupos = await _context.Grupos
+                    .OrderBy(g => g.area)
+                    .Select(g => new GrupoCheckbox
+                    {
+                        IdGrupo = g.idGrupo,
+                        Area    = g.area ?? "",
+                        Marcado = false
+                    })
+                    .ToListAsync()
+            };
+            return View(vm);
         }
 
         // ── CREATE POST ──────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Empleado empleado)
+        public async Task<IActionResult> Create(EmpleadoFormViewModel vm)
         {
+            // Quitar validaciones de Grupos (vienen como lista auxiliar)
+            ModelState.Remove("Grupos");
+
             if (ModelState.IsValid)
             {
-                // Verificar DNI duplicado
                 bool dniExiste = await _context.Empleados
-                    .AnyAsync(e => e.dni == empleado.dni);
+                    .AnyAsync(e => e.dni == vm.Empleado.dni);
 
                 if (dniExiste)
                 {
-                    ModelState.AddModelError("dni", "Ya existe un empleado con ese DNI.");
-                    return View(empleado);
+                    ModelState.AddModelError("Empleado.dni", "Ya existe un empleado con ese DNI.");
+                    vm.Grupos = await CargarGrupos();
+                    return View(vm);
                 }
 
-                _context.Add(empleado);
+                _context.Empleados.Add(vm.Empleado);
                 await _context.SaveChangesAsync();
-                TempData["Success"] = $"Empleado {empleado.nombre} {empleado.paterno} registrado correctamente.";
-                return RedirectToAction(nameof(Index));
+
+                // Guardar grupos marcados
+                foreach (var g in vm.Grupos.Where(g => g.Marcado))
+                {
+                    _context.EmpleadoGrupos.Add(new EmpleadoGrupo
+                    {
+                        IdEmpleado = vm.Empleado.idEmpleado,
+                        IdGrupo    = g.IdGrupo
+                    });
+                }
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} registrado correctamente.";
+                return RedirectToAction(nameof(Details), new { id = vm.Empleado.idEmpleado });
             }
 
-            return View(empleado);
+            vm.Grupos = await CargarGrupos();
+            return View(vm);
         }
 
         // ── EDIT GET ─────────────────────────────────────────────
@@ -100,34 +151,73 @@ namespace TuProyecto.Controllers
 
             if (empleado == null) return NotFound();
 
-            return View(empleado);
+            // Ids de grupos que ya tiene
+            var idsActuales = await _context.EmpleadoGrupos
+                .Where(eg => eg.IdEmpleado == id)
+                .Select(eg => eg.IdGrupo)
+                .ToListAsync();
+
+            var vm = new EmpleadoFormViewModel
+            {
+                Empleado = empleado,
+                Grupos   = await _context.Grupos
+                    .OrderBy(g => g.area)
+                    .Select(g => new GrupoCheckbox
+                    {
+                        IdGrupo = g.idGrupo,
+                        Area    = g.area ?? "",
+                        Marcado = idsActuales.Contains(g.idGrupo)  // preselecciona los que ya tiene
+                    })
+                    .ToListAsync()
+            };
+
+            return View(vm);
         }
 
         // ── EDIT POST ────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Empleado empleado)
+        public async Task<IActionResult> Edit(int id, EmpleadoFormViewModel vm)
         {
-            if (id != empleado.idEmpleado) return NotFound();
+            if (id != vm.Empleado.idEmpleado) return NotFound();
+
+            ModelState.Remove("Grupos");
 
             if (ModelState.IsValid)
             {
-                // Verificar DNI duplicado (excluyendo el mismo)
                 bool dniExiste = await _context.Empleados
-                    .AnyAsync(e => e.dni == empleado.dni && e.idEmpleado != id);
+                    .AnyAsync(e => e.dni == vm.Empleado.dni && e.idEmpleado != id);
 
                 if (dniExiste)
                 {
-                    ModelState.AddModelError("dni", "Ya existe otro empleado con ese DNI.");
-                    return View(empleado);
+                    ModelState.AddModelError("Empleado.dni", "Ya existe otro empleado con ese DNI.");
+                    vm.Grupos = await CargarGrupos(id);
+                    return View(vm);
                 }
 
                 try
                 {
-                    _context.Update(empleado);
+                    _context.Update(vm.Empleado);
+
+                    // Reemplazar grupos: borrar todos los actuales y guardar los nuevos
+                    var relacionesActuales = await _context.EmpleadoGrupos
+                        .Where(eg => eg.IdEmpleado == id)
+                        .ToListAsync();
+
+                    _context.EmpleadoGrupos.RemoveRange(relacionesActuales);
+
+                    foreach (var g in vm.Grupos.Where(g => g.Marcado))
+                    {
+                        _context.EmpleadoGrupos.Add(new EmpleadoGrupo
+                        {
+                            IdEmpleado = id,
+                            IdGrupo    = g.IdGrupo
+                        });
+                    }
+
                     await _context.SaveChangesAsync();
-                    TempData["Success"] = $"Empleado {empleado.nombre} {empleado.paterno} actualizado correctamente.";
-                    return RedirectToAction(nameof(Index));
+                    TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} actualizado correctamente.";
+                    return RedirectToAction(nameof(Details), new { id });
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -137,7 +227,8 @@ namespace TuProyecto.Controllers
                 }
             }
 
-            return View(empleado);
+            vm.Grupos = await CargarGrupos(id);
+            return View(vm);
         }
 
         // ── DELETE GET ───────────────────────────────────────────
@@ -147,7 +238,6 @@ namespace TuProyecto.Controllers
                 .FirstOrDefaultAsync(e => e.idEmpleado == id);
 
             if (empleado == null) return NotFound();
-
             return View(empleado);
         }
 
@@ -163,6 +253,11 @@ namespace TuProyecto.Controllers
 
             try
             {
+                // Borrar relaciones de grupo primero
+                var relaciones = await _context.EmpleadoGrupos
+                    .Where(eg => eg.IdEmpleado == id).ToListAsync();
+                _context.EmpleadoGrupos.RemoveRange(relaciones);
+
                 _context.Empleados.Remove(empleado);
                 await _context.SaveChangesAsync();
                 TempData["Success"] = $"Empleado {empleado.nombre} {empleado.paterno} eliminado.";
@@ -170,9 +265,31 @@ namespace TuProyecto.Controllers
             catch (DbUpdateException)
             {
                 TempData["Error"] = "No se puede eliminar este empleado porque tiene registros asociados.";
+                return RedirectToAction(nameof(Details), new { id });
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── Helper privado ────────────────────────────────────────
+        private async Task<List<GrupoCheckbox>> CargarGrupos(int? idEmpleado = null)
+        {
+            var idsActuales = idEmpleado.HasValue
+                ? await _context.EmpleadoGrupos
+                    .Where(eg => eg.IdEmpleado == idEmpleado)
+                    .Select(eg => eg.IdGrupo)
+                    .ToListAsync()
+                : new List<int>();
+
+            return await _context.Grupos
+                .OrderBy(g => g.area)
+                .Select(g => new GrupoCheckbox
+                {
+                    IdGrupo = g.idGrupo,
+                    Area    = g.area ?? "",
+                    Marcado = idsActuales.Contains(g.idGrupo)
+                })
+                .ToListAsync();
         }
     }
 }

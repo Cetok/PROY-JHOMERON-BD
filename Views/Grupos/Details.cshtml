@@ -1,0 +1,81 @@
+@model PROYJHOME2026.Models.Grupo
+@{
+    ViewData["Title"]      = "Detalle Grupo";
+    ViewData["Breadcrumb"] = "Grupos / Detalle";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Recursos Humanos</div>
+        <h1 class="page-header__title">@(Model.area ?? "Sin nombre")</h1>
+        <p class="page-header__subtitle">ID: #@Model.idGrupo</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Edit" asp-route-id="@Model.idGrupo" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+        </a>
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div style="max-width:480px; display:flex; flex-direction:column; gap:16px;">
+
+    <div class="card">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--gris-200);">
+            <div class="grupo-icon-lg">
+                <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div>
+                <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:700; color:var(--azul-dark);">
+                    @(Model.area ?? "Sin nombre")
+                </div>
+                <div style="font-size:0.78rem; color:var(--gris-500); margin-top:2px;">
+                    ID de grupo: #@Model.idGrupo
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:4px;">
+                Área
+            </div>
+            <div style="font-size:0.92rem; font-weight:500; color:var(--gris-900);">
+                @(Model.area ?? "—")
+            </div>
+        </div>
+    </div>
+
+    <!-- Zona peligro -->
+    <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+            <div>
+                <div style="font-weight:700; color:var(--rojo); font-size:0.88rem;">Zona de peligro</div>
+                <div style="font-size:0.78rem; color:var(--gris-600); margin-top:2px;">
+                    Eliminar este grupo es irreversible si no tiene empleados asociados.
+                </div>
+            </div>
+            <a asp-action="Delete" asp-route-id="@Model.idGrupo" class="btn btn--danger">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                Eliminar grupo
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+<style>
+.grupo-icon-lg {
+    width: 48px; height: 48px; border-radius: var(--r-md);
+    background: var(--celeste-glow); border: 1px solid var(--celeste-border);
+    display: grid; place-items: center; flex-shrink: 0;
+}
+.grupo-icon-lg svg {
+    width: 22px; height: 22px; stroke: var(--celeste);
+    fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+</style>
+}
