@@ -1,3 +1,4 @@
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -20,11 +21,12 @@ namespace PROYJHOME2026.Models
         [Required]
         public DateTime FechaAsignacion { get; set; }
 
-        public DateTime? FechaDevolucion { get; set; }
+        // Correo corporativo asignado junto al equipo (opcional)
+        [StringLength(150)]
+        public string? CorreoEquipo { get; set; }
 
-        [Required]
-        [StringLength(50)]
-        public string EstadoAsignacion { get; set; } = string.Empty;
+        // Solo "Activo" o "Inactivo" — se maneja automáticamente
+        public string EstadoAsignacion { get; set; } = "Activo";
 
         // Navegación
         [ForeignKey("IdEmpleado")]

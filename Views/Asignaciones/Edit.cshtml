@@ -7,14 +7,14 @@
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Equipos TI</div>
-        <h1 class="page-header__title">Editar Asignación</h1>
-        <p class="page-header__subtitle">ID: #@Model.IdAsignacion</p>
+        <h1 class="page-header__title">Editar Asignación #@Model.IdAsignacion</h1>
+        <p class="page-header__subtitle">
+            @(Model.Empleado?.nombre ?? "") @(Model.Empleado?.paterno ?? "") →
+            @(Model.Equipo?.marca ?? "") @(Model.Equipo?.modelo ?? "")
+        </p>
     </div>
     <div class="page-header__actions">
-        <a asp-action="Details" asp-route-id="@Model.IdAsignacion" class="btn btn--ghost btn--sm">
-            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            Ver detalle
-        </a>
+        <a asp-action="Details" asp-route-id="@Model.IdAsignacion" class="btn btn--ghost btn--sm">Ver detalle</a>
         <a asp-action="Index" class="btn btn--secondary">
             <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Volver
@@ -27,11 +27,12 @@
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
             <input asp-for="IdAsignacion" type="hidden" />
+            <input asp-for="EstadoAsignacion" type="hidden" />
 
-            <!-- Relación -->
+            <!-- Empleado y equipo -->
             <div style="margin-bottom:24px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Empleado y equipos
+                    Empleado y equipo
                 </p>
                 <div class="form-grid">
                     <div class="form-group form-group--full">
@@ -58,10 +59,10 @@
                 </div>
             </div>
 
-            <!-- Fechas y estado -->
+            <!-- Datos adicionales -->
             <div style="margin-bottom:28px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Fechas y estado
+                    Datos adicionales
                 </p>
                 <div class="form-grid">
                     <div class="form-group">
@@ -70,18 +71,9 @@
                         <span asp-validation-for="FechaAsignacion" class="form-error"></span>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Fecha de devolución</label>
-                        <input asp-for="FechaDevolucion" type="date" class="form-control" />
-                        <span asp-validation-for="FechaDevolucion" class="form-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Estado <span class="req">*</span></label>
-                        <select asp-for="EstadoAsignacion" class="form-control">
-                            <option value="Activo">Activo</option>
-                            <option value="Devuelto">Devuelto</option>
-                            <option value="Cancelado">Cancelado</option>
-                        </select>
-                        <span asp-validation-for="EstadoAsignacion" class="form-error"></span>
+                        <label class="form-label">Correo corporativo <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
+                        <input asp-for="CorreoEquipo" type="email" class="form-control" />
+                        <span asp-validation-for="CorreoEquipo" class="form-error"></span>
                     </div>
                 </div>
             </div>

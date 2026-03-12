@@ -83,10 +83,17 @@ namespace PROYJHOME2026.Data
                 .HasForeignKey(a => a.IdEmpleado)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Asignacion → Equipo
+            // Equipo → TipoEquipo
+            modelBuilder.Entity<Equipo>()
+                .HasOne(e => e.TipoEquipo)
+                .WithMany()
+                .HasForeignKey(e => e.idTipoEquipo)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Asignacion → Equipo (corregido)
             modelBuilder.Entity<Asignacion>()
                 .HasOne(a => a.Equipo)
-                .WithMany()
+                .WithMany(e => e.Asignaciones)  // ← apunta a la colección
                 .HasForeignKey(a => a.IdEquipo)
                 .OnDelete(DeleteBehavior.Restrict);
 

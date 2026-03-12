@@ -83,7 +83,6 @@
                         <th>Equipo</th>
                         <th>Chip</th>
                         <th>Fecha asignación</th>
-                        <th>Devolución</th>
                         <th>Estado</th>
                         <th style="text-align:center;">Acciones</th>
                     </tr>
@@ -108,9 +107,6 @@
                             </td>
                             <td style="font-size:0.8rem; color:var(--gris-600);">
                                 @a.FechaAsignacion.ToString("dd/MM/yyyy")
-                            </td>
-                            <td style="font-size:0.8rem; color:var(--gris-600);">
-                                @(a.FechaDevolucion.HasValue ? a.FechaDevolucion.Value.ToString("dd/MM/yyyy") : "—")
                             </td>
                             <td>
                                 @{

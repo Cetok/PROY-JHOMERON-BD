@@ -28,10 +28,14 @@ namespace PROYJHOME2026.Controllers
 
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(a =>
-                    (a.Empleado.nombre  != null && a.Empleado.nombre.Contains(buscar))  ||
-                    (a.Empleado.paterno != null && a.Empleado.paterno.Contains(buscar)) ||
-                    (a.Equipo.marca     != null && a.Equipo.marca.Contains(buscar))     ||
-                    (a.Equipo.modelo    != null && a.Equipo.modelo.Contains(buscar)));
+                    (a.Empleado.nombre      != null && a.Empleado.nombre.Contains(buscar))      ||
+                    (a.Empleado.paterno     != null && a.Empleado.paterno.Contains(buscar))     ||
+                    (a.Empleado.dni         != null && a.Empleado.dni.Contains(buscar))         ||
+                    (a.Equipo.marca         != null && a.Equipo.marca.Contains(buscar))         ||
+                    (a.Equipo.modelo        != null && a.Equipo.modelo.Contains(buscar))        ||
+                    (a.Equipo.numero_serie  != null && a.Equipo.numero_serie.Contains(buscar))  ||
+                    (a.CorreoEquipo         != null && a.CorreoEquipo.Contains(buscar))         ||
+                    (a.Chip.NumeroCelular   != null && a.Chip.NumeroCelular.Contains(buscar)));
 
             if (!string.IsNullOrWhiteSpace(estado))
                 query = query.Where(a => a.EstadoAsignacion == estado);
@@ -60,6 +64,7 @@ namespace PROYJHOME2026.Controllers
                 .Include(a => a.Empleado)
                 .Include(a => a.Equipo).ThenInclude(e => e.TipoEquipo)
                 .Include(a => a.Chip)
+                .Include(a => a.Historiales).ThenInclude(h => h.Motivo)
                 .FirstOrDefaultAsync(a => a.IdAsignacion == id);
 
             if (asignacion == null) return NotFound();
@@ -70,7 +75,8 @@ namespace PROYJHOME2026.Controllers
         public async Task<IActionResult> Create()
         {
             await CargarListas();
-            return View();
+            var asignacion = new Asignacion { FechaAsignacion = DateTime.Today };
+            return View(asignacion);
         }
 
         // ── CREATE POST ──────────────────────────────────────────
@@ -78,15 +84,16 @@ namespace PROYJHOME2026.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Asignacion asignacion)
         {
-            // Ignorar errores de propiedades de navegación
             ModelState.Remove("Empleado");
             ModelState.Remove("Equipo");
             ModelState.Remove("Chip");
             ModelState.Remove("Historiales");
+            ModelState.Remove("EstadoAsignacion");
+
+            asignacion.EstadoAsignacion = "Activo";
 
             if (ModelState.IsValid)
             {
-                // Verificar que el equipo no esté ya asignado activamente
                 bool equipoOcupado = await _context.Asignaciones
                     .AnyAsync(a => a.IdEquipo == asignacion.IdEquipo
                                && a.EstadoAsignacion == "Activo");
@@ -98,13 +105,11 @@ namespace PROYJHOME2026.Controllers
                     return View(asignacion);
                 }
 
-                // Verificar que el chip no esté ya asignado activamente
                 if (asignacion.IdChip.HasValue)
                 {
                     bool chipOcupado = await _context.Asignaciones
                         .AnyAsync(a => a.IdChip == asignacion.IdChip
                                    && a.EstadoAsignacion == "Activo");
-
                     if (chipOcupado)
                     {
                         ModelState.AddModelError("IdChip", "Este chip ya tiene una asignación activa.");
@@ -131,6 +136,12 @@ namespace PROYJHOME2026.Controllers
 
             if (asignacion == null) return NotFound();
 
+            if (asignacion.EstadoAsignacion == "Inactivo")
+            {
+                TempData["Warning"] = "No se puede editar una asignación inactiva.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             await CargarListas(asignacion.IdEmpleado, asignacion.IdEquipo, asignacion.IdChip);
             return View(asignacion);
         }
@@ -142,7 +153,6 @@ namespace PROYJHOME2026.Controllers
         {
             if (id != asignacion.IdAsignacion) return NotFound();
 
-            // Ignorar errores de propiedades de navegación
             ModelState.Remove("Empleado");
             ModelState.Remove("Equipo");
             ModelState.Remove("Chip");
@@ -150,12 +160,10 @@ namespace PROYJHOME2026.Controllers
 
             if (ModelState.IsValid)
             {
-                // Equipo ocupado por otra asignación activa
                 bool equipoOcupado = await _context.Asignaciones
                     .AnyAsync(a => a.IdEquipo == asignacion.IdEquipo
                                && a.EstadoAsignacion == "Activo"
                                && a.IdAsignacion != id);
-
                 if (equipoOcupado)
                 {
                     ModelState.AddModelError("IdEquipo", "Este equipo ya tiene otra asignación activa.");
@@ -169,7 +177,6 @@ namespace PROYJHOME2026.Controllers
                         .AnyAsync(a => a.IdChip == asignacion.IdChip
                                    && a.EstadoAsignacion == "Activo"
                                    && a.IdAsignacion != id);
-
                     if (chipOcupado)
                     {
                         ModelState.AddModelError("IdChip", "Este chip ya tiene otra asignación activa.");
@@ -195,24 +202,6 @@ namespace PROYJHOME2026.Controllers
 
             await CargarListas(asignacion.IdEmpleado, asignacion.IdEquipo, asignacion.IdChip);
             return View(asignacion);
-        }
-
-        // ── DEVOLVER (cambiar estado a Devuelto) ─────────────────
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Devolver(int id)
-        {
-            var asignacion = await _context.Asignaciones
-                .FirstOrDefaultAsync(a => a.IdAsignacion == id);
-
-            if (asignacion == null) return NotFound();
-
-            asignacion.EstadoAsignacion = "Devuelto";
-            asignacion.FechaDevolucion  = DateTime.Now;
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = "Equipo marcado como devuelto correctamente.";
-            return RedirectToAction(nameof(Details), new { id });
         }
 
         // ── DELETE GET ───────────────────────────────────────────
@@ -246,7 +235,7 @@ namespace PROYJHOME2026.Controllers
             }
             catch (DbUpdateException)
             {
-                TempData["Error"] = "No se puede eliminar esta asignación porque tiene historiales asociados.";
+                TempData["Error"] = "No se puede eliminar esta asignación porque tiene historiales registrados.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
@@ -256,16 +245,17 @@ namespace PROYJHOME2026.Controllers
         // ── HELPER ───────────────────────────────────────────────
         private async Task CargarListas(int? empleadoSel = null, int? equipoSel = null, int? chipSel = null)
         {
-            // Empleados activos
             var empleados = await _context.Empleados
                 .Where(e => e.estado == "Activo")
                 .OrderBy(e => e.paterno)
-                .Select(e => new { e.idEmpleado, NombreCompleto = e.nombre + " " + e.paterno + " " + e.materno })
+                .Select(e => new {
+                    e.idEmpleado,
+                    NombreCompleto = e.nombre + " " + e.paterno + " " + e.materno
+                })
                 .ToListAsync();
 
             ViewBag.EmpleadosList = new SelectList(empleados, "idEmpleado", "NombreCompleto", empleadoSel);
 
-            // Equipos activos no asignados (+ el actualmente asignado si es edición)
             var equiposOcupados = await _context.Asignaciones
                 .Where(a => a.EstadoAsignacion == "Activo" && a.IdEquipo != equipoSel)
                 .Select(a => a.IdEquipo)
@@ -277,13 +267,14 @@ namespace PROYJHOME2026.Controllers
                 .OrderBy(e => e.marca)
                 .Select(e => new {
                     e.idEquipo,
-                    Descripcion = (e.TipoEquipo != null ? e.TipoEquipo.tipo + " — " : "") + e.marca + " " + e.modelo
+                    Descripcion = (e.TipoEquipo != null ? e.TipoEquipo.tipo + " — " : "") +
+                                  e.marca + " " + e.modelo +
+                                  (e.numero_serie != null ? " [" + e.numero_serie + "]" : "")
                 })
                 .ToListAsync();
 
             ViewBag.EquiposList = new SelectList(equipos, "idEquipo", "Descripcion", equipoSel);
 
-            // Chips disponibles (+ el actualmente asignado si es edición)
             var chipsOcupados = await _context.Asignaciones
                 .Where(a => a.EstadoAsignacion == "Activo" && a.IdChip != chipSel && a.IdChip != null)
                 .Select(a => a.IdChip!.Value)

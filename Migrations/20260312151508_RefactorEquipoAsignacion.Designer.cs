@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PROYJHOME2026.Data;
 
@@ -11,9 +12,11 @@ using PROYJHOME2026.Data;
 namespace PROYJHOME2026.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312151508_RefactorEquipoAsignacion")]
+    partial class RefactorEquipoAsignacion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,6 +55,9 @@ namespace PROYJHOME2026.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<int?>("EquipoidEquipo")
+                        .HasColumnType("int");
+
                     b.Property<string>("EstadoAsignacion")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -69,6 +75,8 @@ namespace PROYJHOME2026.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("IdAsignacion");
+
+                    b.HasIndex("EquipoidEquipo");
 
                     b.HasIndex("IdChip");
 
@@ -304,6 +312,9 @@ namespace PROYJHOME2026.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("idEquipo"));
 
+                    b.Property<int?>("TipoEquipoidTipoEquipo")
+                        .HasColumnType("int");
+
                     b.Property<string>("estado_equipo")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -331,7 +342,7 @@ namespace PROYJHOME2026.Migrations
 
                     b.HasKey("idEquipo");
 
-                    b.HasIndex("idTipoEquipo");
+                    b.HasIndex("TipoEquipoidTipoEquipo");
 
                     b.ToTable("Equipos");
                 });
@@ -594,6 +605,10 @@ namespace PROYJHOME2026.Migrations
 
             modelBuilder.Entity("PROYJHOME2026.Models.Asignacion", b =>
                 {
+                    b.HasOne("PROYJHOME2026.Models.Equipo", null)
+                        .WithMany("Asignaciones")
+                        .HasForeignKey("EquipoidEquipo");
+
                     b.HasOne("PROYJHOME2026.Models.Chip", "Chip")
                         .WithMany("Asignaciones")
                         .HasForeignKey("IdChip")
@@ -606,7 +621,7 @@ namespace PROYJHOME2026.Migrations
                         .IsRequired();
 
                     b.HasOne("PROYJHOME2026.Models.Equipo", "Equipo")
-                        .WithMany("Asignaciones")
+                        .WithMany()
                         .HasForeignKey("IdEquipo")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -736,9 +751,7 @@ namespace PROYJHOME2026.Migrations
                 {
                     b.HasOne("PROYJHOME2026.Models.TipoEquipo", "TipoEquipo")
                         .WithMany()
-                        .HasForeignKey("idTipoEquipo")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("TipoEquipoidTipoEquipo");
 
                     b.Navigation("TipoEquipo");
                 });

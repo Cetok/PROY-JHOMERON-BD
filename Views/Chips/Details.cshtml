@@ -81,7 +81,6 @@
                             <th>Empleado</th>
                             <th>Equipo</th>
                             <th>Desde</th>
-                            <th>Hasta</th>
                             <th>Estado</th>
                         </tr>
                     </thead>
@@ -98,14 +97,9 @@
                                 <td style="font-size:0.8rem; color:var(--gris-600);">
                                     @a.FechaAsignacion.ToString("dd/MM/yyyy")
                                 </td>
-                                <td style="font-size:0.8rem; color:var(--gris-600);">
-                                    @(a.FechaDevolucion.HasValue ? a.FechaDevolucion.Value.ToString("dd/MM/yyyy") : "—")
-                                </td>
                                 <td>
                                     @{
-                                        var bc = a.EstadoAsignacion == "Activo"    ? "badge--verde"
-                                               : a.EstadoAsignacion == "Devuelto"  ? "badge--gris"
-                                               : "badge--amarillo";
+                                        var bc = a.EstadoAsignacion == "Activo" ? "badge--verde" : "badge--gris";
                                     }
                                     <span class="badge @bc">@a.EstadoAsignacion</span>
                                 </td>

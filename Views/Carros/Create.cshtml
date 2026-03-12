@@ -1,0 +1,132 @@
+@model PROYJHOME2026.Models.Carro
+@{
+    ViewData["Title"]      = "Nuevo Vehículo";
+    ViewData["Breadcrumb"] = "Flota Vehicular / Nuevo";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular</div>
+        <h1 class="page-header__title">Nuevo Vehículo</h1>
+        <p class="page-header__subtitle">Registra un vehículo en la flota</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div style="max-width:820px;">
+    <div class="card">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <!-- Identificación -->
+            <div style="margin-bottom:24px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Identificación
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Placa <span class="req">*</span></label>
+                        <input asp-for="Placa" class="form-control" placeholder="Ej: ABC-123"
+                               style="text-transform:uppercase;" maxlength="20" />
+                        <span asp-validation-for="Placa" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">N° de motor</label>
+                        <input asp-for="NumeroMotor" class="form-control" placeholder="Ej: 4D56U-123456" maxlength="50" />
+                        <span asp-validation-for="NumeroMotor" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Marca <span class="req">*</span></label>
+                        <input asp-for="Marca" class="form-control" placeholder="Ej: Toyota, Hyundai..." maxlength="50" />
+                        <span asp-validation-for="Marca" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Modelo <span class="req">*</span></label>
+                        <input asp-for="Modelo" class="form-control" placeholder="Ej: Hilux, H100..." maxlength="50" />
+                        <span asp-validation-for="Modelo" class="form-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Características técnicas -->
+            <div style="margin-bottom:24px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Características técnicas
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Categoría</label>
+                        <input asp-for="Categoria" class="form-control"
+                               placeholder="Ej: Camioneta, Camión, Bus..." maxlength="50" />
+                        <span asp-validation-for="Categoria" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">N° de ejes</label>
+                        <input asp-for="Ejes" type="number" class="form-control"
+                               placeholder="Ej: 2" min="1" max="10" />
+                        <span asp-validation-for="Ejes" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Peso (Kg)</label>
+                        <input asp-for="Peso" type="number" step="0.01" class="form-control"
+                               placeholder="Ej: 1500.00" />
+                        <span asp-validation-for="Peso" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Carga útil (Kg)</label>
+                        <input asp-for="CargaUtil" type="number" step="0.01" class="form-control"
+                               placeholder="Ej: 1000.00" />
+                        <span asp-validation-for="CargaUtil" class="form-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fechas y estado -->
+            <div style="margin-bottom:28px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Fechas y estado
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Año del vehículo</label>
+                        <input asp-for="FechaCarro" type="date" class="form-control" />
+                        <span asp-validation-for="FechaCarro" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fecha de compra</label>
+                        <input asp-for="FechaCompra" type="date" class="form-control" />
+                        <span asp-validation-for="FechaCompra" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estado <span class="req">*</span></label>
+                        <select asp-for="Estado" class="form-control">
+                            <option value="">— Seleccionar —</option>
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                            <option value="En mantenimiento">En mantenimiento</option>
+                            <option value="De baja">De baja</option>
+                        </select>
+                        <span asp-validation-for="Estado" class="form-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
+                <button type="submit" class="btn btn--celeste btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Registrar vehículo
+                </button>
+                <a asp-action="Index" class="btn btn--secondary btn--lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,7 +1,7 @@
 @model PROYJHOME2026.Models.Equipo
 @{
     ViewData["Title"]      = "Editar Equipo";
-    ViewData["Breadcrumb"] = "Equipos TI / Editar";
+    ViewData["Breadcrumb"] = "Equipos / Editar";
 }
 
 <div class="page-header">
@@ -11,10 +11,7 @@
         <p class="page-header__subtitle">@Model.marca @Model.modelo</p>
     </div>
     <div class="page-header__actions">
-        <a asp-action="Details" asp-route-id="@Model.idEquipo" class="btn btn--ghost btn--sm">
-            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            Ver detalle
-        </a>
+        <a asp-action="Details" asp-route-id="@Model.idEquipo" class="btn btn--ghost btn--sm">Ver detalle</a>
         <a asp-action="Index" class="btn btn--secondary">
             <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Volver
@@ -22,11 +19,12 @@
     </div>
 </div>
 
-<div style="max-width:780px;">
+<div style="max-width:680px;">
     <div class="card">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
             <input asp-for="idEquipo" type="hidden" />
+            <input asp-for="estado_equipo" type="hidden" />
 
             <!-- Identificación -->
             <div style="margin-bottom:24px;">
@@ -34,17 +32,12 @@
                     Identificación
                 </p>
                 <div class="form-grid">
-                    <div class="form-group">
+                    <div class="form-group form-group--full">
                         <label class="form-label">Tipo de equipo <span class="req">*</span></label>
                         <select asp-for="idTipoEquipo" asp-items="ViewBag.TiposList" class="form-control">
                             <option value="">— Seleccionar tipo —</option>
                         </select>
                         <span asp-validation-for="idTipoEquipo" class="form-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">N° de serie</label>
-                        <input asp-for="numero_serie" class="form-control" />
-                        <span asp-validation-for="numero_serie" class="form-error"></span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Marca <span class="req">*</span></label>
@@ -55,6 +48,11 @@
                         <label class="form-label">Modelo <span class="req">*</span></label>
                         <input asp-for="modelo" class="form-control" />
                         <span asp-validation-for="modelo" class="form-error"></span>
+                    </div>
+                    <div class="form-group form-group--full">
+                        <label class="form-label">Número de serie</label>
+                        <input asp-for="numero_serie" class="form-control" />
+                        <span asp-validation-for="numero_serie" class="form-error"></span>
                     </div>
                 </div>
             </div>
@@ -75,36 +73,23 @@
                         <input asp-for="version" class="form-control" />
                         <span asp-validation-for="version" class="form-error"></span>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Correo del equipo</label>
-                        <input asp-for="correo_equipo" type="email" class="form-control" />
-                        <span asp-validation-for="correo_equipo" class="form-error"></span>
-                    </div>
                 </div>
             </div>
 
-            <!-- Estado y fecha -->
+            <!-- Compra -->
             <div style="margin-bottom:28px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Estado y adquisición
+                    Compra
                 </p>
                 <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Estado <span class="req">*</span></label>
-                        <select asp-for="estado_equipo" class="form-control">
-                            <option value="">— Seleccionar —</option>
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
-                            <option value="En reparación">En reparación</option>
-                            <option value="De baja">De baja</option>
-                        </select>
-                        <span asp-validation-for="estado_equipo" class="form-error"></span>
-                    </div>
                     <div class="form-group">
                         <label class="form-label">Fecha de compra <span class="req">*</span></label>
                         <input asp-for="fecha_compra" type="date" class="form-control" />
                         <span asp-validation-for="fecha_compra" class="form-error"></span>
                     </div>
+                </div>
+                <div class="form-hint" style="margin-top:8px;">
+                    El estado del equipo (<strong>@Model.estado_equipo</strong>) solo se modifica desde el historial de su asignación.
                 </div>
             </div>
 

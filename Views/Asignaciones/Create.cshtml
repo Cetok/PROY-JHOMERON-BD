@@ -23,10 +23,10 @@
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
 
-            <!-- Relación -->
+            <!-- Empleado y equipo -->
             <div style="margin-bottom:24px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Empleado y equipos
+                    Empleado y equipo
                 </p>
                 <div class="form-grid">
                     <div class="form-group form-group--full">
@@ -39,10 +39,10 @@
                     <div class="form-group form-group--full">
                         <label class="form-label">Equipo <span class="req">*</span></label>
                         <select asp-for="IdEquipo" asp-items="ViewBag.EquiposList" class="form-control">
-                            <option value="">— Seleccionar equipo disponible —</option>
+                            <option value="">— Seleccionar equipo —</option>
                         </select>
                         <span asp-validation-for="IdEquipo" class="form-error"></span>
-                        <div class="form-hint">Solo se muestran equipos activos y sin asignación activa.</div>
+                        <div class="form-hint">Solo equipos activos sin asignación vigente. Se muestra: Tipo — Marca Modelo [Serie]</div>
                     </div>
                     <div class="form-group form-group--full">
                         <label class="form-label">Chip / SIM <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
@@ -50,15 +50,14 @@
                             <option value="">— Sin chip —</option>
                         </select>
                         <span asp-validation-for="IdChip" class="form-error"></span>
-                        <div class="form-hint">Solo se muestran chips sin asignación activa.</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Fechas y estado -->
+            <!-- Datos adicionales -->
             <div style="margin-bottom:28px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Fechas y estado
+                    Datos adicionales
                 </p>
                 <div class="form-grid">
                     <div class="form-group">
@@ -67,20 +66,17 @@
                         <span asp-validation-for="FechaAsignacion" class="form-error"></span>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Fecha de devolución <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
-                        <input asp-for="FechaDevolucion" type="date" class="form-control" />
-                        <span asp-validation-for="FechaDevolucion" class="form-error"></span>
+                        <label class="form-label">Correo corporativo <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
+                        <input asp-for="CorreoEquipo" type="email" class="form-control"
+                               placeholder="Ej: juan.perez@empresa.com" />
+                        <span asp-validation-for="CorreoEquipo" class="form-error"></span>
+                        <div class="form-hint">Correo asignado junto al equipo.</div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Estado <span class="req">*</span></label>
-                        <select asp-for="EstadoAsignacion" class="form-control">
-                            <option value="">— Seleccionar —</option>
-                            <option value="Activo">Activo</option>
-                            <option value="Devuelto">Devuelto</option>
-                            <option value="Cancelado">Cancelado</option>
-                        </select>
-                        <span asp-validation-for="EstadoAsignacion" class="form-error"></span>
-                    </div>
+                </div>
+                <input asp-for="EstadoAsignacion" type="hidden" value="Activo" />
+                <div class="form-hint" style="margin-top:8px;">
+                    <svg style="width:13px;height:13px;stroke:var(--celeste);fill:none;stroke-width:2;vertical-align:middle;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    La asignación se crea como <strong>Activa</strong>. Para cerrarla registra un evento en el historial.
                 </div>
             </div>
 

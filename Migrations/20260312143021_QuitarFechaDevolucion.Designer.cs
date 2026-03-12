@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PROYJHOME2026.Data;
 
@@ -11,9 +12,11 @@ using PROYJHOME2026.Data;
 namespace PROYJHOME2026.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312143021_QuitarFechaDevolucion")]
+    partial class QuitarFechaDevolucion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,10 +50,6 @@ namespace PROYJHOME2026.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdAsignacion"));
-
-                    b.Property<string>("CorreoEquipo")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("EstadoAsignacion")
                         .IsRequired()
@@ -304,8 +303,10 @@ namespace PROYJHOME2026.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("idEquipo"));
 
+                    b.Property<string>("correo_equipo")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("estado_equipo")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("fecha_compra")
@@ -606,7 +607,7 @@ namespace PROYJHOME2026.Migrations
                         .IsRequired();
 
                     b.HasOne("PROYJHOME2026.Models.Equipo", "Equipo")
-                        .WithMany("Asignaciones")
+                        .WithMany()
                         .HasForeignKey("IdEquipo")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -737,7 +738,7 @@ namespace PROYJHOME2026.Migrations
                     b.HasOne("PROYJHOME2026.Models.TipoEquipo", "TipoEquipo")
                         .WithMany()
                         .HasForeignKey("idTipoEquipo")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("TipoEquipo");
@@ -826,11 +827,6 @@ namespace PROYJHOME2026.Migrations
                 });
 
             modelBuilder.Entity("PROYJHOME2026.Models.Chip", b =>
-                {
-                    b.Navigation("Asignaciones");
-                });
-
-            modelBuilder.Entity("PROYJHOME2026.Models.Equipo", b =>
                 {
                     b.Navigation("Asignaciones");
                 });

@@ -26,10 +26,10 @@ namespace PROYJHOME2026.Controllers
 
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(e =>
-                    (e.marca        != null && e.marca.Contains(buscar))        ||
-                    (e.modelo       != null && e.modelo.Contains(buscar))       ||
-                    (e.numero_serie != null && e.numero_serie.Contains(buscar)) ||
-                    (e.correo_equipo!= null && e.correo_equipo.Contains(buscar)));
+                    (e.marca        != null && e.marca.Contains(buscar))         ||
+                    (e.modelo       != null && e.modelo.Contains(buscar))        ||
+                    (e.numero_serie != null && e.numero_serie.Contains(buscar))  ||
+                    (e.sistema_operativo != null && e.sistema_operativo.Contains(buscar)));
 
             if (!string.IsNullOrWhiteSpace(estado))
                 query = query.Where(e => e.estado_equipo == estado);
@@ -40,18 +40,25 @@ namespace PROYJHOME2026.Controllers
             int total = await query.CountAsync();
 
             var equipos = await query
-                .OrderByDescending(e => e.fecha_compra)
+                .OrderBy(e => e.marca)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
 
+            var tipos = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
+
+
+            // Estados posibles para el filtro
+            var estados = new List<string> { "Activo", "Devuelto", "Perdida", "Rotura", "Baja", "Mantenimiento" };
+
             ViewBag.Buscar       = buscar;
             ViewBag.Estado       = estado;
             ViewBag.TipoId       = tipoId;
+            ViewBag.Tipos        = tipos;
+            ViewBag.Estados      = estados;
             ViewBag.Pagina       = pagina;
             ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
-            ViewBag.Tipos        = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
 
             return View(equipos);
         }
@@ -61,6 +68,8 @@ namespace PROYJHOME2026.Controllers
         {
             var equipo = await _context.Equipos
                 .Include(e => e.TipoEquipo)
+                .Include(e => e.Asignaciones).ThenInclude(a => a.Empleado)
+                .Include(e => e.Asignaciones).ThenInclude(a => a.Historiales).ThenInclude(h => h.Motivo)
                 .FirstOrDefaultAsync(e => e.idEquipo == id);
 
             if (equipo == null) return NotFound();
@@ -79,23 +88,28 @@ namespace PROYJHOME2026.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Equipo equipo)
         {
+            ModelState.Remove("TipoEquipo");
+            ModelState.Remove("Asignaciones");
+            ModelState.Remove("estado_equipo");
+
+            // Estado siempre Activo al crear
+            equipo.estado_equipo = "Activo";
+
             if (ModelState.IsValid)
             {
-                if (!string.IsNullOrWhiteSpace(equipo.numero_serie))
+                bool serieExiste = !string.IsNullOrEmpty(equipo.numero_serie) &&
+                    await _context.Equipos.AnyAsync(e => e.numero_serie == equipo.numero_serie);
+
+                if (serieExiste)
                 {
-                    bool serieExiste = await _context.Equipos
-                        .AnyAsync(e => e.numero_serie == equipo.numero_serie);
-                    if (serieExiste)
-                    {
-                        ModelState.AddModelError("numero_serie", "Ya existe un equipo con ese número de serie.");
-                        await CargarTipos(equipo.idTipoEquipo);
-                        return View(equipo);
-                    }
+                    ModelState.AddModelError("numero_serie", "Ya existe un equipo con ese número de serie.");
+                    await CargarTipos(equipo.idTipoEquipo);
+                    return View(equipo);
                 }
 
                 _context.Add(equipo);
                 await _context.SaveChangesAsync();
-                TempData["Success"] = $"Equipo {equipo.marca} {equipo.modelo} registrado correctamente.";
+                TempData["Success"] = $"Equipo '{equipo.marca} {equipo.modelo}' registrado correctamente.";
                 return RedirectToAction(nameof(Details), new { id = equipo.idEquipo });
             }
 
@@ -121,25 +135,26 @@ namespace PROYJHOME2026.Controllers
         {
             if (id != equipo.idEquipo) return NotFound();
 
+            ModelState.Remove("TipoEquipo");
+            ModelState.Remove("Asignaciones");
+
             if (ModelState.IsValid)
             {
-                if (!string.IsNullOrWhiteSpace(equipo.numero_serie))
+                bool serieExiste = !string.IsNullOrEmpty(equipo.numero_serie) &&
+                    await _context.Equipos.AnyAsync(e => e.numero_serie == equipo.numero_serie && e.idEquipo != id);
+
+                if (serieExiste)
                 {
-                    bool serieExiste = await _context.Equipos
-                        .AnyAsync(e => e.numero_serie == equipo.numero_serie && e.idEquipo != id);
-                    if (serieExiste)
-                    {
-                        ModelState.AddModelError("numero_serie", "Ya existe otro equipo con ese número de serie.");
-                        await CargarTipos(equipo.idTipoEquipo);
-                        return View(equipo);
-                    }
+                    ModelState.AddModelError("numero_serie", "Ya existe otro equipo con ese número de serie.");
+                    await CargarTipos(equipo.idTipoEquipo);
+                    return View(equipo);
                 }
 
                 try
                 {
                     _context.Update(equipo);
                     await _context.SaveChangesAsync();
-                    TempData["Success"] = $"Equipo {equipo.marca} {equipo.modelo} actualizado correctamente.";
+                    TempData["Success"] = "Equipo actualizado correctamente.";
                     return RedirectToAction(nameof(Details), new { id = equipo.idEquipo });
                 }
                 catch (DbUpdateConcurrencyException)
@@ -162,6 +177,10 @@ namespace PROYJHOME2026.Controllers
                 .FirstOrDefaultAsync(e => e.idEquipo == id);
 
             if (equipo == null) return NotFound();
+
+            ViewBag.TotalAsignaciones = await _context.Asignaciones
+                .CountAsync(a => a.IdEquipo == id);
+
             return View(equipo);
         }
 
@@ -179,11 +198,11 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.Equipos.Remove(equipo);
                 await _context.SaveChangesAsync();
-                TempData["Success"] = $"Equipo eliminado correctamente.";
+                TempData["Success"] = "Equipo eliminado correctamente.";
             }
             catch (DbUpdateException)
             {
-                TempData["Error"] = "No se puede eliminar este equipo porque tiene registros asociados.";
+                TempData["Error"] = "No se puede eliminar este equipo porque tiene asignaciones registradas.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
@@ -193,8 +212,7 @@ namespace PROYJHOME2026.Controllers
         // ── HELPER ───────────────────────────────────────────────
         private async Task CargarTipos(int? seleccionado = null)
         {
-            var tipos = await _context.TiposEquipo
-                .OrderBy(t => t.tipo).ToListAsync();
+            var tipos = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
             ViewBag.TiposList = new SelectList(tipos, "idTipoEquipo", "tipo", seleccionado);
         }
     }

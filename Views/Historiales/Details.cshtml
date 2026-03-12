@@ -1,0 +1,128 @@
+@model PROYJHOME2026.Models.Historial
+@{
+    ViewData["Title"]      = "Detalle Historial";
+    ViewData["Breadcrumb"] = "Historiales / Detalle";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Equipos TI</div>
+        <h1 class="page-header__title">Registro #@Model.IdHistoria</h1>
+        <p class="page-header__subtitle">
+            @(Model.Motivo?.TipoMotivo ?? "—") · @Model.Fecha.ToString("dd/MM/yyyy")
+        </p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Edit" asp-route-id="@Model.IdHistoria" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+        </a>
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div style="max-width:700px; display:flex; flex-direction:column; gap:16px;">
+
+    <!-- Motivo y fecha -->
+    <div class="card">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:22px; padding-bottom:16px; border-bottom:1px solid var(--gris-200);">
+            <div class="hist-icon-lg">
+                <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <div>
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:4px;">Motivo del evento</div>
+                <div style="font-family:var(--font-display); font-size:1.05rem; font-weight:700; color:var(--azul-dark);">
+                    @(Model.Motivo?.TipoMotivo ?? "—")
+                </div>
+                <div style="font-size:0.82rem; color:var(--gris-500); margin-top:4px;">
+                    Registrado el @Model.Fecha.ToString("dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-PE"))
+                </div>
+            </div>
+        </div>
+
+        <!-- Observaciones -->
+        <div style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid var(--gris-200);">
+            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:8px;">Observaciones</div>
+            @if (!string.IsNullOrEmpty(Model.Observaciones))
+            {
+                <div style="font-size:0.9rem; color:var(--gris-700); line-height:1.6; background:var(--gris-100); border-radius:var(--r-sm); padding:12px 14px; border:1px solid var(--gris-200);">
+                    @Model.Observaciones
+                </div>
+            }
+            else
+            {
+                <div style="font-size:0.85rem; color:var(--gris-400); font-style:italic;">Sin observaciones registradas.</div>
+            }
+        </div>
+
+        <!-- Asignación vinculada -->
+        <div>
+            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:10px;">Asignación vinculada</div>
+            <div style="background:var(--gris-100); border-radius:var(--r-md); padding:14px 16px; border:1px solid var(--gris-200);">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <div style="font-weight:700; color:var(--gris-900); font-size:0.9rem;">
+                            @(Model.Asignacion?.Empleado?.nombre ?? "—")
+                            @(Model.Asignacion?.Empleado?.paterno ?? "")
+                            @(Model.Asignacion?.Empleado?.materno ?? "")
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--gris-500); margin-top:3px;">
+                            @(Model.Asignacion?.Equipo?.TipoEquipo?.tipo ?? "")
+                            @(Model.Asignacion?.Equipo?.marca ?? "—")
+                            @(Model.Asignacion?.Equipo?.modelo ?? "")
+                            @if (Model.Asignacion?.Chip != null)
+                            {
+                                <span>· Chip: @Model.Asignacion.Chip.NumeroCelular</span>
+                            }
+                        </div>
+                        <div style="margin-top:6px;">
+                            @{
+                                var ea = Model.Asignacion?.EstadoAsignacion;
+                                var bc = ea == "Activo"   ? "badge--verde"
+                                       : ea == "Devuelto" ? "badge--gris"
+                                       : "badge--rojo";
+                            }
+                            <span class="badge @bc">@(ea ?? "—")</span>
+                        </div>
+                    </div>
+                    <a asp-controller="Asignaciones" asp-action="Details"
+                       asp-route-id="@Model.IdAsignacion"
+                       class="btn btn--ghost btn--sm">
+                        Ver asignación →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zona peligro -->
+    <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div>
+                <div style="font-weight:700; color:var(--rojo); font-size:0.88rem;">Zona de peligro</div>
+                <div style="font-size:0.76rem; color:var(--gris-600); margin-top:2px;">
+                    Eliminar este registro es irreversible.
+                </div>
+            </div>
+            <a asp-action="Delete" asp-route-id="@Model.IdHistoria" class="btn btn--danger btn--sm">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                Eliminar
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+<style>
+.hist-icon-lg {
+    width:50px; height:50px; border-radius:var(--r-md);
+    background:linear-gradient(135deg, var(--azul-dark), var(--celeste));
+    display:grid; place-items:center; flex-shrink:0;
+    box-shadow:0 4px 14px rgba(26,58,107,0.22);
+}
+.hist-icon-lg svg { width:22px; height:22px; stroke:var(--blanco); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+</style>
+}

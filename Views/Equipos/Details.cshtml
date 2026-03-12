@@ -82,14 +82,7 @@
                 <div class="det-label">Versión</div>
                 <div class="det-value">@(Model.version ?? "—")</div>
             </div>
-            <div class="det-field">
-                <div class="det-label">Correo del equipo</div>
-                <div class="det-value" style="color:var(--celeste);">
-                    @if (!string.IsNullOrEmpty(Model.correo_equipo))
-                    { <a href="mailto:@Model.correo_equipo" style="color:var(--celeste);">@Model.correo_equipo</a> }
-                    else { <span style="color:var(--gris-400);">—</span> }
-                </div>
-            </div>
+           
             <div class="det-field">
                 <div class="det-label">Fecha de compra</div>
                 <div class="det-value">@Model.fecha_compra.ToString("dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-PE"))</div>
