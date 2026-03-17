@@ -84,8 +84,13 @@
             <div style="min-width:130px;">
                 <label class="form-label">Ordenar</label>
                 <select name="orden" class="form-control">
-                    <option value="za" @(orden == "za" ? "selected" : "")>Más reciente</option>
-                    <option value="az" @(orden == "az" ? "selected" : "")>Más antiguo</option>
+                    @if (orden == "az") {
+                        <option value="za">Más reciente</option>
+                        <option value="az" selected>Más antiguo</option>
+                    } else {
+                        <option value="za" selected>Más reciente</option>
+                        <option value="az">Más antiguo</option>
+                    }
                 </select>
             </div>
             <div style="display:flex; gap:8px;">

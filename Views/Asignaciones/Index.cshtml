@@ -61,8 +61,13 @@
         <div style="min-width:130px;">
             <label class="form-label">Ordenar</label>
             <select name="orden" class="form-control">
-                <option value="az" @(orden == "az" ? "selected" : "")>A → Z</option>
-                <option value="za" @(orden == "za" ? "selected" : "")>Z → A</option>
+                @if (orden == "za") {
+                    <option value="az">A → Z</option>
+                    <option value="za" selected>Z → A</option>
+                } else {
+                    <option value="az" selected>A → Z</option>
+                    <option value="za">Z → A</option>
+                }
             </select>
         </div>
         <div style="display:flex; gap:8px;">
