@@ -85,10 +85,12 @@ namespace PROYJHOME2026.Controllers
         {
             ModelState.Remove("Carro");
             ModelState.Remove("TipoMantenimiento");
+            ModelState.Remove("Estado");
+
+            vm.Estado = "En proceso";
 
             if (ModelState.IsValid)
             {
-                vm.Estado = "En proceso";
 
                 // Actualizar estado del carro a "En mantenimiento"
                 var carro = await _context.Carros.FirstOrDefaultAsync(c => c.IdCarro == vm.IdCarro);
