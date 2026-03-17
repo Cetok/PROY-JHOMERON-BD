@@ -6,6 +6,7 @@
     int totalPaginas = ViewBag.TotalPaginas;
     int total        = ViewBag.Total;
     string buscar    = ViewBag.Buscar ?? "";
+    string orden     = ViewBag.Orden  ?? "az";
 }
 
 <div class="page-header">
@@ -32,6 +33,18 @@
                 <input type="text" name="buscar" value="@buscar" class="form-control"
                        style="padding-left:34px;" placeholder="Ej: Sistemas, Contabilidad..." />
             </div>
+        </div>
+        <div style="min-width:130px;">
+            <label class="form-label">Ordenar</label>
+            <select name="orden" class="form-control">
+                @if (orden == "za") {
+                    <option value="az">A → Z</option>
+                    <option value="za" selected>Z → A</option>
+                } else {
+                    <option value="az" selected>A → Z</option>
+                    <option value="za">Z → A</option>
+                }
+            </select>
         </div>
         <div style="display:flex; gap:8px;">
             <button type="submit" class="btn btn--primary">
@@ -104,19 +117,19 @@
                 </span>
                 @if (pagina > 1)
                 {
-                    <a asp-action="Index" asp-route-pagina="@(pagina-1)" asp-route-buscar="@buscar"
+                    <a asp-action="Index" asp-route-pagina="@(pagina-1)" asp-route-buscar="@buscar" asp-route-orden="@orden"
                        class="pagination__btn">
                         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                     </a>
                 }
                 @for (int i = Math.Max(1, pagina - 2); i <= Math.Min(totalPaginas, pagina + 2); i++)
                 {
-                    <a asp-action="Index" asp-route-pagina="@i" asp-route-buscar="@buscar"
+                    <a asp-action="Index" asp-route-pagina="@i" asp-route-buscar="@buscar" asp-route-orden="@orden"
                        class="pagination__btn @(i == pagina ? "active" : "")">@i</a>
                 }
                 @if (pagina < totalPaginas)
                 {
-                    <a asp-action="Index" asp-route-pagina="@(pagina+1)" asp-route-buscar="@buscar"
+                    <a asp-action="Index" asp-route-pagina="@(pagina+1)" asp-route-buscar="@buscar" asp-route-orden="@orden"
                        class="pagination__btn">
                         <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </a>

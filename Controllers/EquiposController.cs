@@ -16,7 +16,7 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, int pagina = 1)
+        public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, string? orden = "az", int pagina = 1)
         {
             int porPagina = 10;
 
@@ -39,14 +39,14 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var equipos = await query
-                .OrderBy(e => e.marca)
+            var equipos = await (orden == "za"
+                ? query.OrderByDescending(e => e.marca)
+                : query.OrderBy(e => e.marca))
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
 
             var tipos = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
-
 
             // Estados posibles para el filtro
             var estados = new List<string> { "Activo", "Devuelto", "Perdida", "Rotura", "Baja", "Mantenimiento" };
@@ -56,6 +56,7 @@ namespace PROYJHOME2026.Controllers
             ViewBag.TipoId       = tipoId;
             ViewBag.Tipos        = tipos;
             ViewBag.Estados      = estados;
+            ViewBag.Orden        = orden;
             ViewBag.Pagina       = pagina;
             ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);

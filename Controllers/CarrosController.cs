@@ -14,7 +14,7 @@ namespace PROYJHOME2026.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index(string? buscar, string? estado, string? categoria, int pagina = 1)
+        public async Task<IActionResult> Index(string? buscar, string? estado, string? categoria, string? orden = "az", int pagina = 1)
         {
             int porPagina = 10;
             var query = _context.Carros.AsQueryable();
@@ -31,7 +31,9 @@ namespace PROYJHOME2026.Controllers
                 query = query.Where(c => c.Categoria == categoria);
 
             int total = await query.CountAsync();
-            var carros = await query.OrderBy(c => c.Placa)
+            var carros = await (orden == "za"
+                ? query.OrderByDescending(c => c.Placa)
+                : query.OrderBy(c => c.Placa))
                 .Skip((pagina - 1) * porPagina).Take(porPagina).ToListAsync();
 
             var categorias = await _context.Carros
@@ -40,6 +42,7 @@ namespace PROYJHOME2026.Controllers
 
             ViewBag.Buscar = buscar; ViewBag.Estado = estado; ViewBag.Categoria = categoria;
             ViewBag.Categorias = categorias; ViewBag.Pagina = pagina; ViewBag.Total = total;
+            ViewBag.Orden = orden;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
             return View(carros);
         }

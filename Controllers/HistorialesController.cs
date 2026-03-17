@@ -19,7 +19,7 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ─────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, int? motivoId, int? asignacionId, int pagina = 1)
+        public async Task<IActionResult> Index(string? buscar, int? motivoId, int? asignacionId, string? orden = "za", int pagina = 1)
         {
             int porPagina = 10;
 
@@ -44,8 +44,9 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var historiales = await query
-                .OrderByDescending(h => h.Fecha)
+            var historiales = await (orden == "az"
+                ? query.OrderBy(h => h.Fecha)
+                : query.OrderByDescending(h => h.Fecha))
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
@@ -56,6 +57,7 @@ namespace PROYJHOME2026.Controllers
             ViewBag.MotivoId     = motivoId;
             ViewBag.AsignacionId = asignacionId;
             ViewBag.Motivos      = motivos;
+            ViewBag.Orden        = orden;
             ViewBag.Pagina       = pagina;
             ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
