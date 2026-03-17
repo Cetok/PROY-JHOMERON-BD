@@ -7,6 +7,7 @@
     int total        = ViewBag.Total;
     string buscar    = ViewBag.Buscar ?? "";
     string estado    = ViewBag.Estado ?? "";
+    string orden     = ViewBag.Orden  ?? "az";
 }
 
 <div class="page-header">
@@ -55,6 +56,13 @@
                     <option value="Devuelto">Devuelto</option>
                     <option value="Cancelado">Cancelado</option>
                 }
+            </select>
+        </div>
+        <div style="min-width:130px;">
+            <label class="form-label">Ordenar</label>
+            <select name="orden" class="form-control">
+                <option value="az" @(orden == "az" ? "selected" : "")>A → Z</option>
+                <option value="za" @(orden == "za" ? "selected" : "")>Z → A</option>
             </select>
         </div>
         <div style="display:flex; gap:8px;">
@@ -150,7 +158,7 @@
                 @if (pagina > 1)
                 {
                     <a asp-action="Index" asp-route-pagina="@(pagina-1)"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
                        class="pagination__btn">
                         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                     </a>
@@ -158,13 +166,13 @@
                 @for (int i = Math.Max(1, pagina - 2); i <= Math.Min(totalPaginas, pagina + 2); i++)
                 {
                     <a asp-action="Index" asp-route-pagina="@i"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
                        class="pagination__btn @(i == pagina ? "active" : "")">@i</a>
                 }
                 @if (pagina < totalPaginas)
                 {
                     <a asp-action="Index" asp-route-pagina="@(pagina+1)"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
                        class="pagination__btn">
                         <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </a>

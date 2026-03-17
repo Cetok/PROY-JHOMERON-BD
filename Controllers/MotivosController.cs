@@ -15,7 +15,7 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, int pagina = 1)
+        public async Task<IActionResult> Index(string? buscar, string? orden = "az", int pagina = 1)
         {
             int porPagina = 10;
 
@@ -26,13 +26,15 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var motivos = await query
-                .OrderBy(m => m.TipoMotivo)
+            var motivos = await (orden == "za"
+                ? query.OrderByDescending(m => m.TipoMotivo)
+                : query.OrderBy(m => m.TipoMotivo))
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
 
             ViewBag.Buscar       = buscar;
+            ViewBag.Orden        = orden;
             ViewBag.Pagina       = pagina;
             ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
