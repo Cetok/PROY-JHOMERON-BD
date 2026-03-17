@@ -2,6 +2,13 @@
 @{
     ViewData["Title"]      = "Detalle Vehículo";
     ViewData["Breadcrumb"] = "Flota Vehicular / Detalle";
+    var bc = Model.Estado switch {
+        "Activo"           => "badge--verde",
+        "Inactivo"         => "badge--gris",
+        "En mantenimiento" => "badge--amarillo",
+        "De baja"          => "badge--rojo",
+        _                  => "badge--gris"
+    };
 }
 
 <div class="page-header">
@@ -22,12 +29,17 @@
     </div>
 </div>
 
-<div style="max-width:960px; display:flex; gap:16px; align-items:flex-start;">
+@if (TempData["Success"] != null) { <div class="alert alert--success" style="margin-bottom:16px;">@TempData["Success"]</div> }
+@if (TempData["Warning"] != null) { <div class="alert alert--warning" style="margin-bottom:16px;">@TempData["Warning"]</div> }
+@if (TempData["Error"]   != null) { <div class="alert alert--error"   style="margin-bottom:16px;">@TempData["Error"]</div> }
 
-    <!-- Columna principal -->
-    <div style="flex:1; min-width:0;">
-        <div class="card">
-            <!-- Cabecera -->
+<div style="max-width:1000px; display:flex; flex-direction:column; gap:16px;">
+
+    <!-- FILA 1: Datos del vehículo + Zona peligro -->
+    <div style="display:flex; gap:16px; align-items:flex-start;">
+
+        <!-- Datos principales -->
+        <div class="card" style="flex:1; min-width:0;">
             <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid var(--gris-200);">
                 <div class="carro-icon-lg">
                     <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
@@ -40,25 +52,14 @@
                         @Model.Placa
                     </div>
                     <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
-                        @{
-                            var bc = Model.Estado switch {
-                                "Activo"           => "badge--verde",
-                                "Inactivo"         => "badge--gris",
-                                "En mantenimiento" => "badge--amarillo",
-                                "De baja"          => "badge--rojo",
-                                _                  => "badge--gris"
-                            };
-                        }
                         <span class="badge @bc">@Model.Estado</span>
-                        @if (!string.IsNullOrEmpty(Model.Categoria))
-                        {
+                        @if (!string.IsNullOrEmpty(Model.Categoria)) {
                             <span class="badge badge--azul">@Model.Categoria</span>
                         }
                     </div>
                 </div>
             </div>
 
-            <!-- Grid de datos -->
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;">
                 <div class="det-field">
                     <div class="det-label">Placa</div>
@@ -106,20 +107,138 @@
                 </div>
             </div>
         </div>
+
+        <!-- Zona peligro -->
+        <div style="width:220px; flex-shrink:0;">
+            <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
+                <div style="font-weight:700; color:var(--rojo); font-size:0.88rem; margin-bottom:6px;">Zona de peligro</div>
+                <div style="font-size:0.76rem; color:var(--gris-600); margin-bottom:14px;">
+                    Solo si no tiene seguros, mantenimientos ni conductores asociados.
+                </div>
+                <a asp-action="Delete" asp-route-id="@Model.IdCarro" class="btn btn--danger btn--sm" style="width:100%; justify-content:center;">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                    Eliminar
+                </a>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Columna derecha: Zona peligro -->
-    <div style="width:230px; flex-shrink:0;">
-        <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
-            <div style="font-weight:700; color:var(--rojo); font-size:0.88rem; margin-bottom:6px;">Zona de peligro</div>
-            <div style="font-size:0.76rem; color:var(--gris-600); margin-bottom:14px;">
-                Solo si no tiene seguros, mantenimientos ni conductores asociados.
+    <!-- FILA 2: Seguros -->
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Seguros asignados
             </div>
-            <a asp-action="Delete" asp-route-id="@Model.IdCarro" class="btn btn--danger btn--sm" style="width:100%; justify-content:center;">
-                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
-                Eliminar
-            </a>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge badge--azul">@Model.CarroSeguros.Count</span>
+                <a asp-controller="CarroSeguros" asp-action="Asignar" asp-route-idCarro="@Model.IdCarro"
+                   class="btn btn--celeste btn--sm">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Asignar seguro
+                </a>
+            </div>
         </div>
+
+        @if (Model.CarroSeguros.Any())
+        {
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;">
+                @foreach (var cs in Model.CarroSeguros)
+                {
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--azul);fill:none;stroke-width:2;flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                <span style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@cs.Seguro?.TipoSeguro</span>
+                            </div>
+                            <div style="font-size:0.72rem; color:var(--gris-400); margin-top:3px;">
+                                @(cs.FechaAsignada.HasValue ? "Desde " + cs.FechaAsignada.Value.ToString("dd/MM/yyyy") : "Sin fecha de inicio")
+                                @if (cs.FechaCulminada.HasValue) { <span> · Vence @cs.FechaCulminada.Value.ToString("dd/MM/yyyy")</span> }
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
+                            <a asp-controller="CarroSeguros" asp-action="Editar"
+                               asp-route-idCarro="@Model.IdCarro" asp-route-idSeguro="@cs.IdSeguro"
+                               class="btn btn--ghost btn--icon btn--sm" title="Editar fechas">
+                                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </a>
+                            <form asp-controller="CarroSeguros" asp-action="Quitar" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="idCarro"  value="@Model.IdCarro" />
+                                <input type="hidden" name="idSeguro" value="@cs.IdSeguro" />
+                                <button type="submit" class="btn btn--danger btn--icon btn--sm" title="Quitar seguro"
+                                        onclick="return confirm('¿Quitar este seguro del vehículo?')">
+                                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">
+                Este vehículo no tiene seguros asignados.
+            </div>
+        }
+    </div>
+
+    <!-- FILA 3: Mantenimientos -->
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#d97706;fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                Historial de mantenimientos
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge badge--amarillo">@Model.MantenimientosCarros.Count</span>
+                <a asp-controller="MantenimientoCarros" asp-action="Create" asp-route-idCarro="@Model.IdCarro"
+                   class="btn btn--celeste btn--sm">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Nuevo mantenimiento
+                </a>
+            </div>
+        </div>
+
+        @if (Model.MantenimientosCarros.Any())
+        {
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                @foreach (var m in Model.MantenimientosCarros.OrderByDescending(x => x.FechaMante))
+                {
+                    var mbc = m.Estado switch {
+                        "En proceso" => "badge--amarillo",
+                        "Culminado"  => "badge--verde",
+                        "Cancelado"  => "badge--rojo",
+                        _            => "badge--gris"
+                    };
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
+                        <div>
+                            <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@m.TipoMantenimiento?.Nombre</div>
+                            <div style="font-size:0.72rem; color:var(--gris-400); margin-top:3px;">
+                                @(m.FechaMante.HasValue ? m.FechaMante.Value.ToString("dd/MM/yyyy") : "Sin fecha")
+                                @if (m.FechaCulminada.HasValue) { <span> → @m.FechaCulminada.Value.ToString("dd/MM/yyyy")</span> }
+                                @if (!string.IsNullOrEmpty(m.Observaciones)) { <span> · @m.Observaciones</span> }
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; flex-shrink:0; margin-left:10px;">
+                            <span class="badge @mbc">@m.Estado</span>
+                            <a asp-controller="MantenimientoCarros" asp-action="Details" asp-route-id="@m.IdMante"
+                               class="btn btn--ghost btn--icon btn--sm" title="Ver detalle">
+                                <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">
+                Este vehículo no tiene mantenimientos registrados.
+            </div>
+        }
     </div>
 
 </div>

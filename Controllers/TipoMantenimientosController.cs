@@ -5,11 +5,11 @@ using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
-    public class ChipsController : Controller
+    public class TipoMantenimientosController : Controller
     {
         private readonly AppDbContext _context;
 
-        public ChipsController(AppDbContext context)
+        public TipoMantenimientosController(AppDbContext context)
         {
             _context = context;
         }
@@ -19,52 +19,36 @@ namespace PROYJHOME2026.Controllers
         {
             int porPagina = 10;
 
-            var query = _context.Chips.AsQueryable();
+            var query = _context.TiposMantenimiento.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(buscar))
-                query = query.Where(c => c.NumeroCelular.Contains(buscar));
+                query = query.Where(t => t.Nombre.Contains(buscar));
 
             int total = await query.CountAsync();
 
-            var chips = await query.OrderBy(c => c.NumeroCelular)
+            var tipos = await query
+                .OrderBy(t => t.Nombre)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
 
-            // Para cada chip saber si está asignado actualmente
-            var idsAsignados = await _context.Asignaciones
-                .Where(a => a.IdChip != null && a.EstadoAsignacion == "Activo")
-                .Select(a => a.IdChip!.Value)
-                .ToListAsync();
-
-            ViewBag.IdsAsignados = idsAsignados;
             ViewBag.Buscar       = buscar;
             ViewBag.Pagina       = pagina;
             ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
 
-            return View(chips);
+            return View(tipos);
         }
 
         // ── DETAILS ──────────────────────────────────────────────
         public async Task<IActionResult> Details(int id)
         {
-            var chip = await _context.Chips
-                .FirstOrDefaultAsync(c => c.IdChip == id);
+            var tipo = await _context.TiposMantenimiento
+                .Include(t => t.MantenimientosCarros).ThenInclude(m => m.Carro)
+                .FirstOrDefaultAsync(t => t.IdTipoMante == id);
 
-            if (chip == null) return NotFound();
-
-            // Historial de asignaciones de este chip
-            var asignaciones = await _context.Asignaciones
-                .Include(a => a.Empleado)
-                .Include(a => a.Equipo)
-                .Where(a => a.IdChip == id)
-                .OrderByDescending(a => a.FechaAsignacion)
-                .ToListAsync();
-
-            ViewBag.Asignaciones = asignaciones;
-
-            return View(chip);
+            if (tipo == null) return NotFound();
+            return View(tipo);
         }
 
         // ── CREATE GET ───────────────────────────────────────────
@@ -73,84 +57,75 @@ namespace PROYJHOME2026.Controllers
         // ── CREATE POST ──────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Chip chip)
+        public async Task<IActionResult> Create(TipoMantenimiento tipo)
         {
+            ModelState.Remove("MantenimientosCarros");
+
             if (ModelState.IsValid)
             {
-                bool existe = await _context.Chips
-                    .AnyAsync(c => c.NumeroCelular == chip.NumeroCelular);
-
-                if (existe)
+                if (await _context.TiposMantenimiento.AnyAsync(t => t.Nombre == tipo.Nombre))
                 {
-                    ModelState.AddModelError("NumeroCelular", "Ya existe un chip con ese número celular.");
-                    return View(chip);
+                    ModelState.AddModelError("Nombre", "Ya existe un tipo de mantenimiento con ese nombre.");
+                    return View(tipo);
                 }
 
-                _context.Add(chip);
+                _context.Add(tipo);
                 await _context.SaveChangesAsync();
-                TempData["Success"] = $"Chip {chip.NumeroCelular} registrado correctamente.";
+                TempData["Success"] = $"Tipo \"{tipo.Nombre}\" registrado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-            return View(chip);
+            return View(tipo);
         }
 
         // ── EDIT GET ─────────────────────────────────────────────
         public async Task<IActionResult> Edit(int id)
         {
-            var chip = await _context.Chips
-                .FirstOrDefaultAsync(c => c.IdChip == id);
-
-            if (chip == null) return NotFound();
-            return View(chip);
+            var tipo = await _context.TiposMantenimiento.FirstOrDefaultAsync(t => t.IdTipoMante == id);
+            if (tipo == null) return NotFound();
+            return View(tipo);
         }
 
         // ── EDIT POST ────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Chip chip)
+        public async Task<IActionResult> Edit(int id, TipoMantenimiento tipo)
         {
-            if (id != chip.IdChip) return NotFound();
+            if (id != tipo.IdTipoMante) return NotFound();
+
+            ModelState.Remove("MantenimientosCarros");
 
             if (ModelState.IsValid)
             {
-                bool existe = await _context.Chips
-                    .AnyAsync(c => c.NumeroCelular == chip.NumeroCelular && c.IdChip != id);
-
-                if (existe)
+                if (await _context.TiposMantenimiento.AnyAsync(t => t.Nombre == tipo.Nombre && t.IdTipoMante != id))
                 {
-                    ModelState.AddModelError("NumeroCelular", "Ya existe otro chip con ese número.");
-                    return View(chip);
+                    ModelState.AddModelError("Nombre", "Ya existe otro tipo con ese nombre.");
+                    return View(tipo);
                 }
 
                 try
                 {
-                    _context.Update(chip);
+                    _context.Update(tipo);
                     await _context.SaveChangesAsync();
-                    TempData["Success"] = $"Chip {chip.NumeroCelular} actualizado correctamente.";
+                    TempData["Success"] = $"Tipo \"{tipo.Nombre}\" actualizado.";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!await _context.Chips.AnyAsync(c => c.IdChip == id))
-                        return NotFound();
+                    if (!await _context.TiposMantenimiento.AnyAsync(t => t.IdTipoMante == id)) return NotFound();
                     throw;
                 }
             }
-            return View(chip);
+            return View(tipo);
         }
 
         // ── DELETE GET ───────────────────────────────────────────
         public async Task<IActionResult> Delete(int id)
         {
-            var chip = await _context.Chips
-                .FirstOrDefaultAsync(c => c.IdChip == id);
-
-            if (chip == null) return NotFound();
-
-            ViewBag.TotalAsignaciones = await _context.Asignaciones
-                .CountAsync(a => a.IdChip == id);
-
-            return View(chip);
+            var tipo = await _context.TiposMantenimiento
+                .Include(t => t.MantenimientosCarros)
+                .FirstOrDefaultAsync(t => t.IdTipoMante == id);
+            if (tipo == null) return NotFound();
+            return View(tipo);
         }
 
         // ── DELETE POST ──────────────────────────────────────────
@@ -158,20 +133,18 @@ namespace PROYJHOME2026.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var chip = await _context.Chips
-                .FirstOrDefaultAsync(c => c.IdChip == id);
-
-            if (chip == null) return NotFound();
+            var tipo = await _context.TiposMantenimiento.FirstOrDefaultAsync(t => t.IdTipoMante == id);
+            if (tipo == null) return NotFound();
 
             try
             {
-                _context.Chips.Remove(chip);
+                _context.TiposMantenimiento.Remove(tipo);
                 await _context.SaveChangesAsync();
-                TempData["Success"] = $"Chip {chip.NumeroCelular} eliminado correctamente.";
+                TempData["Success"] = "Tipo de mantenimiento eliminado.";
             }
             catch (DbUpdateException)
             {
-                TempData["Error"] = "No se puede eliminar este chip porque tiene asignaciones asociadas.";
+                TempData["Error"] = "No se puede eliminar: tiene mantenimientos asociados.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 

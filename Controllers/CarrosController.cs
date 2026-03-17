@@ -49,7 +49,10 @@ namespace PROYJHOME2026.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
-            var carro = await _context.Carros.FirstOrDefaultAsync(c => c.IdCarro == id);
+            var carro = await _context.Carros
+                .Include(c => c.CarroSeguros).ThenInclude(cs => cs.Seguro)
+                .Include(c => c.MantenimientosCarros).ThenInclude(m => m.TipoMantenimiento)
+                .FirstOrDefaultAsync(c => c.IdCarro == id);
             if (carro == null) return NotFound();
             return View(carro);
         }

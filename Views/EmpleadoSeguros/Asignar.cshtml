@@ -1,0 +1,63 @@
+@model PROYJHOME2026.Models.EmpleadoSeguro
+@{
+    ViewData["Title"]      = "Asignar Seguro";
+    ViewData["Breadcrumb"] = "Empleados / Asignar Seguro";
+    var empleado = ViewBag.Empleado as PROYJHOME2026.Models.Empleado;
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Recursos Humanos</div>
+        <h1 class="page-header__title">Asignar Seguro</h1>
+        <p class="page-header__subtitle">@empleado?.nombre @empleado?.paterno @empleado?.materno</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-controller="Empleados" asp-action="Details" asp-route-id="@Model.IdEmpleado" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver al empleado
+        </a>
+    </div>
+</div>
+
+<div style="max-width:540px;">
+    <div class="card">
+        <form asp-action="Asignar" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdEmpleado" />
+
+            <div class="form-group">
+                <label class="form-label">Tipo de seguro <span class="req">*</span></label>
+                <select asp-for="IdSeguro" asp-items="ViewBag.SegurosDisponibles" class="form-control">
+                    <option value="">— Seleccionar seguro —</option>
+                </select>
+                <span asp-validation-for="IdSeguro" class="form-error"></span>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Fecha de inicio</label>
+                    <input asp-for="FechaAsignada" type="date" class="form-control" />
+                    <span asp-validation-for="FechaAsignada" class="form-error"></span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fecha de vencimiento</label>
+                    <input asp-for="FechaCulminada" type="date" class="form-control" />
+                    <span asp-validation-for="FechaCulminada" class="form-error"></span>
+                    <div class="form-hint">Opcional.</div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; padding-top:12px; border-top:1px solid var(--gris-200); margin-top:8px;">
+                <button type="submit" class="btn btn--celeste btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Asignar seguro
+                </button>
+                <a asp-controller="Empleados" asp-action="Details" asp-route-id="@Model.IdEmpleado" class="btn btn--secondary btn--lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

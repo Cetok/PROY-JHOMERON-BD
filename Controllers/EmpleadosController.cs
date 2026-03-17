@@ -80,7 +80,13 @@ namespace PROYJHOME2026.Controllers
                 .Select(eg => eg.Grupo)
                 .ToListAsync();
 
-            ViewBag.Grupos = grupos;
+            var seguros = await _context.EmpleadoSeguros
+                .Include(es => es.Seguro)
+                .Where(es => es.IdEmpleado == id)
+                .ToListAsync();
+
+            ViewBag.Grupos  = grupos;
+            ViewBag.Seguros = seguros;
             return View(empleado);
         }
 

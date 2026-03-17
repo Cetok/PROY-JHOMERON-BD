@@ -2,7 +2,8 @@
 @{
     ViewData["Title"]      = "Detalle Empleado";
     ViewData["Breadcrumb"] = "Empleados / Detalle";
-    var grupos = ViewBag.Grupos as List<PROYJHOME2026.Models.Grupo> ?? new();
+    var grupos  = ViewBag.Grupos  as List<PROYJHOME2026.Models.Grupo>         ?? new();
+    var seguros = ViewBag.Seguros as List<PROYJHOME2026.Models.EmpleadoSeguro> ?? new();
 }
 
 <div class="page-header">
@@ -23,47 +24,116 @@
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start;">
+@if (TempData["Success"] != null) { <div class="alert alert--success" style="margin-bottom:16px;">@TempData["Success"]</div> }
+@if (TempData["Error"]   != null) { <div class="alert alert--error"   style="margin-bottom:16px;">@TempData["Error"]</div> }
 
-    <!-- DATOS DEL EMPLEADO -->
-    <div class="card">
-        <div style="display:flex; align-items:center; gap:14px; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--gris-200);">
-            <div class="emp-avatar-lg">
-                @((Model.nombre?.Length > 0 ? Model.nombre[0].ToString() : "?").ToUpper())@((Model.paterno?.Length > 0 ? Model.paterno[0].ToString() : "").ToUpper())
-            </div>
-            <div>
-                <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--azul-dark);">
-                    @Model.nombre @Model.paterno @Model.materno
+<div style="display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start; max-width:1000px;">
+
+    <!-- COLUMNA IZQUIERDA: datos + seguros -->
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+        <!-- DATOS DEL EMPLEADO -->
+        <div class="card">
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--gris-200);">
+                <div class="emp-avatar-lg">
+                    @((Model.nombre?.Length > 0 ? Model.nombre[0].ToString() : "?").ToUpper())@((Model.paterno?.Length > 0 ? Model.paterno[0].ToString() : "").ToUpper())
                 </div>
-                <div style="font-size:0.78rem; color:var(--gris-500); margin-top:3px;">DNI: @(Model.dni ?? "No registrado")</div>
-                <div style="margin-top:7px;">
-                    @{ var bc = Model.estado == "Activo" ? "badge--verde" : Model.estado == "Inactivo" ? "badge--rojo" : "badge--gris"; }
-                    <span class="badge @bc">@(Model.estado ?? "Sin estado")</span>
+                <div>
+                    <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--azul-dark);">
+                        @Model.nombre @Model.paterno @Model.materno
+                    </div>
+                    <div style="font-size:0.78rem; color:var(--gris-500); margin-top:3px;">DNI: @(Model.dni ?? "No registrado")</div>
+                    <div style="margin-top:7px;">
+                        @{ var bc = Model.estado == "Activo" ? "badge--verde" : Model.estado == "Inactivo" ? "badge--rojo" : "badge--gris"; }
+                        <span class="badge @bc">@(Model.estado ?? "Sin estado")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="det-field"><div class="det-label">Nombre</div><div class="det-value">@(Model.nombre ?? "—")</div></div>
+                <div class="det-field"><div class="det-label">Ap. Paterno</div><div class="det-value">@(Model.paterno ?? "—")</div></div>
+                <div class="det-field"><div class="det-label">Ap. Materno</div><div class="det-value">@(Model.materno ?? "—")</div></div>
+                <div class="det-field">
+                    <div class="det-label">DNI</div>
+                    <div class="det-value" style="font-family:monospace; letter-spacing:0.05em;">@(Model.dni ?? "—")</div>
+                </div>
+                <div class="det-field" style="grid-column:1/-1;">
+                    <div class="det-label">Correo</div>
+                    <div class="det-value" style="color:var(--celeste);">
+                        @if (!string.IsNullOrEmpty(Model.correo))
+                        { <a href="mailto:@Model.correo" style="color:var(--celeste);">@Model.correo</a> }
+                        else { <span>—</span> }
+                    </div>
+                </div>
+                <div class="det-field" style="grid-column:1/-1;">
+                    <div class="det-label">Dirección</div>
+                    <div class="det-value">@(Model.direccion ?? "—")</div>
                 </div>
             </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-            <div class="det-field"><div class="det-label">Nombre</div><div class="det-value">@(Model.nombre ?? "—")</div></div>
-            <div class="det-field"><div class="det-label">Ap. Paterno</div><div class="det-value">@(Model.paterno ?? "—")</div></div>
-            <div class="det-field"><div class="det-label">Ap. Materno</div><div class="det-value">@(Model.materno ?? "—")</div></div>
-            <div class="det-field">
-                <div class="det-label">DNI</div>
-                <div class="det-value" style="font-family:monospace; letter-spacing:0.05em;">@(Model.dni ?? "—")</div>
-            </div>
-            <div class="det-field" style="grid-column:1/-1;">
-                <div class="det-label">Correo</div>
-                <div class="det-value" style="color:var(--celeste);">
-                    @if (!string.IsNullOrEmpty(Model.correo))
-                    { <a href="mailto:@Model.correo" style="color:var(--celeste);">@Model.correo</a> }
-                    else { <span>—</span> }
+        <!-- SEGUROS DEL EMPLEADO -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
+                <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Seguros asignados
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="badge badge--azul">@seguros.Count</span>
+                    <a asp-controller="EmpleadoSeguros" asp-action="Asignar" asp-route-idEmpleado="@Model.idEmpleado"
+                       class="btn btn--celeste btn--sm">
+                        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Asignar seguro
+                    </a>
                 </div>
             </div>
-            <div class="det-field" style="grid-column:1/-1;">
-                <div class="det-label">Dirección</div>
-                <div class="det-value">@(Model.direccion ?? "—")</div>
-            </div>
+
+            @if (seguros.Any())
+            {
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    @foreach (var es in seguros)
+                    {
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
+                            <div>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--azul);fill:none;stroke-width:2;flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <span style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@es.Seguro?.TipoSeguro</span>
+                                </div>
+                                <div style="font-size:0.72rem; color:var(--gris-400); margin-top:3px;">
+                                    @(es.FechaAsignada.HasValue ? "Desde " + es.FechaAsignada.Value.ToString("dd/MM/yyyy") : "Sin fecha de inicio")
+                                    @if (es.FechaCulminada.HasValue) { <span> · Vence @es.FechaCulminada.Value.ToString("dd/MM/yyyy")</span> }
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
+                                <a asp-controller="EmpleadoSeguros" asp-action="Editar"
+                                   asp-route-idEmpleado="@Model.idEmpleado" asp-route-idSeguro="@es.IdSeguro"
+                                   class="btn btn--ghost btn--icon btn--sm" title="Editar fechas">
+                                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </a>
+                                <form asp-controller="EmpleadoSeguros" asp-action="Quitar" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="idEmpleado" value="@Model.idEmpleado" />
+                                    <input type="hidden" name="idSeguro"   value="@es.IdSeguro" />
+                                    <button type="submit" class="btn btn--danger btn--icon btn--sm" title="Quitar seguro"
+                                            onclick="return confirm('¿Quitar este seguro del empleado?')">
+                                        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">
+                    Este empleado no tiene seguros asignados.
+                </div>
+            }
         </div>
+
     </div>
 
     <!-- COLUMNA DERECHA -->
@@ -136,7 +206,6 @@
 }
 .det-label { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gris-400); margin-bottom: 3px; }
 .det-value { font-size: 0.88rem; font-weight: 500; color: var(--gris-900); }
-
 @@media (max-width: 820px) {
     .page-header ~ div { grid-template-columns: 1fr !important; }
 }
