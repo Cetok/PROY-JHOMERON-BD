@@ -182,7 +182,97 @@
         }
     </div>
 
-    <!-- FILA 3: Mantenimientos -->
+    <!-- FILA 3: Accesorios -->
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                Accesorios asignados
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge badge--azul">@Model.CarroAsesorios.Count</span>
+                <a asp-controller="CarroAsesorios" asp-action="Asignar" asp-route-idCarro="@Model.IdCarro"
+                   class="btn btn--celeste btn--sm">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Asignar accesorio
+                </a>
+            </div>
+        </div>
+        @if (Model.CarroAsesorios.Any())
+        {
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px;">
+                @foreach (var ca in Model.CarroAsesorios)
+                {
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
+                        <div>
+                            <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@ca.Asesorio?.TipoAsesorio</div>
+                            @if (ca.FechaAsignada.HasValue) { <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px;">@ca.FechaAsignada.Value.ToString("dd/MM/yyyy")</div> }
+                            @if (!string.IsNullOrEmpty(ca.Observaciones)) { <div style="font-size:0.72rem; color:var(--gris-400); font-style:italic;">@ca.Observaciones</div> }
+                        </div>
+                        <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
+                            <a asp-controller="CarroAsesorios" asp-action="Editar"
+                               asp-route-idCarro="@Model.IdCarro" asp-route-idAsesorio="@ca.IdAsesorio"
+                               class="btn btn--ghost btn--icon btn--sm" title="Editar">
+                                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </a>
+                            <form asp-controller="CarroAsesorios" asp-action="Quitar" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="idCarro"    value="@Model.IdCarro" />
+                                <input type="hidden" name="idAsesorio" value="@ca.IdAsesorio" />
+                                <button type="submit" class="btn btn--danger btn--icon btn--sm"
+                                        onclick="return confirm('¿Quitar este accesorio?')">
+                                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else { <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Este vehículo no tiene accesorios asignados.</div> }
+    </div>
+
+    <!-- FILA 4: Modalidades -->
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                Modalidades asignadas
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge badge--azul">@Model.CarroModalidades.Count</span>
+                <a asp-controller="CarroModalidades" asp-action="Asignar" asp-route-idCarro="@Model.IdCarro"
+                   class="btn btn--celeste btn--sm">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Asignar modalidad
+                </a>
+            </div>
+        </div>
+        @if (Model.CarroModalidades.Any())
+        {
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                @foreach (var cm in Model.CarroModalidades)
+                {
+                    <div style="display:flex; align-items:center; gap:8px; padding:8px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
+                        <span style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@cm.Modalidad?.TipoModalidad</span>
+                        <span class="badge @(cm.Modalidad?.Estado == "Activo" ? "badge--verde" : "badge--gris")" style="font-size:0.68rem;">@cm.Modalidad?.Estado</span>
+                        <form asp-controller="CarroModalidades" asp-action="Quitar" method="post" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="idCarro"     value="@Model.IdCarro" />
+                            <input type="hidden" name="idModalidad" value="@cm.IdModalidad" />
+                            <button type="submit" class="btn btn--ghost btn--icon btn--sm"
+                                    onclick="return confirm('¿Quitar esta modalidad?')" title="Quitar">
+                                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+        else { <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Este vehículo no tiene modalidades asignadas.</div> }
+    </div>
+
+    <!-- FILA 5: Mantenimientos -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
             <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">

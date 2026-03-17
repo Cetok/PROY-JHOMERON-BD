@@ -52,6 +52,8 @@ namespace PROYJHOME2026.Controllers
             var carro = await _context.Carros
                 .Include(c => c.CarroSeguros).ThenInclude(cs => cs.Seguro)
                 .Include(c => c.MantenimientosCarros).ThenInclude(m => m.TipoMantenimiento)
+                .Include(c => c.CarroAsesorios).ThenInclude(ca => ca.Asesorio)
+                .Include(c => c.CarroModalidades).ThenInclude(cm => cm.Modalidad)
                 .FirstOrDefaultAsync(c => c.IdCarro == id);
             if (carro == null) return NotFound();
             return View(carro);

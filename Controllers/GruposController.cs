@@ -50,6 +50,13 @@ namespace PROYJHOME2026.Controllers
                 .FirstOrDefaultAsync(g => g.idGrupo == id);
 
             if (grupo == null) return NotFound();
+
+            var asesorios = await _context.GrupoAsesorios
+                .Include(ga => ga.Asesorio)
+                .Where(ga => ga.IdGrupo == id)
+                .ToListAsync();
+
+            ViewBag.Asesorios = asesorios;
             return View(grupo);
         }
 

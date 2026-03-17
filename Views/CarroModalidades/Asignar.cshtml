@@ -1,0 +1,42 @@
+@model PROYJHOME2026.Models.CarroModalidad
+@{
+    ViewData["Title"]      = "Asignar Modalidad";
+    ViewData["Breadcrumb"] = "Flota / Asignar Modalidad";
+    var carro = ViewBag.Carro as PROYJHOME2026.Models.Carro;
+}
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular</div>
+        <h1 class="page-header__title">Asignar Modalidad</h1>
+        <p class="page-header__subtitle">@carro?.Placa — @carro?.Marca @carro?.Modelo</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver al vehículo
+        </a>
+    </div>
+</div>
+<div style="max-width:480px;">
+    <div class="card">
+        <form asp-action="Asignar" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdCarro" />
+            <div class="form-group">
+                <label class="form-label">Modalidad <span class="req">*</span></label>
+                <select asp-for="IdModalidad" asp-items="ViewBag.Disponibles" class="form-control">
+                    <option value="">— Seleccionar modalidad —</option>
+                </select>
+                <span asp-validation-for="IdModalidad" class="form-error"></span>
+            </div>
+            <div style="display:flex; gap:10px; padding-top:12px; border-top:1px solid var(--gris-200); margin-top:8px;">
+                <button type="submit" class="btn btn--celeste btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Asignar modalidad
+                </button>
+                <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro" class="btn btn--secondary btn--lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }

@@ -1,0 +1,57 @@
+@model PROYJHOME2026.Models.Modalidad
+@{
+    ViewData["Title"]      = "Editar Modalidad";
+    ViewData["Breadcrumb"] = "Modalidades / Editar";
+}
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Configuración</div>
+        <h1 class="page-header__title">Editar Modalidad</h1>
+        <p class="page-header__subtitle">@Model.TipoModalidad</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Details" asp-route-id="@Model.IdModalidad" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Cancelar
+        </a>
+    </div>
+</div>
+<div style="max-width:520px;">
+    <div class="card">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="IdModalidad" type="hidden" />
+            <div class="form-group">
+                <label class="form-label">Tipo de modalidad <span class="req">*</span></label>
+                <input asp-for="TipoModalidad" class="form-control" maxlength="100" />
+                <span asp-validation-for="TipoModalidad" class="form-error"></span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha de vigencia</label>
+                <input asp-for="FechaVigente" type="date" class="form-control" />
+                <span asp-validation-for="FechaVigente" class="form-error"></span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Estado <span class="req">*</span></label>
+                <select asp-for="Estado" class="form-control">
+                    @if (Model.Estado == "Activo") {
+                        <option value="Activo" selected>Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    } else {
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo" selected>Inactivo</option>
+                    }
+                </select>
+                <span asp-validation-for="Estado" class="form-error"></span>
+            </div>
+            <div style="display:flex; gap:10px; padding-top:12px; border-top:1px solid var(--gris-200); margin-top:8px;">
+                <button type="submit" class="btn btn--celeste btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Guardar cambios
+                </button>
+                <a asp-action="Details" asp-route-id="@Model.IdModalidad" class="btn btn--secondary btn--lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }

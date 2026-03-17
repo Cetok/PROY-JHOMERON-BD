@@ -1,0 +1,46 @@
+@model PROYJHOME2026.Models.Modalidad
+@{
+    ViewData["Title"]      = "Nueva Modalidad";
+    ViewData["Breadcrumb"] = "Modalidades / Nueva";
+}
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Configuración</div>
+        <h1 class="page-header__title">Nueva Modalidad</h1>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+<div style="max-width:520px;">
+    <div class="card">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label class="form-label">Tipo de modalidad <span class="req">*</span></label>
+                <input asp-for="TipoModalidad" class="form-control" placeholder="Ej: Transporte de carga, Pasajeros..." maxlength="100" />
+                <span asp-validation-for="TipoModalidad" class="form-error"></span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha de vigencia</label>
+                <input asp-for="FechaVigente" type="date" class="form-control" />
+                <span asp-validation-for="FechaVigente" class="form-error"></span>
+                <div class="form-hint">Opcional. Fecha hasta la que aplica esta modalidad.</div>
+            </div>
+            <div style="background:rgba(59,155,232,0.06); border:1px solid rgba(59,155,232,0.2); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:16px; font-size:0.82rem; color:var(--azul);">
+                ℹ️ El estado se establecerá como <strong>Activo</strong> automáticamente.
+            </div>
+            <div style="display:flex; gap:10px; padding-top:12px; border-top:1px solid var(--gris-200); margin-top:8px;">
+                <button type="submit" class="btn btn--celeste btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Registrar
+                </button>
+                <a asp-action="Index" class="btn btn--secondary btn--lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }
