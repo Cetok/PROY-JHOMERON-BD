@@ -58,6 +58,25 @@
                 </div>
             </div>
 
+            <!-- Conductor -->
+            <div style="margin-bottom:24px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Conductor
+                </p>
+                <div class="form-group" style="max-width:400px;">
+                    <label class="form-label">Empleado asignado</label>
+                    <select name="IdEmpleado" class="form-control">
+                        <option value="">— Sin conductor asignado —</option>
+                        @foreach (var item in ViewBag.EmpleadosList as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                        {
+                            if (item.Selected) { <option value="@item.Value" selected>@item.Text</option> }
+                            else               { <option value="@item.Value">@item.Text</option> }
+                        }
+                    </select>
+                    <div class="form-hint">Selecciona "Sin conductor asignado" para remover la asignación actual.</div>
+                </div>
+            </div>
+
             <!-- Características técnicas -->
             <div style="margin-bottom:24px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
@@ -106,10 +125,10 @@
                     <div class="form-group">
                         <label class="form-label">Estado <span class="req">*</span></label>
                         <select asp-for="Estado" class="form-control">
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
-                            <option value="En mantenimiento">En mantenimiento</option>
-                            <option value="De baja">De baja</option>
+                            @foreach (var op in new[] { "Activo", "Inactivo", "En mantenimiento", "De baja" }) {
+                                if (Model.Estado == op) { <option value="@op" selected>@op</option> }
+                                else                    { <option value="@op">@op</option> }
+                            }
                         </select>
                         <span asp-validation-for="Estado" class="form-error"></span>
                     </div>

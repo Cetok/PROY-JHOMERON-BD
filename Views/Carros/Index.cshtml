@@ -8,7 +8,6 @@
     string buscar    = ViewBag.Buscar    ?? "";
     string estado    = ViewBag.Estado    ?? "";
     string categoria = ViewBag.Categoria ?? "";
-    string orden     = ViewBag.Orden     ?? "az";
     var categorias   = ViewBag.Categorias as List<string> ?? new();
 }
 
@@ -34,38 +33,16 @@
             <div style="position:relative;">
                 <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" name="buscar" value="@buscar" class="form-control"
-                       style="padding-left:34px;" placeholder="Placa, marca, modelo..." />
+                       style="padding-left:34px;" placeholder="Placa, marca, empleado..." />
             </div>
         </div>
         <div style="min-width:150px;">
             <label class="form-label">Estado</label>
             <select name="estado" class="form-control">
                 <option value="">Todos</option>
-                @if (estado == "Activo") {
-                    <option value="Activo" selected>Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                    <option value="En mantenimiento">En mantenimiento</option>
-                    <option value="De baja">De baja</option>
-                } else if (estado == "Inactivo") {
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo" selected>Inactivo</option>
-                    <option value="En mantenimiento">En mantenimiento</option>
-                    <option value="De baja">De baja</option>
-                } else if (estado == "En mantenimiento") {
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                    <option value="En mantenimiento" selected>En mantenimiento</option>
-                    <option value="De baja">De baja</option>
-                } else if (estado == "De baja") {
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                    <option value="En mantenimiento">En mantenimiento</option>
-                    <option value="De baja" selected>De baja</option>
-                } else {
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                    <option value="En mantenimiento">En mantenimiento</option>
-                    <option value="De baja">De baja</option>
+                @foreach (var op in new[] { "Activo", "Inactivo", "En mantenimiento", "De baja" }) {
+                    if (estado == op) { <option value="@op" selected>@op</option> }
+                    else              { <option value="@op">@op</option> }
                 }
             </select>
         </div>
@@ -75,29 +52,13 @@
                 <label class="form-label">Categoría</label>
                 <select name="categoria" class="form-control">
                     <option value="">Todas</option>
-                    @foreach (var cat in categorias)
-                    {
-                        if (categoria == cat) {
-                            <option value="@cat" selected>@cat</option>
-                        } else {
-                            <option value="@cat">@cat</option>
-                        }
+                    @foreach (var cat in categorias) {
+                        if (categoria == cat) { <option value="@cat" selected>@cat</option> }
+                        else                  { <option value="@cat">@cat</option> }
                     }
                 </select>
             </div>
         }
-        <div style="min-width:130px;">
-            <label class="form-label">Ordenar</label>
-            <select name="orden" class="form-control">
-                @if (orden == "za") {
-                    <option value="az">A → Z</option>
-                    <option value="za" selected>Z → A</option>
-                } else {
-                    <option value="az" selected>A → Z</option>
-                    <option value="za">Z → A</option>
-                }
-            </select>
-        </div>
         <div style="display:flex; gap:8px;">
             <button type="submit" class="btn btn--primary">
                 <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -121,10 +82,9 @@
                     <tr>
                         <th>Placa</th>
                         <th>Vehículo</th>
-                        <th>N° Motor</th>
+                        <th>Conductor asignado</th>
                         <th>Categoría</th>
                         <th style="text-align:center;">Ejes</th>
-                        <th>Compra</th>
                         <th>Estado</th>
                         <th style="text-align:center;">Acciones</th>
                     </tr>
@@ -132,6 +92,7 @@
                 <tbody>
                     @foreach (var c in Model)
                     {
+                        var conductor = c.EmpleadosCarros.FirstOrDefault()?.Empleado;
                         <tr>
                             <td>
                                 <span style="font-family:monospace; font-weight:700; font-size:0.9rem; letter-spacing:0.08em; color:var(--azul);">
@@ -152,17 +113,29 @@
                                     </div>
                                 </div>
                             </td>
-                            <td style="font-family:monospace; font-size:0.82rem; color:var(--gris-600);">
-                                @(c.NumeroMotor ?? "—")
+                            <td>
+                                @if (conductor != null)
+                                {
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <div class="emp-avatar-sm">
+                                            @((conductor.nombre?.Length > 0 ? conductor.nombre[0].ToString() : "?").ToUpper())@((conductor.paterno?.Length > 0 ? conductor.paterno[0].ToString() : "").ToUpper())
+                                        </div>
+                                        <div>
+                                            <div style="font-size:0.85rem; font-weight:600; color:var(--gris-900);">@conductor.nombre @conductor.paterno</div>
+                                            <div style="font-size:0.72rem; color:var(--gris-400);">@conductor.dni</div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="font-size:0.82rem; color:var(--gris-400);">Sin asignar</span>
+                                }
                             </td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">
                                 @(c.Categoria ?? "—")
                             </td>
                             <td style="font-size:0.82rem; color:var(--gris-600); text-align:center;">
                                 @(c.Ejes.HasValue ? c.Ejes.ToString() : "—")
-                            </td>
-                            <td style="font-size:0.82rem; color:var(--gris-600);">
-                                @(c.FechaCompra.HasValue ? c.FechaCompra.Value.ToString("dd/MM/yyyy") : "—")
                             </td>
                             <td>
                                 @{
@@ -204,22 +177,19 @@
                 <span style="font-size:0.75rem; color:var(--gris-400); margin-right:8px;">
                     Página @pagina de @totalPaginas
                 </span>
-                @if (pagina > 1)
-                {
+                @if (pagina > 1) {
                     <a asp-action="Index" asp-route-pagina="@(pagina-1)"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-categoria="@categoria" asp-route-orden="@orden"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-categoria="@categoria"
                        class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
                 }
-                @for (int i = Math.Max(1, pagina-2); i <= Math.Min(totalPaginas, pagina+2); i++)
-                {
+                @for (int i = Math.Max(1, pagina-2); i <= Math.Min(totalPaginas, pagina+2); i++) {
                     <a asp-action="Index" asp-route-pagina="@i"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-categoria="@categoria" asp-route-orden="@orden"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-categoria="@categoria"
                        class="pagination__btn @(i == pagina ? "active" : "")">@i</a>
                 }
-                @if (pagina < totalPaginas)
-                {
+                @if (pagina < totalPaginas) {
                     <a asp-action="Index" asp-route-pagina="@(pagina+1)"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-categoria="@categoria" asp-route-orden="@orden"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-categoria="@categoria"
                        class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
                 }
             </div>
@@ -253,5 +223,11 @@
     display:grid; place-items:center; flex-shrink:0;
 }
 .carro-icon svg { width:15px; height:15px; stroke:var(--azul); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.emp-avatar-sm {
+    width:28px; height:28px; border-radius:50%;
+    background:linear-gradient(135deg, var(--azul-mid), var(--celeste));
+    display:grid; place-items:center; flex-shrink:0;
+    font-family:var(--font-display); font-weight:800; font-size:0.65rem; color:var(--blanco);
+}
 </style>
 }
