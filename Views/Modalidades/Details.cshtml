@@ -4,11 +4,12 @@
     ViewData["Breadcrumb"] = "Modalidades / Detalle";
     var bc = Model.Estado == "Activo" ? "badge--verde" : "badge--gris";
 }
+
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Modalidades</div>
         <h1 class="page-header__title">@Model.TipoModalidad</h1>
-        <p class="page-header__subtitle">@Model.CarroModalidades.Count vehículo(s) con esta modalidad</p>
+        <p class="page-header__subtitle">Código: @Model.Codigo · @Model.CarroModalidades.Count vehículo(s)</p>
     </div>
     <div class="page-header__actions">
         <a asp-action="Edit" asp-route-id="@Model.IdModalidad" class="btn btn--celeste">
@@ -23,14 +24,28 @@
 </div>
 
 <div style="max-width:860px; display:flex; gap:16px; align-items:flex-start;">
+
     <div class="card" style="flex:1;">
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--gris-200);">
-            <div class="det-field"><div class="det-label">Tipo</div><div class="det-value">@Model.TipoModalidad</div></div>
-            <div class="det-field"><div class="det-label">Fecha vigente</div><div class="det-value">@(Model.FechaVigente.HasValue ? Model.FechaVigente.Value.ToString("dd/MM/yyyy") : "—")</div></div>
-            <div class="det-field"><div class="det-label">Estado</div><div class="det-value"><span class="badge @bc">@Model.Estado</span></div></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--gris-200);">
+            <div class="det-field">
+                <div class="det-label">Código</div>
+                <div class="det-value" style="font-family:monospace; font-size:1rem; font-weight:700; color:var(--azul); letter-spacing:0.06em;">@Model.Codigo</div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">Estado</div>
+                <div class="det-value"><span class="badge @bc">@Model.Estado</span></div>
+            </div>
+            <div class="det-field" style="grid-column:1/-1;">
+                <div class="det-label">Tipo de modalidad</div>
+                <div class="det-value" style="font-size:0.92rem;">@Model.TipoModalidad</div>
+            </div>
+            <div class="det-field">
+                <div class="det-label">Fecha de vigencia</div>
+                <div class="det-value">@(Model.FechaVigente.HasValue ? Model.FechaVigente.Value.ToString("dd/MM/yyyy") : "—")</div>
+            </div>
         </div>
 
-        <div style="font-weight:700; font-size:0.85rem; margin-bottom:12px; color:var(--gris-900);">Vehículos asignados</div>
+        <div style="font-weight:700; font-size:0.85rem; margin-bottom:12px; color:var(--gris-900);">Vehículos con esta modalidad</div>
         @if (Model.CarroModalidades.Any())
         {
             <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px;">
@@ -63,6 +78,7 @@
         </div>
     </div>
 </div>
+
 @section Styles {
 <style>
 .det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }

@@ -9,8 +9,13 @@ namespace PROYJHOME2026.Models
         [Key]
         public int IdModalidad { get; set; }
 
+        // Código de habilitación — determina el tipo automáticamente
         [Required]
-        [StringLength(100)]
+        [StringLength(20)]
+        public string Codigo { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(200)]
         public string TipoModalidad { get; set; } = string.Empty;
 
         public DateTime? FechaVigente { get; set; }

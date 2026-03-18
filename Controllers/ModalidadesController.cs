@@ -9,6 +9,13 @@ namespace PROYJHOME2026.Controllers
     {
         private readonly AppDbContext _context;
 
+        // Mapeo código → descripción
+        private static readonly Dictionary<string, string> CodigoNombres = new()
+        {
+            ["1505457MRP"] = "Servicio de Transporte de Materiales y/o Residuos Peligrosos Publico",
+            ["15139314CNG"] = "Mercancias en general"
+        };
+
         public ModalidadesController(AppDbContext context)
         {
             _context = context;
@@ -24,7 +31,9 @@ namespace PROYJHOME2026.Controllers
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(buscar))
-                query = query.Where(m => m.TipoModalidad.Contains(buscar));
+                query = query.Where(m =>
+                    m.TipoModalidad.Contains(buscar) ||
+                    m.Codigo.Contains(buscar));
 
             if (!string.IsNullOrWhiteSpace(estadoFiltro))
                 query = query.Where(m => m.Estado == estadoFiltro);
@@ -68,13 +77,21 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("CarroModalidades");
             ModelState.Remove("Estado");
 
+            // Asignar nombre automáticamente según código
+            if (!string.IsNullOrWhiteSpace(modalidad.Codigo) &&
+                CodigoNombres.TryGetValue(modalidad.Codigo, out var nombre))
+            {
+                modalidad.TipoModalidad = nombre;
+                ModelState.Remove("TipoModalidad");
+            }
+
             modalidad.Estado = "Activo";
 
             if (ModelState.IsValid)
             {
-                if (await _context.Modalidades.AnyAsync(m => m.TipoModalidad == modalidad.TipoModalidad))
+                if (await _context.Modalidades.AnyAsync(m => m.Codigo == modalidad.Codigo))
                 {
-                    ModelState.AddModelError("TipoModalidad", "Ya existe una modalidad con ese nombre.");
+                    ModelState.AddModelError("Codigo", "Ya existe una modalidad registrada con ese código.");
                     return View(modalidad);
                 }
 
@@ -103,11 +120,19 @@ namespace PROYJHOME2026.Controllers
 
             ModelState.Remove("CarroModalidades");
 
+            // Asignar nombre automáticamente según código
+            if (!string.IsNullOrWhiteSpace(modalidad.Codigo) &&
+                CodigoNombres.TryGetValue(modalidad.Codigo, out var nombre))
+            {
+                modalidad.TipoModalidad = nombre;
+                ModelState.Remove("TipoModalidad");
+            }
+
             if (ModelState.IsValid)
             {
-                if (await _context.Modalidades.AnyAsync(m => m.TipoModalidad == modalidad.TipoModalidad && m.IdModalidad != id))
+                if (await _context.Modalidades.AnyAsync(m => m.Codigo == modalidad.Codigo && m.IdModalidad != id))
                 {
-                    ModelState.AddModelError("TipoModalidad", "Ya existe otra modalidad con ese nombre.");
+                    ModelState.AddModelError("Codigo", "Ya existe otra modalidad con ese código.");
                     return View(modalidad);
                 }
 
