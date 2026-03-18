@@ -88,6 +88,13 @@
                         Asignaciones
                     </a>
                 </div>
+                <div class="sidebar__item">
+                    <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Historiales" ? "active" : "")"
+                       asp-controller="Historiales" asp-action="Index">
+                        <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Historial
+                    </a>
+                </div>
             </div>
 
             <!-- FLOTA -->
@@ -126,20 +133,6 @@
             <!-- CONFIG -->
             <div class="sidebar__section">
                 <p class="sidebar__section-label">Configuración</p>
-                <div class="sidebar__item">
-                    <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TipoEquipos" ? "active" : "")"
-                       asp-controller="TipoEquipos" asp-action="Index">
-                        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                        Tipos de Equipo
-                    </a>
-                </div>
-                <div class="sidebar__item">
-                    <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TipoMantenimientos" ? "active" : "")"
-                       asp-controller="TipoMantenimientos" asp-action="Index">
-                        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                        Tipos Mantenimiento
-                    </a>
-                </div>
                 <div class="sidebar__item">
                     <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Modalidades" ? "active" : "")"
                        asp-controller="Modalidades" asp-action="Index">
