@@ -2,17 +2,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class EquiposController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext    _context;
+        private readonly AuditoriaService _auditoriaService;
 
-        public EquiposController(AppDbContext context)
+        public EquiposController(AppDbContext context, AuditoriaService auditoriaService)
         {
-            _context = context;
+            _context          = context;
+            _auditoriaService = auditoriaService;
         }
 
         // ── INDEX ────────────────────────────────────────────────

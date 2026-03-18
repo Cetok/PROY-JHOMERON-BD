@@ -24,6 +24,11 @@ namespace PROYJHOME2026.Data
         public DbSet<Modalidad> Modalidades { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
 
+        // ── Nuevas tablas ───────────────────────────────────────
+        public DbSet<Notificacion> Notificaciones { get; set; }
+        public DbSet<AuditoriaLog> AuditoriaLogs { get; set; }
+        public DbSet<CarroEstadoLog> CarroEstadoLogs { get; set; }
+
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }
         public DbSet<EmpleadoCarro> EmpleadosCarros { get; set; }
@@ -37,8 +42,7 @@ namespace PROYJHOME2026.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // ── Claves compuestas (tablas de relación) ───────────
-
+            // ── Claves compuestas ────────────────────────────────
             modelBuilder.Entity<EmpleadoGrupo>()
                 .HasKey(eg => new { eg.IdEmpleado, eg.IdGrupo });
 
@@ -60,66 +64,53 @@ namespace PROYJHOME2026.Data
             modelBuilder.Entity<CarroModalidad>()
                 .HasKey(cm => new { cm.IdCarro, cm.IdModalidad });
 
-            // ── Relaciones explícitas ────────────────────────────
-
-            // Historial → Asignacion
+            // ── Relaciones ───────────────────────────────────────
             modelBuilder.Entity<Historial>()
-                .HasOne(h => h.Asignacion)
-                .WithMany(a => a.Historiales)
-                .HasForeignKey(h => h.IdAsignacion)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(h => h.Asignacion).WithMany(a => a.Historiales)
+                .HasForeignKey(h => h.IdAsignacion).OnDelete(DeleteBehavior.Restrict);
 
-            // Historial → Motivo
             modelBuilder.Entity<Historial>()
-                .HasOne(h => h.Motivo)
-                .WithMany(m => m.Historiales)
-                .HasForeignKey(h => h.IdMotivo)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(h => h.Motivo).WithMany(m => m.Historiales)
+                .HasForeignKey(h => h.IdMotivo).OnDelete(DeleteBehavior.Restrict);
 
-            // Asignacion → Empleado
             modelBuilder.Entity<Asignacion>()
-                .HasOne(a => a.Empleado)
-                .WithMany()
-                .HasForeignKey(a => a.IdEmpleado)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(a => a.Empleado).WithMany()
+                .HasForeignKey(a => a.IdEmpleado).OnDelete(DeleteBehavior.Restrict);
 
-            // Equipo → TipoEquipo
             modelBuilder.Entity<Equipo>()
-                .HasOne(e => e.TipoEquipo)
-                .WithMany()
-                .HasForeignKey(e => e.idTipoEquipo)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(e => e.TipoEquipo).WithMany()
+                .HasForeignKey(e => e.idTipoEquipo).OnDelete(DeleteBehavior.Restrict);
 
-            // Asignacion → Equipo (corregido)
             modelBuilder.Entity<Asignacion>()
-                .HasOne(a => a.Equipo)
-                .WithMany(e => e.Asignaciones)  // ← apunta a la colección
-                .HasForeignKey(a => a.IdEquipo)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(a => a.Equipo).WithMany(e => e.Asignaciones)
+                .HasForeignKey(a => a.IdEquipo).OnDelete(DeleteBehavior.Restrict);
 
-            // Asignacion → Chip (opcional)
             modelBuilder.Entity<Asignacion>()
-                .HasOne(a => a.Chip)
-                .WithMany(c => c.Asignaciones)
-                .HasForeignKey(a => a.IdChip)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(a => a.Chip).WithMany(c => c.Asignaciones)
+                .HasForeignKey(a => a.IdChip).OnDelete(DeleteBehavior.SetNull);
 
-            // MantenimientoCarro → TipoMantenimiento
             modelBuilder.Entity<MantenimientoCarro>()
-                .HasOne(m => m.TipoMantenimiento)
-                .WithMany(t => t.MantenimientosCarros)
-                .HasForeignKey(m => m.IdTipoMante)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(m => m.TipoMantenimiento).WithMany(t => t.MantenimientosCarros)
+                .HasForeignKey(m => m.IdTipoMante).OnDelete(DeleteBehavior.Restrict);
 
-            // MantenimientoCarro → Carro
             modelBuilder.Entity<MantenimientoCarro>()
-                .HasOne(m => m.Carro)
-                .WithMany(c => c.MantenimientosCarros)
-                .HasForeignKey(m => m.IdCarro)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(m => m.Carro).WithMany(c => c.MantenimientosCarros)
+                .HasForeignKey(m => m.IdCarro).OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MantenimientoCarro>()
+                .HasOne(m => m.UsuarioCreador).WithMany()
+                .HasForeignKey(m => m.IdUsuarioCreador).OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Notificacion>()
+                .HasOne(n => n.Usuario).WithMany()
+                .HasForeignKey(n => n.IdUsuario).OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CarroEstadoLog>()
+                .HasOne(l => l.Carro).WithMany()
+                .HasForeignKey(l => l.IdCarro).OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<Usuario>()
-                .HasIndex(u => u.username)
-                .IsUnique();    
+                .HasIndex(u => u.username).IsUnique();
         }
     }
 }

@@ -4,7 +4,7 @@
     ViewData["Breadcrumb"] = "Dashboard";
 }
 
-<!-- ENCABEZADO ─────────────────────────────────────────── -->
+<!-- ENCABEZADO -->
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Resumen general</div>
@@ -26,7 +26,7 @@
     </div>
 </div>
 
-<!-- TARJETAS DE TOTALES ─────────────────────────────────── -->
+<!-- TARJETAS DE TOTALES -->
 <div class="stats-grid">
 
     <div class="stat-card">
@@ -67,13 +67,10 @@
             <div class="stat-card__icon stat-card__icon--@(Model.MantenimientosPendientes > 0 ? "amarillo" : "verde")">
                 <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
             </div>
-            @if (Model.MantenimientosPendientes > 0)
-            {
-                <span class="stat-card__delta stat-card__delta--down">Requieren atención</span>
-            }
-            else
-            {
-                <span class="stat-card__delta stat-card__delta--up">Al día ✓</span>
+            @if (Model.MantenimientosPendientes > 0) {
+                <span class="stat-card__delta stat-card__delta--down">Programados</span>
+            } else {
+                <span class="stat-card__delta stat-card__delta--up">Sin pendientes ✓</span>
             }
         </div>
         <div class="stat-card__value">@Model.MantenimientosPendientes</div>
@@ -82,48 +79,41 @@
 
 </div>
 
-<!-- ACCESOS RÁPIDOS ─────────────────────────────────────── -->
-<div style="margin-bottom: 26px;">
+<!-- ACCESOS RÁPIDOS -->
+<div style="margin-bottom:26px;">
     <p style="font-family:var(--font-display); font-size:0.7rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gris-500); margin-bottom:12px;">
         Accesos rápidos
     </p>
     <div style="display:flex; flex-wrap:wrap; gap:10px;">
-
-        <a asp-controller="Empleados"         asp-action="Create" class="quick-link">
+        <a asp-controller="Empleados"          asp-action="Create" class="quick-link">
             <div class="quick-link__icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
             Nuevo Empleado
         </a>
-
-        <a asp-controller="Equipos"           asp-action="Create" class="quick-link">
+        <a asp-controller="Equipos"            asp-action="Create" class="quick-link">
             <div class="quick-link__icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
             Nuevo Equipo
         </a>
-
-        <a asp-controller="Asignaciones"      asp-action="Create" class="quick-link">
+        <a asp-controller="Asignaciones"       asp-action="Create" class="quick-link">
             <div class="quick-link__icon"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg></div>
             Nueva Asignación
         </a>
-
-        <a asp-controller="Carros"            asp-action="Create" class="quick-link">
+        <a asp-controller="Carros"             asp-action="Create" class="quick-link">
             <div class="quick-link__icon"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
             Nuevo Vehículo
         </a>
-
         <a asp-controller="MantenimientoCarros" asp-action="Create" class="quick-link">
             <div class="quick-link__icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
-            Registrar Mantenimiento
+            Programar Mantenimiento
         </a>
-
-        <a asp-controller="Seguros"           asp-action="Create" class="quick-link">
+        <a asp-controller="Seguros"            asp-action="Create" class="quick-link">
             <div class="quick-link__icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
             Nuevo Seguro
         </a>
-
     </div>
 </div>
 
-<!-- TABLAS INFERIORES ───────────────────────────────────── -->
-<div class="dash-tables" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+<!-- TABLAS INFERIORES -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
 
     <!-- Últimas asignaciones -->
     <div class="card" style="padding:0; overflow:hidden;">
@@ -137,7 +127,6 @@
                 <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
         </div>
-
         @if (Model.UltimasAsignaciones.Any())
         {
             <div class="table-wrapper" style="border:none; border-radius:0; margin-top:14px;">
@@ -155,20 +144,10 @@
                         {
                             <tr>
                                 <td>@(a.Empleado?.nombre ?? "—") @(a.Empleado?.paterno ?? "")</td>
-                                <td style="color:var(--gris-500); font-weight:400;">
-                                    @(a.Equipo?.marca ?? "—") @(a.Equipo?.modelo ?? "")
-                                </td>
-                                <td style="font-weight:400; color:var(--gris-500);">
-                                    @a.FechaAsignacion.ToString("dd/MM/yyyy")
-                                </td>
+                                <td style="color:var(--gris-500); font-weight:400;">@(a.Equipo?.marca ?? "—") @(a.Equipo?.modelo ?? "")</td>
+                                <td style="font-weight:400; color:var(--gris-500);">@a.FechaAsignacion.ToString("dd/MM/yyyy")</td>
                                 <td>
-                                    @{
-                                        var bc = a.EstadoAsignacion switch {
-                                            "Activo"   => "badge--verde",
-                                            "Devuelto" => "badge--gris",
-                                            _          => "badge--amarillo"
-                                        };
-                                    }
+                                    @{ var bc = a.EstadoAsignacion == "Activo" ? "badge--verde" : "badge--gris"; }
                                     <span class="badge @bc">@a.EstadoAsignacion</span>
                                 </td>
                             </tr>
@@ -180,11 +159,8 @@
         else
         {
             <div class="empty-state">
-                <div class="empty-state__icon">
-                    <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
-                </div>
+                <div class="empty-state__icon"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></div>
                 <div class="empty-state__title">Sin asignaciones aún</div>
-                <div class="empty-state__text">Registra la primera asignación desde el módulo de Equipos TI.</div>
             </div>
         }
     </div>
@@ -194,14 +170,13 @@
         <div class="card__header" style="padding:18px 20px 0;">
             <div>
                 <div class="card__title">Mantenimientos pendientes</div>
-                <div class="card__subtitle">Próximos a realizar o en proceso</div>
+                <div class="card__subtitle">Programados — ordenados por fecha</div>
             </div>
-            <a asp-controller="MantenimientoCarros" asp-action="Index" class="btn btn--ghost btn--sm">
+            <a asp-controller="MantenimientoCarros" asp-action="Index" asp-route-estadoFiltro="Pendiente" class="btn btn--ghost btn--sm">
                 Ver todos
                 <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
         </div>
-
         @if (Model.MantenimientosRecientes.Any())
         {
             <div class="table-wrapper" style="border:none; border-radius:0; margin-top:14px;">
@@ -210,31 +185,34 @@
                         <tr>
                             <th>Vehículo</th>
                             <th>Tipo</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
+                            <th>Registrado</th>
+                            <th>Programado</th>
+                            <th>Por</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var m in Model.MantenimientosRecientes)
                         {
+                            var esHoy    = m.FechaProgramada.Date == DateTime.Today;
+                            var esPasado = m.FechaProgramada.Date < DateTime.Today;
                             <tr>
-                                <td>@(m.Carro?.Placa ?? "—")</td>
-                                <td style="font-weight:400; color:var(--gris-500);">
-                                    @(m.TipoMantenimiento?.Nombre ?? "—")
-                                </td>
-                                <td style="font-weight:400; color:var(--gris-500);">
-                                    @(m.FechaMante.HasValue ? m.FechaMante.Value.ToString("dd/MM/yyyy") : "—")
-                                </td>
                                 <td>
-                                    @{
-                                        var mb = m.Estado switch {
-                                            "En proceso" => "badge--celeste",
-                                            "Pendiente"  => "badge--amarillo",
-                                            "Completado" => "badge--verde",
-                                            _            => "badge--gris"
-                                        };
-                                    }
-                                    <span class="badge @mb">@m.Estado</span>
+                                    <a asp-controller="MantenimientoCarros" asp-action="Details" asp-route-id="@m.IdMante"
+                                       style="font-family:monospace; font-weight:700; color:var(--azul); text-decoration:none;">
+                                        @m.Carro?.Placa
+                                    </a>
+                                </td>
+                                <td style="font-size:0.82rem; color:var(--gris-600);">@m.TipoMantenimiento?.Nombre</td>
+                                <td style="font-size:0.78rem; color:var(--gris-400);">@m.FechaRegistro.ToString("dd/MM/yy")</td>
+                                <td>
+                                    <span style="font-size:0.82rem; font-weight:@(esHoy || esPasado ? "700" : "400"); color:@(esPasado ? "var(--rojo)" : esHoy ? "#d97706" : "var(--gris-700)");">
+                                        @m.FechaProgramada.ToString("dd/MM/yyyy")
+                                    </span>
+                                    @if (esHoy) { <span class="badge badge--amarillo" style="font-size:0.6rem; margin-left:2px;">HOY</span> }
+                                    @if (esPasado) { <span class="badge badge--rojo" style="font-size:0.6rem; margin-left:2px;">VENCIDO</span> }
+                                </td>
+                                <td style="font-size:0.78rem; color:var(--gris-400);">
+                                    @(m.UsuarioCreador?.nombreCompleto ?? m.UsuarioCreador?.username ?? "—")
                                 </td>
                             </tr>
                         }
@@ -245,63 +223,81 @@
         else
         {
             <div class="empty-state">
-                <div class="empty-state__icon">
-                    <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-                </div>
-                <div class="empty-state__title">Todo al día</div>
-                <div class="empty-state__text">No hay mantenimientos pendientes ni en proceso actualmente.</div>
+                <div class="empty-state__icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div>
+                <div class="empty-state__title">Sin mantenimientos pendientes</div>
+                <div class="empty-state__text">No hay mantenimientos programados.</div>
             </div>
         }
     </div>
 
 </div>
 
+<!-- ÚLTIMOS MOVIMIENTOS (AUDITORÍA) -->
+<div class="card" style="padding:0; overflow:hidden;">
+    <div class="card__header" style="padding:18px 20px 0;">
+        <div>
+            <div class="card__title">Últimos movimientos</div>
+            <div class="card__subtitle">Actividad reciente del sistema</div>
+        </div>
+    </div>
+    @if (Model.UltimosMovimientos.Any())
+    {
+        <div class="table-wrapper" style="border:none; border-radius:0; margin-top:14px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.UltimosMovimientos)
+                    {
+                        var accionColor = log.Accion switch {
+                            "Crear"        => "badge--verde",
+                            "Editar"       => "badge--azul",
+                            "Eliminar"     => "badge--rojo",
+                            "CambioEstado" => "badge--amarillo",
+                            "Login"        => "badge--celeste",
+                            _              => "badge--gris"
+                        };
+                        <tr>
+                            <td style="font-size:0.78rem; color:var(--gris-500); white-space:nowrap;">
+                                @log.FechaHora.ToString("dd/MM/yy HH:mm")
+                            </td>
+                            <td style="font-size:0.82rem; font-weight:500;">
+                                @(log.NombreUsuario ?? "—")
+                            </td>
+                            <td>
+                                <span class="badge @accionColor" style="font-size:0.7rem;">@log.Accion</span>
+                            </td>
+                            <td style="font-size:0.80rem; color:var(--gris-600);">
+                                @log.Descripcion
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div style="text-align:center; padding:20px; color:var(--gris-400); font-size:0.82rem;">
+            Sin movimientos registrados aún.
+        </div>
+    }
+</div>
+
 @section Styles {
 <style>
-.quick-link {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 10px 16px;
-    background: var(--blanco);
-    border: 1.5px solid var(--gris-300);
-    border-radius: var(--r-md);
-    font-size: 0.83rem;
-    font-weight: 600;
-    color: var(--gris-900);
-    transition: all var(--t);
-    box-shadow: var(--shadow-xs);
-}
-.quick-link:hover {
-    border-color: var(--celeste);
-    color: var(--celeste);
-    background: var(--celeste-glow);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-cel);
-}
-.quick-link__icon {
-    width: 30px; height: 30px;
-    border-radius: var(--r-sm);
-    background: var(--gris-100);
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    transition: background var(--t);
-}
-.quick-link:hover .quick-link__icon { background: rgba(59,155,232,0.12); }
-.quick-link__icon svg {
-    width: 15px; height: 15px;
-    stroke: var(--azul);
-    fill: none;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    transition: stroke var(--t);
-}
-.quick-link:hover .quick-link__icon svg { stroke: var(--celeste); }
-
-@@media (max-width: 860px) {
-    .dash-tables { grid-template-columns: 1fr !important; }
-}
+.quick-link { display:flex; align-items:center; gap:9px; padding:10px 16px; background:var(--blanco); border:1.5px solid var(--gris-300); border-radius:var(--r-md); font-size:0.83rem; font-weight:600; color:var(--gris-900); transition:all var(--t); box-shadow:var(--shadow-xs); }
+.quick-link:hover { border-color:var(--celeste); color:var(--celeste); background:var(--celeste-glow); transform:translateY(-2px); box-shadow:var(--shadow-cel); }
+.quick-link__icon { width:30px; height:30px; border-radius:var(--r-sm); background:var(--gris-100); display:grid; place-items:center; flex-shrink:0; transition:background var(--t); }
+.quick-link:hover .quick-link__icon { background:rgba(59,155,232,0.12); }
+.quick-link__icon svg { width:15px; height:15px; stroke:var(--azul); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:stroke var(--t); }
+.quick-link:hover .quick-link__icon svg { stroke:var(--celeste); }
+@@media (max-width:860px) { .dash-tables { grid-template-columns:1fr !important; } }
 </style>
 }

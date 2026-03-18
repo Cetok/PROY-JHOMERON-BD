@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PROYJHOME2026.Data;
 
@@ -11,9 +12,11 @@ using PROYJHOME2026.Data;
 namespace PROYJHOME2026.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260318170142_V2_NotifAuditoriaMantenimiento")]
+    partial class V2_NotifAuditoriaMantenimiento
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -202,53 +205,6 @@ namespace PROYJHOME2026.Migrations
                     b.HasIndex("IdAsesorio");
 
                     b.ToTable("Carro_Asesorio");
-                });
-
-            modelBuilder.Entity("PROYJHOME2026.Models.CarroEstadoLog", b =>
-                {
-                    b.Property<int>("IdLog")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdLog"));
-
-                    b.Property<string>("EstadoAnterior")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("EstadoNuevo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("FechaHora")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("IdCarro")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("IdUsuario")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Motivo")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("NombreUsuario")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Observaciones")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.HasKey("IdLog");
-
-                    b.HasIndex("IdCarro");
-
-                    b.ToTable("CarroEstadoLog");
                 });
 
             modelBuilder.Entity("PROYJHOME2026.Models.CarroModalidad", b =>
@@ -792,17 +748,6 @@ namespace PROYJHOME2026.Migrations
                         .IsRequired();
 
                     b.Navigation("Asesorio");
-
-                    b.Navigation("Carro");
-                });
-
-            modelBuilder.Entity("PROYJHOME2026.Models.CarroEstadoLog", b =>
-                {
-                    b.HasOne("PROYJHOME2026.Models.Carro", "Carro")
-                        .WithMany()
-                        .HasForeignKey("IdCarro")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Carro");
                 });

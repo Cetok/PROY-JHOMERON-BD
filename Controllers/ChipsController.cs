@@ -1,21 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class ChipsController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext    _context;
+        private readonly AuditoriaService _auditoriaService;
 
-        public ChipsController(AppDbContext context)
+        public ChipsController(AppDbContext context, AuditoriaService auditoriaService)
         {
-            _context = context;
+            _context          = context;
+            _auditoriaService = auditoriaService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, int pagina = 1)
+        public async Task<IActionResult> Index(string? buscar, string? orden = "az", int pagina = 1)
         {
             int porPagina = 10;
 
@@ -26,7 +29,9 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var chips = await query.OrderBy(c => c.NumeroCelular)
+            var chips = await (orden == "za"
+                ? query.OrderByDescending(c => c.NumeroCelular)
+                : query.OrderBy(c => c.NumeroCelular))
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
@@ -39,6 +44,7 @@ namespace PROYJHOME2026.Controllers
 
             ViewBag.IdsAsignados = idsAsignados;
             ViewBag.Buscar       = buscar;
+            ViewBag.Orden        = orden;
             ViewBag.Pagina       = pagina;
             ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
@@ -88,6 +94,8 @@ namespace PROYJHOME2026.Controllers
 
                 _context.Add(chip);
                 await _context.SaveChangesAsync();
+                await _auditoriaService.RegistrarAsync("Crear", "Chip", chip.IdChip,
+                    $"Registró chip {chip.NumeroCelular}");
                 TempData["Success"] = $"Chip {chip.NumeroCelular} registrado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
@@ -126,6 +134,8 @@ namespace PROYJHOME2026.Controllers
                 {
                     _context.Update(chip);
                     await _context.SaveChangesAsync();
+                    await _auditoriaService.RegistrarAsync("Editar", "Chip", id,
+                        $"Editó chip {chip.NumeroCelular}");
                     TempData["Success"] = $"Chip {chip.NumeroCelular} actualizado correctamente.";
                     return RedirectToAction(nameof(Index));
                 }
@@ -167,6 +177,8 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.Chips.Remove(chip);
                 await _context.SaveChangesAsync();
+                await _auditoriaService.RegistrarAsync("Eliminar", "Chip", id,
+                    $"Eliminó chip {chip.NumeroCelular}");
                 TempData["Success"] = $"Chip {chip.NumeroCelular} eliminado correctamente.";
             }
             catch (DbUpdateException)

@@ -3,10 +3,11 @@
     ViewData["Title"]      = "Detalle Mantenimiento";
     ViewData["Breadcrumb"] = "Mantenimientos / Detalle";
     var bc = Model.Estado switch {
-        "En proceso"  => "badge--amarillo",
-        "Culminado"   => "badge--verde",
-        "Cancelado"   => "badge--rojo",
-        _             => "badge--gris"
+        "Pendiente"  => "badge--gris",
+        "En proceso" => "badge--amarillo",
+        "Culminado"  => "badge--verde",
+        "Cancelado"  => "badge--rojo",
+        _            => "badge--gris"
     };
 }
 
@@ -17,7 +18,7 @@
         <p class="page-header__subtitle">@Model.Carro?.Placa — @Model.Carro?.Marca @Model.Carro?.Modelo</p>
     </div>
     <div class="page-header__actions">
-        @if (Model.Estado == "En proceso")
+        @if (Model.Estado == "Pendiente")
         {
             <a asp-action="Edit" asp-route-id="@Model.IdMante" class="btn btn--celeste">
                 <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -31,11 +32,11 @@
     </div>
 </div>
 
-
-<div style="max-width:860px; display:flex; gap:16px; align-items:flex-start;">
+<div style="max-width:900px; display:flex; gap:16px; align-items:flex-start;">
 
     <!-- Info principal -->
-    <div style="flex:1; min-width:0;">
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:16px;">
+
         <div class="card">
             <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid var(--gris-200);">
                 <div class="mante-icon-lg">
@@ -55,17 +56,36 @@
 
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;">
                 <div class="det-field">
-                    <div class="det-label">Fecha de inicio</div>
-                    <div class="det-value">@(Model.FechaMante.HasValue ? Model.FechaMante.Value.ToString("dd/MM/yyyy") : "—")</div>
+                    <div class="det-label">Registrado por</div>
+                    <div class="det-value">@(Model.UsuarioCreador?.nombreCompleto ?? Model.UsuarioCreador?.username ?? "—")</div>
                 </div>
                 <div class="det-field">
-                    <div class="det-label">Fecha de culminación</div>
-                    <div class="det-value">@(Model.FechaCulminada.HasValue ? Model.FechaCulminada.Value.ToString("dd/MM/yyyy") : "—")</div>
+                    <div class="det-label">Fecha de registro</div>
+                    <div class="det-value">@Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</div>
                 </div>
                 <div class="det-field">
-                    <div class="det-label">Estado</div>
-                    <div class="det-value"><span class="badge @bc">@Model.Estado</span></div>
+                    <div class="det-label">Fecha programada</div>
+                    <div class="det-value" style="font-weight:700; color:var(--azul);">
+                        @Model.FechaProgramada.ToString("dd/MM/yyyy")
+                        @if (Model.FechaProgramada.Date == DateTime.Today && Model.Estado == "Pendiente") {
+                            <span class="badge badge--amarillo" style="font-size:0.65rem; margin-left:4px;">HOY</span>
+                        }
+                    </div>
                 </div>
+                @if (Model.FechaInicio.HasValue)
+                {
+                    <div class="det-field">
+                        <div class="det-label">Inicio</div>
+                        <div class="det-value">@Model.FechaInicio.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                }
+                @if (Model.FechaCulminada.HasValue)
+                {
+                    <div class="det-field">
+                        <div class="det-label">Culminado</div>
+                        <div class="det-value">@Model.FechaCulminada.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                }
                 @if (!string.IsNullOrEmpty(Model.Observaciones))
                 {
                     <div class="det-field" style="grid-column:1/-1;">
@@ -75,42 +95,99 @@
                 }
             </div>
         </div>
+
+        <!-- Línea de tiempo del estado -->
+        <div class="card">
+            <div style="font-weight:700; font-size:0.85rem; color:var(--gris-900); margin-bottom:16px;">Progreso</div>
+            <div style="display:flex; align-items:center; gap:0;">
+                @{
+                    var estados = new[] { "Pendiente", "En proceso", "Culminado" };
+                    int actual  = Array.IndexOf(estados, Model.Estado);
+                    if (Model.Estado == "Cancelado") actual = -1;
+                }
+                @for (int i = 0; i < estados.Length; i++)
+                {
+                    bool completado = actual > i || (actual == i);
+                    bool esActual   = actual == i && Model.Estado != "Cancelado";
+                    var color = completado ? "var(--azul)" : "var(--gris-200)";
+                    var textColor = completado ? "var(--azul-dark)" : "var(--gris-400)";
+                    <div style="display:flex; flex-direction:column; align-items:center; flex:1;">
+                        <div style="width:32px; height:32px; border-radius:50%; background:@color; display:grid; place-items:center; position:relative; z-index:1;">
+                            @if (completado) {
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:white;fill:none;stroke-width:2.5;"><polyline points="20 6 9 17 4 12"/></svg>
+                            } else {
+                                <span style="width:10px;height:10px;border-radius:50%;background:var(--gris-300);display:block;"></span>
+                            }
+                        </div>
+                        <div style="font-size:0.75rem; font-weight:@(esActual ? "700" : "400"); color:@textColor; margin-top:6px; text-align:center;">
+                            @estados[i]
+                        </div>
+                    </div>
+                    @if (i < estados.Length - 1) {
+                        <div style="height:2px; flex:1; background:@(actual > i ? "var(--azul)" : "var(--gris-200)"); margin-bottom:20px;"></div>
+                    }
+                }
+                @if (Model.Estado == "Cancelado") {
+                    <div style="flex:1; text-align:right;">
+                        <span class="badge badge--rojo">Cancelado</span>
+                    </div>
+                }
+            </div>
+        </div>
+
     </div>
 
     <!-- Acciones rápidas -->
-    <div style="width:220px; flex-shrink:0; display:flex; flex-direction:column; gap:12px;">
+    <div style="width:230px; flex-shrink:0; display:flex; flex-direction:column; gap:12px;">
+
+        @if (Model.Estado == "Pendiente")
+        {
+            <div class="card" style="border-color:rgba(26,58,107,0.2); background:rgba(26,58,107,0.03);">
+                <div style="font-weight:700; color:var(--azul-dark); font-size:0.82rem; margin-bottom:6px;">Iniciar mantenimiento</div>
+                <div style="font-size:0.75rem; color:var(--gris-600); margin-bottom:12px;">Confirma que el mantenimiento ya comenzó.</div>
+                <form asp-action="Proceder" asp-route-id="@Model.IdMante" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn--celeste btn--sm" style="width:100%; justify-content:center;">
+                        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Proceder
+                    </button>
+                </form>
+            </div>
+        }
 
         @if (Model.Estado == "En proceso")
         {
             <div class="card" style="border-color:rgba(34,197,94,0.3); background:rgba(34,197,94,0.04);">
-                <div style="font-weight:700; color:#15803d; font-size:0.82rem; margin-bottom:8px;">Culminar mantenimiento</div>
+                <div style="font-weight:700; color:#15803d; font-size:0.82rem; margin-bottom:6px;">Culminar mantenimiento</div>
                 <div style="font-size:0.75rem; color:var(--gris-600); margin-bottom:12px;">El vehículo volverá a estado Activo.</div>
                 <form asp-action="Culminar" asp-route-id="@Model.IdMante" method="post">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn--verde btn--sm" style="width:100%; justify-content:center;">
-                        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                        Marcar culminado
+                    <button type="submit" class="btn btn--sm" style="width:100%; justify-content:center; background:#16a34a; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 12px; display:flex; align-items:center; gap:6px;">
+                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:white;fill:none;stroke-width:2.5;stroke-linecap:round;"><polyline points="20 6 9 17 4 12"/></svg>
+                        Culminado
                     </button>
                 </form>
             </div>
+        }
 
+        @if (Model.Estado == "Pendiente" || Model.Estado == "En proceso")
+        {
             <div class="card" style="border-color:rgba(245,158,11,0.3); background:rgba(245,158,11,0.04);">
-                <div style="font-weight:700; color:#b45309; font-size:0.82rem; margin-bottom:8px;">Cancelar mantenimiento</div>
-                <div style="font-size:0.75rem; color:var(--gris-600); margin-bottom:12px;">El vehículo volverá a estado Activo.</div>
+                <div style="font-weight:700; color:#b45309; font-size:0.82rem; margin-bottom:6px;">Cancelar</div>
+                <div style="font-size:0.75rem; color:var(--gris-600); margin-bottom:12px;">Cancela este mantenimiento.</div>
                 <form asp-action="Cancelar" asp-route-id="@Model.IdMante" method="post">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn--warning btn--sm" style="width:100%; justify-content:center;"
+                    <button type="submit" class="btn btn--sm" style="width:100%; justify-content:center; background:#d97706; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 12px;"
                             onclick="return confirm('¿Cancelar este mantenimiento?')">
-                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                        Cancelar
+                        Cancelar mantenimiento
                     </button>
                 </form>
             </div>
         }
 
         <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
-            <div style="font-weight:700; color:var(--rojo); font-size:0.82rem; margin-bottom:6px;">Zona de peligro</div>
-            <div style="font-size:0.75rem; color:var(--gris-600); margin-bottom:12px;">Eliminar registro permanentemente.</div>
+            <div style="font-weight:700; color:var(--rojo); font-size:0.82rem; margin-bottom:6px;">Eliminar</div>
+            <div style="font-size:0.75rem; color:var(--gris-600); margin-bottom:12px;">Elimina el registro permanentemente.</div>
             <a asp-action="Delete" asp-route-id="@Model.IdMante" class="btn btn--danger btn--sm" style="width:100%; justify-content:center;">
                 <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                 Eliminar
@@ -122,18 +199,9 @@
 
 @section Styles {
 <style>
-.mante-icon-lg {
-    width:56px; height:56px; border-radius:var(--r-md);
-    background:linear-gradient(135deg, #b45309, #d97706);
-    display:grid; place-items:center; flex-shrink:0;
-    box-shadow:0 4px 16px rgba(180,83,9,0.3);
-}
+.mante-icon-lg { width:56px; height:56px; border-radius:var(--r-md); background:linear-gradient(135deg, #b45309, #d97706); display:grid; place-items:center; flex-shrink:0; box-shadow:0 4px 16px rgba(180,83,9,0.3); }
 .mante-icon-lg svg { width:26px; height:26px; stroke:white; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
 .det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
 .det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
-.btn--verde { background:#16a34a; color:white; border:none; cursor:pointer; }
-.btn--verde:hover { background:#15803d; }
-.btn--warning { background:#d97706; color:white; border:none; cursor:pointer; }
-.btn--warning:hover { background:#b45309; }
 </style>
 }

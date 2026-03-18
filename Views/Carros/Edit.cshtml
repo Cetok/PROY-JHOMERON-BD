@@ -58,25 +58,6 @@
                 </div>
             </div>
 
-            <!-- Conductor -->
-            <div style="margin-bottom:24px;">
-                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Conductor
-                </p>
-                <div class="form-group" style="max-width:400px;">
-                    <label class="form-label">Empleado asignado</label>
-                    <select name="IdEmpleado" class="form-control">
-                        <option value="">— Sin conductor asignado —</option>
-                        @foreach (var item in ViewBag.EmpleadosList as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
-                        {
-                            if (item.Selected) { <option value="@item.Value" selected>@item.Text</option> }
-                            else               { <option value="@item.Value">@item.Text</option> }
-                        }
-                    </select>
-                    <div class="form-hint">Selecciona "Sin conductor asignado" para remover la asignación actual.</div>
-                </div>
-            </div>
-
             <!-- Características técnicas -->
             <div style="margin-bottom:24px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
@@ -114,8 +95,11 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Año del vehículo</label>
-                        <input asp-for="FechaCarro" type="date" class="form-control" />
-                        <span asp-validation-for="FechaCarro" class="form-error"></span>
+                        <input type="number" name="AnioFechaCarro" id="AnioFechaCarro"
+                               class="form-control" placeholder="Ej: 2019"
+                               min="1950" max="2100"
+                               value="@(Model?.FechaCarro.HasValue == true ? Model.FechaCarro.Value.Year.ToString() : "")" />
+                        <input asp-for="FechaCarro" type="hidden" id="FechaCarro" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Fecha de compra</label>
@@ -148,4 +132,13 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Convierte el año ingresado a una fecha (01/01/YYYY) antes de enviar
+        document.querySelector('form').addEventListener('submit', function () {
+            var anio = document.getElementById('AnioFechaCarro').value;
+            if (anio) {
+                document.getElementById('FechaCarro').value = anio + '-01-01';
+            }
+        });
+    </script>
 }

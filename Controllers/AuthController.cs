@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 using BCrypt.Net;
 
@@ -8,15 +9,17 @@ namespace PROYJHOME2026.Controllers
 {
     public class AuthController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext    _context;
+        private readonly AuditoriaService _auditoriaService;
 
         // Máximo de intentos antes de bloquear la cuenta
         private const int MaxIntentos      = 5;
         private const int MinutosBloqueo   = 15;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, AuditoriaService auditoriaService)
         {
-            _context = context;
+            _context          = context;
+            _auditoriaService = auditoriaService;
         }
 
         // ── LOGIN GET ────────────────────────────────────────────
@@ -116,6 +119,10 @@ namespace PROYJHOME2026.Controllers
             HttpContext.Session.SetString("UsuarioUsername", usuario.username);
             HttpContext.Session.SetString("UsuarioRol",      usuario.rol);
 
+            // Auditoría login
+            await _auditoriaService.RegistrarAsync("Login", "Usuario", usuario.idUsuario,
+                $"Inicio de sesión: {usuario.username}");
+
             // Redirigir a returnUrl si es válida, si no al dashboard
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
@@ -126,8 +133,11 @@ namespace PROYJHOME2026.Controllers
         // ── LOGOUT ───────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
+            var nombre = HttpContext.Session.GetString("UsuarioNombre") ?? "Usuario";
+            await _auditoriaService.RegistrarAsync("Logout", "Usuario", null,
+                $"Cerró sesión: {nombre}");
             HttpContext.Session.Clear();
             return RedirectToAction(nameof(Login));
         }

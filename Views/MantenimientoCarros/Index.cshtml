@@ -84,7 +84,7 @@
                     <tr>
                         <th>Vehículo</th>
                         <th>Tipo de mantenimiento</th>
-                        <th>Fecha inicio</th>
+                        <th>Fecha programada</th>
                         <th>Fecha culminación</th>
                         <th style="text-align:center;">Estado</th>
                         <th style="text-align:center;">Acciones</th>
@@ -100,7 +100,7 @@
                             </td>
                             <td style="font-size:0.85rem;">@m.TipoMantenimiento?.Nombre</td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">
-                                @(m.FechaMante.HasValue ? m.FechaMante.Value.ToString("dd/MM/yyyy") : "—")
+                                @m.FechaProgramada.ToString("dd/MM/yyyy")
                             </td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">
                                 @(m.FechaCulminada.HasValue ? m.FechaCulminada.Value.ToString("dd/MM/yyyy") : "—")

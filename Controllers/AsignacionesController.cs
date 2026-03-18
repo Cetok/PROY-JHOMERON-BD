@@ -2,21 +2,24 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class AsignacionesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext    _context;
+        private readonly AuditoriaService _auditoriaService;
 
-        public AsignacionesController(AppDbContext context)
+        public AsignacionesController(AppDbContext context, AuditoriaService auditoriaService)
         {
-            _context = context;
+            _context          = context;
+            _auditoriaService = auditoriaService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, string? estado, int pagina = 1)
+        public async Task<IActionResult> Index(string? buscar, string? estado, string? orden = "az", int pagina = 1)
         {
             int porPagina = 10;
 
@@ -42,13 +45,16 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var asignaciones = await query.OrderBy(a => a.Empleado.paterno)
+            var asignaciones = await (orden == "za"
+                ? query.OrderByDescending(a => a.Empleado.paterno)
+                : query.OrderBy(a => a.Empleado.paterno))
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
 
             ViewBag.Buscar       = buscar;
             ViewBag.Estado       = estado;
+            ViewBag.Orden        = orden;
             ViewBag.Pagina       = pagina;
             ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
@@ -119,6 +125,8 @@ namespace PROYJHOME2026.Controllers
 
                 _context.Add(asignacion);
                 await _context.SaveChangesAsync();
+                await _auditoriaService.RegistrarAsync("Crear", "Asignacion", asignacion.IdAsignacion,
+                    $"Registró asignación #{asignacion.IdAsignacion} — Empleado {asignacion.IdEmpleado}, Equipo {asignacion.IdEquipo}");
                 TempData["Success"] = "Asignación registrada correctamente.";
                 return RedirectToAction(nameof(Details), new { id = asignacion.IdAsignacion });
             }
@@ -188,6 +196,8 @@ namespace PROYJHOME2026.Controllers
                 {
                     _context.Update(asignacion);
                     await _context.SaveChangesAsync();
+                    await _auditoriaService.RegistrarAsync("Editar", "Asignacion", id,
+                        $"Editó asignación #{id}");
                     TempData["Success"] = "Asignación actualizada correctamente.";
                     return RedirectToAction(nameof(Details), new { id = asignacion.IdAsignacion });
                 }
@@ -230,6 +240,8 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.Asignaciones.Remove(asignacion);
                 await _context.SaveChangesAsync();
+                await _auditoriaService.RegistrarAsync("Eliminar", "Asignacion", id,
+                    $"Eliminó asignación #{id}");
                 TempData["Success"] = "Asignación eliminada correctamente.";
             }
             catch (DbUpdateException)

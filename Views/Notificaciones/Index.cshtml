@@ -1,0 +1,77 @@
+@model IEnumerable<PROYJHOME2026.Models.Notificacion>
+@{
+    ViewData["Title"]      = "Notificaciones";
+    ViewData["Breadcrumb"] = "Notificaciones";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Sistema</div>
+        <h1 class="page-header__title">Notificaciones</h1>
+        <p class="page-header__subtitle">Últimas @Model.Count() notificaciones</p>
+    </div>
+</div>
+
+<div style="max-width:720px; display:flex; flex-direction:column; gap:8px;">
+    @if (Model.Any())
+    {
+        @foreach (var n in Model)
+        {
+            var iconColor = n.Tipo switch {
+                "Mantenimiento" => "#d97706",
+                "Creacion"      => "#16a34a",
+                "Edicion"       => "#2563eb",
+                "Eliminacion"   => "#dc2626",
+                "CambioEstado"  => "#7c3aed",
+                _               => "var(--azul)"
+            };
+            var iconPath = n.Tipo switch {
+                "Mantenimiento" => "M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z",
+                "Creacion"      => "M12 5v14M5 12h14",
+                "Edicion"       => "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7",
+                "Eliminacion"   => "M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6",
+                "CambioEstado"  => "M9 12l2 2 4-4",
+                _               => "M13 16h-1v-4h-1m1-4h.01"
+            };
+
+            <div style="display:flex; align-items:flex-start; gap:12px; padding:14px 16px; background:@(n.Leida ? "var(--gris-50)" : "white"); border:1px solid @(n.Leida ? "var(--gris-200)" : "rgba(26,58,107,0.2)"); border-radius:var(--r-md); @(n.Leida ? "" : "box-shadow:0 1px 6px rgba(26,58,107,0.08);")">
+                <div style="width:36px;height:36px;border-radius:50%;background:@(iconColor)20;border:1px solid @(iconColor)40;display:grid;place-items:center;flex-shrink:0;margin-top:2px;">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:@(iconColor);fill:none;stroke-width:2;stroke-linecap:round;">
+                        <path d="@iconPath"/>
+                    </svg>
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                        <div style="font-weight:@(n.Leida ? "500" : "700"); font-size:0.88rem; color:var(--gris-900);">
+                            @n.Titulo
+                            @if (!n.Leida) { <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--azul);margin-left:6px;vertical-align:middle;"></span> }
+                        </div>
+                        <div style="font-size:0.72rem; color:var(--gris-400); white-space:nowrap; flex-shrink:0;">
+                            @n.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(n.Mensaje))
+                    {
+                        <div style="font-size:0.82rem; color:var(--gris-600); margin-top:3px;">@n.Mensaje</div>
+                    }
+                    @if (!string.IsNullOrEmpty(n.Url))
+                    {
+                        <a href="@n.Url" style="font-size:0.78rem; color:var(--celeste); text-decoration:none; margin-top:4px; display:inline-block;">
+                            Ver registro →
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <div class="empty-state__icon">
+                <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            </div>
+            <div class="empty-state__title">Sin notificaciones</div>
+            <div class="empty-state__text">No tienes notificaciones aún.</div>
+        </div>
+    }
+</div>

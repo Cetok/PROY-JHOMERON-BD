@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using PROYJHOME2026.BackgroundServices;
 using PROYJHOME2026.Data;
 using PROYJHOME2026.Filters;
 using PROYJHOME2026.Seeds;
+using PROYJHOME2026.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,20 +15,29 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout        = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly    = true;   // No accesible por JS
-    options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  // Solo HTTPS
-    options.Cookie.SameSite    = SameSiteMode.Strict;
+    options.IdleTimeout         = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly     = true;
+    options.Cookie.IsEssential  = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite     = SameSiteMode.Strict;
 });
+
+// ── HttpContextAccessor (necesario para AuditoriaService) ───
+builder.Services.AddHttpContextAccessor();
+
+// ── Servicios propios ────────────────────────────────────────
+builder.Services.AddScoped<AuditoriaService>();
+builder.Services.AddScoped<NotificacionService>();
+builder.Services.AddScoped<EmailService>();
+
+// ── Servicio de background (revisa mantenimientos pendientes)
+builder.Services.AddHostedService<MantenimientoBackgroundService>();
 
 // ── MVC con filtro global de autenticación ───────────────────
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<AuthFilter>();
 });
-
-// ── Protección anti-CSRF ya incluida con AddControllersWithViews ──
 
 var app = builder.Build();
 
@@ -40,8 +51,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
-app.UseSession();   // Debe ir ANTES de MapControllerRoute
+app.UseSession();
 
 // ── Headers de seguridad ─────────────────────────────────────
 app.Use(async (context, next) =>
@@ -54,10 +64,10 @@ app.Use(async (context, next) =>
 });
 
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Auth}/{action=Login}/{id?}");  // Ruta raíz → Login
+    name:    "default",
+    pattern: "{controller=Auth}/{action=Login}/{id?}");
 
-// ── Seed: crear admin si no existe ──────────────────────────
+// ── Seed ─────────────────────────────────────────────────────
 await DbSeeder.SeedAdminAsync(app.Services);
 
 app.Run();

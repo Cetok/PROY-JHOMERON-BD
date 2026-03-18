@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
@@ -22,11 +23,13 @@ namespace PROYJHOME2026.Controllers
     }
     public class EmpleadosController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext    _context;
+        private readonly AuditoriaService _auditoriaService;
 
-        public EmpleadosController(AppDbContext context)
+        public EmpleadosController(AppDbContext context, AuditoriaService auditoriaService)
         {
-            _context = context;
+            _context          = context;
+            _auditoriaService = auditoriaService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
@@ -80,13 +83,7 @@ namespace PROYJHOME2026.Controllers
                 .Select(eg => eg.Grupo)
                 .ToListAsync();
 
-            var seguros = await _context.EmpleadoSeguros
-                .Include(es => es.Seguro)
-                .Where(es => es.IdEmpleado == id)
-                .ToListAsync();
-
-            ViewBag.Grupos  = grupos;
-            ViewBag.Seguros = seguros;
+            ViewBag.Grupos = grupos;
             return View(empleado);
         }
 
@@ -143,6 +140,8 @@ namespace PROYJHOME2026.Controllers
                 }
                 await _context.SaveChangesAsync();
 
+                await _auditoriaService.RegistrarAsync("Crear", "Empleado", vm.Empleado.idEmpleado,
+                    $"Registró empleado {vm.Empleado.nombre} {vm.Empleado.paterno} (DNI: {vm.Empleado.dni})");
                 TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} registrado correctamente.";
                 return RedirectToAction(nameof(Details), new { id = vm.Empleado.idEmpleado });
             }
@@ -224,6 +223,8 @@ namespace PROYJHOME2026.Controllers
                     }
 
                     await _context.SaveChangesAsync();
+                    await _auditoriaService.RegistrarAsync("Editar", "Empleado", id,
+                        $"Editó empleado {vm.Empleado.nombre} {vm.Empleado.paterno}");
                     TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} actualizado correctamente.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
@@ -268,6 +269,8 @@ namespace PROYJHOME2026.Controllers
 
                 _context.Empleados.Remove(empleado);
                 await _context.SaveChangesAsync();
+                await _auditoriaService.RegistrarAsync("Eliminar", "Empleado", id,
+                    $"Eliminó empleado {empleado.nombre} {empleado.paterno}");
                 TempData["Success"] = $"Empleado {empleado.nombre} {empleado.paterno} eliminado.";
             }
             catch (DbUpdateException)

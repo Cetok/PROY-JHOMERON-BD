@@ -8,9 +8,13 @@
     <div class="page-header__info">
         <div class="page-header__eyebrow">Flota Vehicular</div>
         <h1 class="page-header__title">Nuevo Mantenimiento</h1>
-        <p class="page-header__subtitle">Registra un mantenimiento vehicular</p>
+        <p class="page-header__subtitle">Se registrará como <strong>Pendiente</strong> hasta la fecha programada</p>
     </div>
     <div class="page-header__actions">
+        <a asp-controller="TipoMantenimientos" asp-action="Index" class="btn btn--secondary btn--sm">
+            <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Tipos
+        </a>
         <a asp-action="Index" class="btn btn--secondary">
             <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Volver
@@ -43,9 +47,10 @@
                         <span asp-validation-for="IdTipoMante" class="form-error"></span>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Fecha de inicio</label>
-                        <input asp-for="FechaMante" type="date" class="form-control" />
-                        <span asp-validation-for="FechaMante" class="form-error"></span>
+                        <label class="form-label">Fecha programada <span class="req">*</span></label>
+                        <input asp-for="FechaProgramada" type="date" class="form-control" />
+                        <span asp-validation-for="FechaProgramada" class="form-error"></span>
+                        <div class="form-hint">Fecha en que se realizará el mantenimiento.</div>
                     </div>
                 </div>
             </div>
@@ -55,15 +60,14 @@
                     Observaciones
                 </p>
                 <div class="form-group">
-                    <label class="form-label">Notas u observaciones</label>
                     <textarea asp-for="Observaciones" class="form-control" rows="3"
-                              maxlength="500" placeholder="Descripción del trabajo a realizar, piezas a cambiar..."></textarea>
+                              maxlength="500" placeholder="Descripción del trabajo, piezas, notas..."></textarea>
                     <span asp-validation-for="Observaciones" class="form-error"></span>
                 </div>
             </div>
 
-            <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:20px; font-size:0.82rem; color:#92400e;">
-                ⚙️ Al registrar, el vehículo cambiará automáticamente a estado <strong>En mantenimiento</strong>.
+            <div style="background:rgba(59,155,232,0.06); border:1px solid rgba(59,155,232,0.2); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:20px; font-size:0.82rem; color:var(--azul);">
+                📅 El mantenimiento quedará en estado <strong>Pendiente</strong>. Cuando llegue la fecha programada recibirás una notificación para dar inicio al proceso.
             </div>
 
             <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">

@@ -6,14 +6,42 @@
     <title>@ViewData["Title"] Jhomeron</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
+    <style>
+    .notif-wrapper { position:relative; }
+    .notif-badge {
+        position:absolute; top:-4px; right:-4px;
+        min-width:18px; height:18px; border-radius:9px;
+        background:var(--rojo, #dc2626); color:white;
+        font-size:0.65rem; font-weight:700; line-height:18px;
+        text-align:center; padding:0 4px;
+        pointer-events:none; display:none;
+    }
+    .notif-panel {
+        position:absolute; top:calc(100% + 8px); right:0;
+        width:340px; background:white;
+        border:1px solid var(--gris-200); border-radius:var(--r-md);
+        box-shadow:0 8px 32px rgba(0,0,0,0.12);
+        z-index:9999; display:none;
+    }
+    .notif-panel__header {
+        display:flex; justify-content:space-between; align-items:center;
+        padding:12px 16px; border-bottom:1px solid var(--gris-200);
+    }
+    .notif-panel__list { max-height:380px; overflow-y:auto; }
+    .notif-panel__footer { padding:10px 16px; border-top:1px solid var(--gris-200); text-align:center; }
+    .notif-item {
+        display:flex; gap:10px; padding:12px 16px;
+        border-bottom:1px solid var(--gris-100);
+        transition:background 0.15s;
+    }
+    .notif-item:hover { background:var(--gris-50); }
+    .notif-item--no-leida { background:rgba(26,58,107,0.03); }
+    </style>
 </head>
 <body>
 
 <div class="layout">
 
-    <!-- ═══════════════════════════════════════
-         SIDEBAR
-    ══════════════════════════════════════════ -->
     <aside class="sidebar" id="sidebar">
 
         <div class="sidebar__logo">
@@ -53,13 +81,6 @@
                        asp-controller="Empleados" asp-action="Index">
                         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                         Empleados
-                    </a>
-                </div>
-                <div class="sidebar__item">
-                    <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Grupos" ? "active" : "")"
-                       asp-controller="Grupos" asp-action="Index">
-                        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                        Grupos
                     </a>
                 </div>
             </div>
@@ -134,17 +155,24 @@
             <div class="sidebar__section">
                 <p class="sidebar__section-label">Configuración</p>
                 <div class="sidebar__item">
+                    <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TipoEquipos" ? "active" : "")"
+                       asp-controller="TipoEquipos" asp-action="Index">
+                        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        Tipos de Equipo
+                    </a>
+                </div>
+                <div class="sidebar__item">
+                    <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "TipoMantenimientos" ? "active" : "")"
+                       asp-controller="TipoMantenimientos" asp-action="Index">
+                        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                        Tipos Mantenimiento
+                    </a>
+                </div>
+                <div class="sidebar__item">
                     <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Modalidades" ? "active" : "")"
                        asp-controller="Modalidades" asp-action="Index">
                         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                         Modalidades
-                    </a>
-                </div>
-                <div class="sidebar__item">
-                    <a class="sidebar__link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Motivos" ? "active" : "")"
-                       asp-controller="Motivos" asp-action="Index">
-                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        Motivos
                     </a>
                 </div>
             </div>
@@ -166,7 +194,6 @@
                     <div class="sidebar__user-name">@sesNombre</div>
                     <div class="sidebar__user-role">@sesRol</div>
                 </div>
-                <!-- Logout -->
                 <form asp-controller="Auth" asp-action="Logout" method="post" style="margin:0;">
                     @Html.AntiForgeryToken()
                     <button type="submit" title="Cerrar sesión"
@@ -188,9 +215,6 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- ═══════════════════════════════════════
-         COLUMNA DERECHA
-    ══════════════════════════════════════════ -->
     <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
 
         <!-- NAVBAR -->
@@ -212,16 +236,30 @@
                 }
             </nav>
 
-            <div class="navbar__search">
-                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" placeholder="Buscar registros..." />
-            </div>
-
             <div class="navbar__actions">
-                <button class="navbar__btn" title="Notificaciones">
-                    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                    <span class="navbar__notif-dot"></span>
-                </button>
+
+                <!-- CAMPANITA DE NOTIFICACIONES -->
+                <div class="notif-wrapper" id="notifWrapper">
+                    <button class="navbar__btn" id="notifBtn" title="Notificaciones" onclick="toggleNotifPanel()">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                        <span class="notif-badge" id="notifBadge">0</span>
+                    </button>
+                    <div class="notif-panel" id="notifPanel">
+                        <div class="notif-panel__header">
+                            <span style="font-weight:700; font-size:0.88rem;">Notificaciones</span>
+                            <button onclick="marcarTodasLeidas()" style="font-size:0.72rem; color:var(--celeste); background:none; border:none; cursor:pointer; padding:0;">
+                                Marcar todas leídas
+                            </button>
+                        </div>
+                        <div class="notif-panel__list" id="notifList">
+                            <div style="text-align:center; padding:20px; color:var(--gris-400); font-size:0.82rem;">Cargando...</div>
+                        </div>
+                        <div class="notif-panel__footer">
+                            <a href="/Notificaciones/Index" style="font-size:0.78rem; color:var(--celeste); text-decoration:none;">Ver todas →</a>
+                        </div>
+                    </div>
+                </div>
+
                 <button class="navbar__btn" title="Mi perfil">
                     <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </button>
@@ -267,32 +305,105 @@
 </div>
 
 <script>
+    // ── Sidebar toggle ────────────────────────────────────────
     const toggle  = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
 
-    function openSidebar() {
-        sidebar.classList.add('open');
-        overlay.classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
+    function openSidebar()  { sidebar.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; }
 
-    function closeSidebar() {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('open');
-        document.body.style.overflow = '';
-    }
-
-    toggle?.addEventListener('click', () => {
-        sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
-    });
-
+    toggle?.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
     overlay?.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
 
-    // Cerrar con Escape
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeSidebar();
+    // ── Notificaciones ────────────────────────────────────────
+    let notifAbierto = false;
+
+    function toggleNotifPanel() {
+        notifAbierto = !notifAbierto;
+        document.getElementById('notifPanel').style.display = notifAbierto ? 'block' : 'none';
+        if (notifAbierto) cargarNotificaciones();
+    }
+
+    document.addEventListener('click', function(e) {
+        const wrapper = document.getElementById('notifWrapper');
+        if (wrapper && !wrapper.contains(e.target) && notifAbierto) {
+            notifAbierto = false;
+            document.getElementById('notifPanel').style.display = 'none';
+        }
     });
+
+    const coloresNotif = {
+        'Mantenimiento': '#d97706',
+        'Creacion':      '#16a34a',
+        'Edicion':       '#2563eb',
+        'Eliminacion':   '#dc2626',
+        'CambioEstado':  '#7c3aed'
+    };
+
+    async function cargarNotificaciones() {
+        try {
+            const res  = await fetch('/Notificaciones/ObtenerNoLeidas');
+            const data = await res.json();
+
+            const badge = document.getElementById('notifBadge');
+            badge.textContent    = data.contador;
+            badge.style.display  = data.contador > 0 ? 'block' : 'none';
+
+            const lista = document.getElementById('notifList');
+            if (!data.notificaciones || data.notificaciones.length === 0) {
+                lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gris-400);font-size:0.82rem;">Sin notificaciones</div>';
+                return;
+            }
+
+            lista.innerHTML = data.notificaciones.map(n => `
+                <div class="notif-item ${!n.leida ? 'notif-item--no-leida' : ''}">
+                    <div style="width:32px;height:32px;border-radius:50%;background:${(coloresNotif[n.tipo] ?? '#1a3a6b')}20;display:grid;place-items:center;flex-shrink:0;">
+                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:${coloresNotif[n.tipo] ?? '#1a3a6b'};fill:none;stroke-width:2;stroke-linecap:round;">
+                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        </svg>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:${n.leida ? '500' : '700'};font-size:0.82rem;color:var(--gris-900);">
+                            ${n.titulo}
+                            ${!n.leida ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#1a3a6b;margin-left:4px;vertical-align:middle;"></span>' : ''}
+                        </div>
+                        ${n.mensaje ? `<div style="font-size:0.76rem;color:var(--gris-500);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n.mensaje}</div>` : ''}
+                        <div style="font-size:0.7rem;color:var(--gris-400);margin-top:2px;">${n.fechaCreacion}</div>
+                        ${n.url ? `<a href="${n.url}" style="font-size:0.73rem;color:var(--celeste);text-decoration:none;">Ver →</a>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        } catch(e) {
+            console.error('Error notificaciones:', e);
+        }
+    }
+
+    async function marcarTodasLeidas() {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+        await fetch('/Notificaciones/MarcarTodasLeidas', {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': token }
+        });
+        cargarNotificaciones();
+    }
+
+    async function actualizarContador() {
+        try {
+            const res  = await fetch('/Notificaciones/ObtenerNoLeidas');
+            const data = await res.json();
+            const badge = document.getElementById('notifBadge');
+            if (badge) {
+                badge.textContent   = data.contador;
+                badge.style.display = data.contador > 0 ? 'block' : 'none';
+            }
+        } catch(e) {}
+    }
+
+    // Cargar contador al iniciar y cada 2 minutos
+    actualizarContador();
+    setInterval(actualizarContador, 2 * 60 * 1000);
 </script>
 
 @await RenderSectionAsync("Scripts", required: false)

@@ -15,11 +15,11 @@ namespace PROYJHOME2026.Models
 
         [Required]
         [StringLength(255)]
-        public string passwordHash { get; set; } = string.Empty;  // BCrypt hash
+        public string passwordHash { get; set; } = string.Empty;
 
         [Required]
         [StringLength(20)]
-        public string rol { get; set; } = "Admin";  // Admin | Viewer
+        public string rol { get; set; } = "Admin";
 
         [StringLength(100)]
         public string? nombreCompleto { get; set; }
@@ -27,13 +27,16 @@ namespace PROYJHOME2026.Models
         [StringLength(100)]
         public string? correo { get; set; }
 
+        // Número de celular para SMS (futuro)
+        [StringLength(20)]
+        public string? numeroCelular { get; set; }
+
         public bool activo { get; set; } = true;
 
         public DateTime creadoEn { get; set; } = DateTime.Now;
 
         public DateTime? ultimoAcceso { get; set; }
 
-        // ── Campos de seguridad anti-brute-force ──────────────
         public int intentosFallidos { get; set; } = 0;
 
         public DateTime? bloqueadoHasta { get; set; }

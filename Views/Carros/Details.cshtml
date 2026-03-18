@@ -121,7 +121,138 @@
 
     </div>
 
-    <!-- FILA 2: Seguros -->
+    <!-- FILA 2: Conductor -->
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                Conductor asignado
+            </div>
+        </div>
+
+        @{
+            var conductor = Model.EmpleadosCarros.FirstOrDefault()?.Empleado;
+        }
+
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+            @if (conductor != null)
+            {
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="emp-avatar-md">
+                        @((conductor.nombre?.Length > 0 ? conductor.nombre[0].ToString() : "?").ToUpper())@((conductor.paterno?.Length > 0 ? conductor.paterno[0].ToString() : "").ToUpper())
+                    </div>
+                    <div>
+                        <div style="font-weight:600; font-size:0.92rem; color:var(--gris-900);">@conductor.nombre @conductor.paterno @conductor.materno</div>
+                        <div style="font-size:0.78rem; color:var(--gris-400);">DNI: @(conductor.dni ?? "—")</div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div style="font-size:0.85rem; color:var(--gris-400);">Sin conductor asignado.</div>
+            }
+
+            <!-- Formulario para asignar/cambiar/quitar conductor -->
+            <form asp-action="AsignarConductor" method="post" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="idCarro" value="@Model.IdCarro" />
+                <select name="idEmpleado" class="form-control" style="min-width:220px;">
+                    <option value="">— Sin conductor —</option>
+                    @foreach (var item in ViewBag.EmpleadosList as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                    {
+                        if (conductor != null && item.Value == conductor.idEmpleado.ToString()) {
+                            <option value="@item.Value" selected>@item.Text</option>
+                        } else {
+                            <option value="@item.Value">@item.Text</option>
+                        }
+                    }
+                </select>
+                <button type="submit" class="btn btn--celeste btn--sm">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    @(conductor != null ? "Cambiar" : "Asignar")
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FILA 3: Cambio de estado (Baja / Inactivo) -->
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#d97706;fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Cambiar estado del vehículo
+            </div>
+            <span class="badge @bc">@Model.Estado</span>
+        </div>
+
+        <form asp-action="CambiarEstado" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="idCarro" value="@Model.IdCarro" />
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Nuevo estado <span class="req">*</span></label>
+                    <select name="nuevoEstado" class="form-control" required>
+                        <option value="">— Seleccionar —</option>
+                        @foreach (var op in new[] { "Activo", "Inactivo", "En mantenimiento", "De baja" }) {
+                            if (Model.Estado == op) { <option value="@op" selected>@op</option> }
+                            else                    { <option value="@op">@op</option> }
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Motivo <span class="req">*</span></label>
+                    <select name="motivo" class="form-control" required>
+                        <option value="">— Seleccionar —</option>
+                        <option value="Robo">Robo</option>
+                        <option value="Venta">Venta</option>
+                        <option value="No en uso">No en uso</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Accidente">Accidente</option>
+                        <option value="Recuperado">Recuperado</option>
+                        <option value="Reactivación">Reactivación</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Observaciones</label>
+                <input type="text" name="observaciones" class="form-control" maxlength="500"
+                       placeholder="Detalles adicionales (opcional)" />
+            </div>
+            <button type="submit" class="btn btn--primary btn--sm"
+                    onclick="return confirm('¿Confirmar cambio de estado?')">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Registrar cambio de estado
+            </button>
+        </form>
+
+        <!-- Historial de estados -->
+        @{
+            var estadoLog = ViewBag.EstadoLog as List<PROYJHOME2026.Models.CarroEstadoLog> ?? new();
+        }
+        @if (estadoLog.Any())
+        {
+            <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--gris-200);">
+                <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:10px;">Historial de estados</div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    @foreach (var log in estadoLog)
+                    {
+                        <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200); font-size:0.80rem;">
+                            <span style="color:var(--gris-400); flex-shrink:0; font-size:0.72rem;">@log.FechaHora.ToString("dd/MM/yy HH:mm")</span>
+                            <span class="badge badge--gris" style="font-size:0.68rem;">@log.EstadoAnterior</span>
+                            <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--gris-400);fill:none;stroke-width:2;flex-shrink:0;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                            <span class="badge @(log.EstadoNuevo == "Activo" ? "badge--verde" : log.EstadoNuevo == "De baja" ? "badge--rojo" : "badge--amarillo")" style="font-size:0.68rem;">@log.EstadoNuevo</span>
+                            <span style="color:var(--gris-600);">@log.Motivo</span>
+                            @if (!string.IsNullOrEmpty(log.Observaciones)) { <span style="color:var(--gris-400);">— @log.Observaciones</span> }
+                            <span style="margin-left:auto; color:var(--gris-400); font-size:0.72rem;">@(log.NombreUsuario ?? "—")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- FILA 4: Seguros -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
             <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
@@ -182,7 +313,7 @@
         }
     </div>
 
-    <!-- FILA 3: Accesorios -->
+    <!-- FILA 5: Accesorios -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
             <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
@@ -232,7 +363,7 @@
         else { <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Este vehículo no tiene accesorios asignados.</div> }
     </div>
 
-    <!-- FILA 4: Modalidades -->
+    <!-- FILA 6: Modalidades -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
             <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
@@ -272,7 +403,7 @@
         else { <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Este vehículo no tiene modalidades asignadas.</div> }
     </div>
 
-    <!-- FILA 5: Mantenimientos -->
+    <!-- FILA 7: Mantenimientos -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
             <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
@@ -292,7 +423,7 @@
         @if (Model.MantenimientosCarros.Any())
         {
             <div style="display:flex; flex-direction:column; gap:8px;">
-                @foreach (var m in Model.MantenimientosCarros.OrderByDescending(x => x.FechaMante))
+                @foreach (var m in Model.MantenimientosCarros.OrderByDescending(x => x.FechaProgramada))
                 {
                     var mbc = m.Estado switch {
                         "En proceso" => "badge--amarillo",
@@ -304,7 +435,7 @@
                         <div>
                             <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@m.TipoMantenimiento?.Nombre</div>
                             <div style="font-size:0.72rem; color:var(--gris-400); margin-top:3px;">
-                                @(m.FechaMante.HasValue ? m.FechaMante.Value.ToString("dd/MM/yyyy") : "Sin fecha")
+                                @m.FechaProgramada.ToString("dd/MM/yyyy")
                                 @if (m.FechaCulminada.HasValue) { <span> → @m.FechaCulminada.Value.ToString("dd/MM/yyyy")</span> }
                                 @if (!string.IsNullOrEmpty(m.Observaciones)) { <span> · @m.Observaciones</span> }
                             </div>
@@ -332,6 +463,13 @@
 
 @section Styles {
 <style>
+.emp-avatar-md {
+    width:40px; height:40px; border-radius:50%;
+    background:linear-gradient(135deg, var(--azul-mid), var(--celeste));
+    display:grid; place-items:center; flex-shrink:0;
+    font-family:var(--font-display); font-weight:800;
+    font-size:0.85rem; color:var(--blanco);
+}
 .carro-icon-lg {
     width:60px; height:60px; border-radius:var(--r-md);
     background:linear-gradient(135deg, var(--azul-dark), var(--azul-mid));
