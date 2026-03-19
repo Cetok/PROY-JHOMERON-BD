@@ -28,6 +28,7 @@ namespace PROYJHOME2026.Data
         public DbSet<Notificacion> Notificaciones { get; set; }
         public DbSet<AuditoriaLog> AuditoriaLogs { get; set; }
         public DbSet<CarroEstadoLog> CarroEstadoLogs { get; set; }
+        public DbSet<EquipoComponenteLog> EquipoComponenteLogs { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }

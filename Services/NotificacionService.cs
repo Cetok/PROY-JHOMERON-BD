@@ -13,7 +13,7 @@ namespace PROYJHOME2026.Services
             _context = context;
         }
 
-        /// <summary>Crea una notificación para todos los usuarios activos o para uno específico.</summary>
+        /// <summary>Crea notificación para todos los usuarios activos o uno específico.</summary>
         public async Task CrearAsync(
             string tipo,
             string titulo,
@@ -43,39 +43,51 @@ namespace PROYJHOME2026.Services
                     FechaCreacion = DateTime.Now
                 });
             }
-
             await _context.SaveChangesAsync();
         }
 
-        /// <summary>Devuelve el conteo de notificaciones no leídas para un usuario.</summary>
-        public async Task<int> ContarNoLeidasAsync(int idUsuario)
+        /// <summary>Shortcut para notificaciones de sistema (Crear/Editar/Eliminar).</summary>
+        public async Task NotificarAccionAsync(
+            string accion,       // "Creacion" | "Edicion" | "Eliminacion" | "CambioEstado"
+            string entidad,      // "Empleado", "Carro", "Equipo", etc.
+            string descripcion,  // "Registró empleado Juan Pérez"
+            string? url = null)
         {
-            return await _context.Notificaciones
-                .CountAsync(n => n.IdUsuario == idUsuario && !n.Leida);
+            var tipo = accion switch {
+                "Creacion"    => "Creacion",
+                "Edicion"     => "Edicion",
+                "Eliminacion" => "Eliminacion",
+                _             => "CambioEstado"
+            };
+
+            var titulo = accion switch {
+                "Creacion"    => $"✅ Nuevo {entidad} registrado",
+                "Edicion"     => $"✏️ {entidad} actualizado",
+                "Eliminacion" => $"🗑️ {entidad} eliminado",
+                _             => $"🔄 Cambio de estado — {entidad}"
+            };
+
+            await CrearAsync(tipo, titulo, descripcion, url);
         }
 
-        /// <summary>Devuelve las últimas N notificaciones de un usuario.</summary>
-        public async Task<List<Notificacion>> ObtenerUltimasAsync(int idUsuario, int cantidad = 15)
-        {
-            return await _context.Notificaciones
+        public async Task<int> ContarNoLeidasAsync(int idUsuario) =>
+            await _context.Notificaciones.CountAsync(n => n.IdUsuario == idUsuario && !n.Leida);
+
+        public async Task<List<Notificacion>> ObtenerUltimasAsync(int idUsuario, int cantidad = 15) =>
+            await _context.Notificaciones
                 .Where(n => n.IdUsuario == idUsuario)
                 .OrderByDescending(n => n.FechaCreacion)
                 .Take(cantidad)
                 .ToListAsync();
-        }
 
-        /// <summary>Marca todas las notificaciones de un usuario como leídas.</summary>
         public async Task MarcarTodasLeidasAsync(int idUsuario)
         {
             var noLeidas = await _context.Notificaciones
-                .Where(n => n.IdUsuario == idUsuario && !n.Leida)
-                .ToListAsync();
-
+                .Where(n => n.IdUsuario == idUsuario && !n.Leida).ToListAsync();
             foreach (var n in noLeidas) n.Leida = true;
             await _context.SaveChangesAsync();
         }
 
-        /// <summary>Marca una notificación específica como leída.</summary>
         public async Task MarcarLeidaAsync(int idNotificacion)
         {
             var n = await _context.Notificaciones.FindAsync(idNotificacion);

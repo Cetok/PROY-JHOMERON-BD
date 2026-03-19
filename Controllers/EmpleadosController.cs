@@ -23,13 +23,15 @@ namespace PROYJHOME2026.Controllers
     }
     public class EmpleadosController : Controller
     {
-        private readonly AppDbContext    _context;
-        private readonly AuditoriaService _auditoriaService;
+        private readonly AppDbContext        _context;
+        private readonly AuditoriaService    _auditoriaService;
+        private readonly NotificacionService _notifService;
 
-        public EmpleadosController(AppDbContext context, AuditoriaService auditoriaService)
+        public EmpleadosController(AppDbContext context, AuditoriaService auditoriaService, NotificacionService notifService)
         {
             _context          = context;
             _auditoriaService = auditoriaService;
+            _notifService     = notifService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
@@ -142,6 +144,8 @@ namespace PROYJHOME2026.Controllers
 
                 await _auditoriaService.RegistrarAsync("Crear", "Empleado", vm.Empleado.idEmpleado,
                     $"Registró empleado {vm.Empleado.nombre} {vm.Empleado.paterno} (DNI: {vm.Empleado.dni})");
+                
+                await _notifService.NotificarAccionAsync("Creacion", "Empleado", $"Registró empleado {vm.Empleado.nombre} {vm.Empleado.paterno} (DNI: {vm.Empleado.dni})");
                 TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} registrado correctamente.";
                 return RedirectToAction(nameof(Details), new { id = vm.Empleado.idEmpleado });
             }
@@ -225,7 +229,9 @@ namespace PROYJHOME2026.Controllers
                     await _context.SaveChangesAsync();
                     await _auditoriaService.RegistrarAsync("Editar", "Empleado", id,
                         $"Editó empleado {vm.Empleado.nombre} {vm.Empleado.paterno}");
-                    TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} actualizado correctamente.";
+                    
+                await _notifService.NotificarAccionAsync("Edicion", "Empleado", $"Editó empleado {vm.Empleado.nombre} {vm.Empleado.paterno}");
+                TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} actualizado correctamente.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
                 catch (DbUpdateConcurrencyException)
@@ -271,6 +277,8 @@ namespace PROYJHOME2026.Controllers
                 await _context.SaveChangesAsync();
                 await _auditoriaService.RegistrarAsync("Eliminar", "Empleado", id,
                     $"Eliminó empleado {empleado.nombre} {empleado.paterno}");
+                
+                await _notifService.NotificarAccionAsync("Eliminacion", "Empleado", $"Eliminó empleado {empleado.nombre} {empleado.paterno}");
                 TempData["Success"] = $"Empleado {empleado.nombre} {empleado.paterno} eliminado.";
             }
             catch (DbUpdateException)

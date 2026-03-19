@@ -1,13 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class ModalidadesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext        _context;
+        private readonly AuditoriaService    _auditoriaService;
+        private readonly NotificacionService _notifService;
 
         // Mapeo código → descripción
         private static readonly Dictionary<string, string> CodigoNombres = new()
@@ -16,9 +19,11 @@ namespace PROYJHOME2026.Controllers
             ["15139314CNG"] = "Mercancias en general"
         };
 
-        public ModalidadesController(AppDbContext context)
+        public ModalidadesController(AppDbContext context, AuditoriaService auditoriaService, NotificacionService notifService)
         {
-            _context = context;
+            _context          = context;
+            _auditoriaService = auditoriaService;
+            _notifService     = notifService;
         }
 
         // ── INDEX ────────────────────────────────────────────────

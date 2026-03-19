@@ -10,12 +10,14 @@ namespace PROYJHOME2026.Controllers
     public class AsignacionesController : Controller
     {
         private readonly AppDbContext    _context;
-        private readonly AuditoriaService _auditoriaService;
+        private readonly AuditoriaService    _auditoriaService;
+        private readonly NotificacionService _notifService;
 
-        public AsignacionesController(AppDbContext context, AuditoriaService auditoriaService)
+        public AsignacionesController(AppDbContext context, AuditoriaService auditoriaService, NotificacionService notifService)
         {
             _context          = context;
             _auditoriaService = auditoriaService;
+            _notifService     = notifService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
@@ -127,6 +129,7 @@ namespace PROYJHOME2026.Controllers
                 await _context.SaveChangesAsync();
                 await _auditoriaService.RegistrarAsync("Crear", "Asignacion", asignacion.IdAsignacion,
                     $"Registró asignación #{asignacion.IdAsignacion} — Empleado {asignacion.IdEmpleado}, Equipo {asignacion.IdEquipo}");
+                await _notifService.NotificarAccionAsync("Creacion", "Asignacion", $"Registró asignación #{asignacion.IdAsignacion}", $"/Asignaciones/Details/{asignacion.IdAsignacion}");
                 TempData["Success"] = "Asignación registrada correctamente.";
                 return RedirectToAction(nameof(Details), new { id = asignacion.IdAsignacion });
             }
@@ -208,6 +211,7 @@ namespace PROYJHOME2026.Controllers
                     await _context.SaveChangesAsync();
                     await _auditoriaService.RegistrarAsync("Editar", "Asignacion", id,
                         $"Editó asignación #{id}");
+                    await _notifService.NotificarAccionAsync("Edicion", "Asignacion", $"Editó asignación #{id}", $"/Asignaciones/Details/{id}");
                     TempData["Success"] = "Asignación actualizada correctamente.";
                     return RedirectToAction(nameof(Details), new { id = asignacion.IdAsignacion });
                 }
@@ -252,6 +256,7 @@ namespace PROYJHOME2026.Controllers
                 await _context.SaveChangesAsync();
                 await _auditoriaService.RegistrarAsync("Eliminar", "Asignacion", id,
                     $"Eliminó asignación #{id}");
+                await _notifService.NotificarAccionAsync("Eliminacion", "Asignacion", $"Eliminó asignación #{id}");
                 TempData["Success"] = "Asignación eliminada correctamente.";
             }
             catch (DbUpdateException)

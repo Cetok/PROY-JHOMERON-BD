@@ -9,16 +9,18 @@ namespace PROYJHOME2026.Controllers
 {
     public class HistorialesController : Controller
     {
-        private readonly AppDbContext    _context;
-        private readonly AuditoriaService _auditoriaService;
+        private readonly AppDbContext        _context;
+        private readonly AuditoriaService    _auditoriaService;
+        private readonly NotificacionService _notifService;
 
         // Motivos que cierran la asignación E actualizan el estado del equipo
         private static readonly string[] MotivosCierre = { "Devuelto", "Perdida", "Rotura", "Baja" };
 
-        public HistorialesController(AppDbContext context, AuditoriaService auditoriaService)
+        public HistorialesController(AppDbContext context, AuditoriaService auditoriaService, NotificacionService notifService)
         {
             _context          = context;
             _auditoriaService = auditoriaService;
+            _notifService     = notifService;
         }
 
         // ── INDEX ─────────────────────────────────────────────────
@@ -197,6 +199,7 @@ namespace PROYJHOME2026.Controllers
                     existing.Observaciones = historial.Observaciones;
 
                     await _context.SaveChangesAsync();
+                    await _notifService.NotificarAccionAsync("Edicion", "Historial", $"Editó registro de historial #{id}");
                     TempData["Success"] = "Registro actualizado correctamente.";
                     return RedirectToAction(nameof(Details), new { id = historial.IdHistoria });
                 }
@@ -313,6 +316,7 @@ namespace PROYJHOME2026.Controllers
             await _auditoriaService.RegistrarAsync("CambioEstado", "Asignacion", asignacion.IdAsignacion,
                 $"Reactivó asignación #{asignacion.IdAsignacion}. Motivo: {observaciones}");
 
+            await _notifService.NotificarAccionAsync("CambioEstado", "Asignacion", $"Reactivó asignación #{idHistoria}");
             TempData["Success"] = "Asignación reactivada correctamente.";
             return RedirectToAction(nameof(Details), new { id = idHistoria });
         }

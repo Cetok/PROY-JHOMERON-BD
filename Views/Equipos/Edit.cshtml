@@ -19,22 +19,21 @@
     </div>
 </div>
 
-<div style="max-width:680px;">
+<div style="max-width:760px;">
     <div class="card">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
-            <input asp-for="idEquipo" type="hidden" />
+            <input asp-for="idEquipo"     type="hidden" />
             <input asp-for="estado_equipo" type="hidden" />
 
-            <!-- Identificación -->
+            <!-- Información básica -->
             <div style="margin-bottom:24px;">
-                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Identificación
-                </p>
+                <p class="form-section-title">Información básica</p>
                 <div class="form-grid">
-                    <div class="form-group form-group--full">
+                    <div class="form-group">
                         <label class="form-label">Tipo de equipo <span class="req">*</span></label>
-                        <select asp-for="idTipoEquipo" asp-items="ViewBag.TiposList" class="form-control">
+                        <select asp-for="idTipoEquipo" asp-items="ViewBag.TiposList"
+                                class="form-control" id="selectTipo" onchange="toggleCamposTecnicos()">
                             <option value="">— Seleccionar tipo —</option>
                         </select>
                         <span asp-validation-for="idTipoEquipo" class="form-error"></span>
@@ -49,61 +48,161 @@
                         <input asp-for="modelo" class="form-control" />
                         <span asp-validation-for="modelo" class="form-error"></span>
                     </div>
-                    <div class="form-group form-group--full">
+                    <div class="form-group">
                         <label class="form-label">Número de serie</label>
                         <input asp-for="numero_serie" class="form-control" />
                         <span asp-validation-for="numero_serie" class="form-error"></span>
                     </div>
-                </div>
-            </div>
-
-            <!-- Software -->
-            <div style="margin-bottom:24px;">
-                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Software
-                </p>
-                <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">Sistema operativo</label>
-                        <input asp-for="sistema_operativo" class="form-control" />
-                        <span asp-validation-for="sistema_operativo" class="form-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Versión</label>
-                        <input asp-for="version" class="form-control" />
-                        <span asp-validation-for="version" class="form-error"></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Compra -->
-            <div style="margin-bottom:28px;">
-                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Compra
-                </p>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Fecha de compra <span class="req">*</span></label>
+                        <label class="form-label">Fecha de compra</label>
                         <input asp-for="fecha_compra" type="date" class="form-control" />
                         <span asp-validation-for="fecha_compra" class="form-error"></span>
                     </div>
                 </div>
-                <div class="form-hint" style="margin-top:8px;">
-                    El estado del equipo (<strong>@Model.estado_equipo</strong>) solo se modifica desde el historial de su asignación.
+            </div>
+
+            <!-- Campos técnicos CPU/Laptop (dinámicos) -->
+            <div id="seccionTecnica" style="display:none; margin-bottom:24px;">
+                <p class="form-section-title" id="tituloTecnico">Especificaciones técnicas</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Procesador</label>
+                        <input asp-for="Procesador" class="form-control" placeholder="Ej: Intel Core i5-12400" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjeta madre</label>
+                        <input asp-for="TarjetaMadre" class="form-control" placeholder="Ej: ASUS B660M" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">RAM</label>
+                        <input asp-for="Ram" class="form-control" placeholder="Ej: 16 GB DDR4" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Disco</label>
+                        <input asp-for="Disco" class="form-control" placeholder="Ej: SSD 512 GB NVMe" />
+                    </div>
+                    <div class="form-group" id="campoFuente" style="display:none;">
+                        <label class="form-label">Fuente de energía</label>
+                        <input asp-for="FuenteEnergia" class="form-control"
+                               placeholder="Ej: 600W 80 Plus Bronze" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sistema operativo</label>
+                        <input asp-for="sistema_operativo" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Versión</label>
+                        <input asp-for="version" class="form-control" />
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div style="margin-top:12px; padding:14px 16px; background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-sm);">
+                    <label class="form-label" style="margin-bottom:10px;">Gráficos</label>
+                    <div style="display:flex; gap:20px; margin-bottom:12px;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                            <input type="radio" name="GraficosIntegrados" value="true"
+                                   @(Model.GraficosIntegrados == true ? "checked" : "")
+                                   onchange="toggleTarjetaGrafica()" style="accent-color:var(--azul);" />
+                            Gráficos integrados
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                            <input type="radio" name="GraficosIntegrados" value="false"
+                                   @(Model.GraficosIntegrados == false ? "checked" : "")
+                                   onchange="toggleTarjetaGrafica()" style="accent-color:var(--azul);" />
+                            Tarjeta gráfica dedicada
+                        </label>
+                    </div>
+                    <div id="campoTarjetaGrafica" style="display:@(Model.GraficosIntegrados == false ? "block" : "none");">
+                        <label class="form-label">Tarjeta gráfica</label>
+                        <input asp-for="TarjetaGrafica" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campos SO para otros tipos (no CPU/Laptop) -->
+            <div id="seccionSO" style="display:none; margin-bottom:24px;">
+                <p class="form-section-title">Software</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Sistema operativo</label>
+                        <input asp-for="sistema_operativo" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Versión</label>
+                        <input asp-for="version" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observaciones (todos) -->
+            <div style="margin-bottom:24px;">
+                <p class="form-section-title">Observaciones</p>
+                <div class="form-group">
+                    <textarea asp-for="Observaciones" class="form-control" rows="3" maxlength="1000"
+                              placeholder="Estado del equipo, si es nuevo, condición, detalles adicionales..."></textarea>
                 </div>
             </div>
 
             <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
-                <button type="submit" class="btn btn--primary btn--lg">
-                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <button type="submit" class="btn btn--celeste btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Guardar cambios
                 </button>
-                <a asp-action="Index" class="btn btn--secondary btn--lg">Cancelar</a>
+                <a asp-action="Details" asp-route-id="@Model.idEquipo" class="btn btn--secondary btn--lg">Cancelar</a>
             </div>
         </form>
     </div>
 </div>
 
+@section Styles {
+<style>
+.form-section-title {
+    font-family:var(--font-display); font-size:0.72rem; font-weight:700;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste);
+    margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);
+}
+</style>
+}
+
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script>
+const TIPOS_TECNICOS = ['CPU', 'LAPTOP'];
+
+function getNombreTipo() {
+    const sel = document.getElementById('selectTipo');
+    return sel.options[sel.selectedIndex]?.text?.toUpperCase() ?? '';
+}
+
+function toggleCamposTecnicos() {
+    const tipo     = getNombreTipo();
+    const esTec    = TIPOS_TECNICOS.some(t => tipo.includes(t));
+    const esLaptop = tipo.includes('LAPTOP');
+
+    document.getElementById('seccionTecnica').style.display = esTec  ? 'block' : 'none';
+    document.getElementById('seccionSO').style.display      = !esTec ? 'block' : 'none';
+
+    if (esTec) {
+        const labelFuente = document.getElementById('labelFuente');
+        const inputFuente = document.getElementById('inputFuente');
+        if (esLaptop) {
+            labelFuente.textContent    = 'Cargador';
+            inputFuente.placeholder    = 'Ej: Incluido 65W, No incluido';
+        } else {
+            labelFuente.textContent    = 'Fuente de energía';
+            inputFuente.placeholder    = 'Ej: 600W 80 Plus Bronze';
+        }
+        toggleTarjetaGrafica();
+    }
+}
+
+function toggleTarjetaGrafica() {
+    const dedicada = document.querySelector('input[name="GraficosIntegrados"]:checked')?.value === 'false';
+    document.getElementById('campoTarjetaGrafica').style.display = dedicada ? 'block' : 'none';
+    if (!dedicada) document.querySelector('[name="TarjetaGrafica"]').value = '';
+}
+
+document.addEventListener('DOMContentLoaded', () => { toggleCamposTecnicos(); });
+</script>
 }

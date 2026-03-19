@@ -9,12 +9,14 @@ namespace PROYJHOME2026.Controllers
     public class ChipsController : Controller
     {
         private readonly AppDbContext    _context;
-        private readonly AuditoriaService _auditoriaService;
+        private readonly AuditoriaService    _auditoriaService;
+        private readonly NotificacionService _notifService;
 
-        public ChipsController(AppDbContext context, AuditoriaService auditoriaService)
+        public ChipsController(AppDbContext context, AuditoriaService auditoriaService, NotificacionService notifService)
         {
             _context          = context;
             _auditoriaService = auditoriaService;
+            _notifService     = notifService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
@@ -96,6 +98,8 @@ namespace PROYJHOME2026.Controllers
                 await _context.SaveChangesAsync();
                 await _auditoriaService.RegistrarAsync("Crear", "Chip", chip.IdChip,
                     $"Registró chip {chip.NumeroCelular}");
+                
+                await _notifService.NotificarAccionAsync("Creacion", "Chip", $"Registró chip {chip.NumeroCelular}");
                 TempData["Success"] = $"Chip {chip.NumeroCelular} registrado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
@@ -136,7 +140,9 @@ namespace PROYJHOME2026.Controllers
                     await _context.SaveChangesAsync();
                     await _auditoriaService.RegistrarAsync("Editar", "Chip", id,
                         $"Editó chip {chip.NumeroCelular}");
-                    TempData["Success"] = $"Chip {chip.NumeroCelular} actualizado correctamente.";
+                    
+                await _notifService.NotificarAccionAsync("Edicion", "Chip", $"Editó chip {chip.NumeroCelular}");
+                TempData["Success"] = $"Chip {chip.NumeroCelular} actualizado correctamente.";
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
@@ -179,6 +185,8 @@ namespace PROYJHOME2026.Controllers
                 await _context.SaveChangesAsync();
                 await _auditoriaService.RegistrarAsync("Eliminar", "Chip", id,
                     $"Eliminó chip {chip.NumeroCelular}");
+                
+                await _notifService.NotificarAccionAsync("Eliminacion", "Chip", $"Eliminó chip {chip.NumeroCelular}");
                 TempData["Success"] = $"Chip {chip.NumeroCelular} eliminado correctamente.";
             }
             catch (DbUpdateException)

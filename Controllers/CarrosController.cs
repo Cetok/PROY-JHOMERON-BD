@@ -10,12 +10,14 @@ namespace PROYJHOME2026.Controllers
     public class CarrosController : Controller
     {
         private readonly AppDbContext     _context;
-        private readonly AuditoriaService _auditoriaService;
+        private readonly AuditoriaService    _auditoriaService;
+        private readonly NotificacionService _notifService;
 
-        public CarrosController(AppDbContext context, AuditoriaService auditoriaService)
+        public CarrosController(AppDbContext context, AuditoriaService auditoriaService, NotificacionService notifService)
         {
             _context          = context;
             _auditoriaService = auditoriaService;
+            _notifService     = notifService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
@@ -202,6 +204,7 @@ namespace PROYJHOME2026.Controllers
                 await _auditoriaService.RegistrarAsync("Crear", "Carro", carro.IdCarro,
                     $"Registró vehículo {carro.Placa} — {carro.Marca} {carro.Modelo}");
 
+                await _notifService.NotificarAccionAsync("Creacion", "Carro", $"Registró vehículo {carro.Placa} — {carro.Marca} {carro.Modelo}", $"/Carros/Details/{carro.IdCarro}");
                 TempData["Success"] = $"Vehículo {carro.Placa} registrado correctamente.";
                 return RedirectToAction(nameof(Details), new { id = carro.IdCarro });
             }
@@ -250,6 +253,7 @@ namespace PROYJHOME2026.Controllers
                     await _auditoriaService.RegistrarAsync("Editar", "Carro", id,
                         $"Editó vehículo {carro.Placa}");
 
+                    await _notifService.NotificarAccionAsync("Edicion", "Carro", $"Editó vehículo {carro.Placa}", $"/Carros/Details/{id}");
                     TempData["Success"] = $"Vehículo {carro.Placa} actualizado.";
                     return RedirectToAction(nameof(Details), new { id = carro.IdCarro });
                 }
@@ -283,6 +287,7 @@ namespace PROYJHOME2026.Controllers
                 await _context.SaveChangesAsync();
                 await _auditoriaService.RegistrarAsync("Eliminar", "Carro", id,
                     $"Eliminó vehículo {carro.Placa}");
+                await _notifService.NotificarAccionAsync("Eliminacion", "Carro", $"Eliminó vehículo {carro.Placa}");
                 TempData["Success"] = $"Vehículo {carro.Placa} eliminado.";
             }
             catch (DbUpdateException)

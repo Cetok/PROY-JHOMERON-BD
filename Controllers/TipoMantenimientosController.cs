@@ -1,17 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class TipoMantenimientosController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext        _context;
+        private readonly AuditoriaService    _auditoriaService;
+        private readonly NotificacionService _notifService;
 
-        public TipoMantenimientosController(AppDbContext context)
+        public TipoMantenimientosController(AppDbContext context, AuditoriaService auditoriaService, NotificacionService notifService)
         {
-            _context = context;
+            _context          = context;
+            _auditoriaService = auditoriaService;
+            _notifService     = notifService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
@@ -140,6 +145,7 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.TiposMantenimiento.Remove(tipo);
                 await _context.SaveChangesAsync();
+                await _notifService.NotificarAccionAsync("Eliminacion", "TipoMantenimiento", $"Se eliminó el tipo de mantenimiento #{id}");
                 TempData["Success"] = "Tipo de mantenimiento eliminado.";
             }
             catch (DbUpdateException)

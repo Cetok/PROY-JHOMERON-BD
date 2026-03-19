@@ -9,12 +9,14 @@ namespace PROYJHOME2026.Controllers
     public class MotivosController : Controller
     {
         private readonly AppDbContext    _context;
-        private readonly AuditoriaService _auditoriaService;
+        private readonly AuditoriaService    _auditoriaService;
+        private readonly NotificacionService _notifService;
 
-        public MotivosController(AppDbContext context, AuditoriaService auditoriaService)
+        public MotivosController(AppDbContext context, AuditoriaService auditoriaService, NotificacionService notifService)
         {
             _context          = context;
             _auditoriaService = auditoriaService;
+            _notifService     = notifService;
         }
 
         // ── INDEX ────────────────────────────────────────────────

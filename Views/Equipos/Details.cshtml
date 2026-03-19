@@ -2,13 +2,24 @@
 @{
     ViewData["Title"]      = "Detalle Equipo";
     ViewData["Breadcrumb"] = "Equipos TI / Detalle";
+    var esTecnico  = new[] { "CPU", "LAPTOP" }.Contains(Model.TipoEquipo?.tipo?.ToUpper() ?? "");
+    var esLaptop   = Model.TipoEquipo?.tipo?.ToUpper() == "LAPTOP";
+    var ebc = Model.estado_equipo switch {
+        "Activo"          => "badge--verde",
+        "Asignado"        => "badge--azul",
+        "Mantenimiento"   => "badge--amarillo",
+        "Devuelto"        => "badge--gris",
+        _                 => "badge--rojo"
+    };
+    var asigActiva = Model.Asignaciones.FirstOrDefault(a =>
+        a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado");
 }
 
 <div class="page-header">
     <div class="page-header__info">
-        <div class="page-header__eyebrow">Equipos TI</div>
+        <div class="page-header__eyebrow">Equipos TI — @(Model.TipoEquipo?.tipo ?? "—")</div>
         <h1 class="page-header__title">@Model.marca @Model.modelo</h1>
-        <p class="page-header__subtitle">ID: #@Model.idEquipo — Serie: @(Model.numero_serie ?? "No registrada")</p>
+        <p class="page-header__subtitle">Serie: @(Model.numero_serie ?? "—")</p>
     </div>
     <div class="page-header__actions">
         <a asp-action="Edit" asp-route-id="@Model.idEquipo" class="btn btn--celeste">
@@ -22,108 +33,280 @@
     </div>
 </div>
 
-<div style="max-width:780px; display:flex; flex-direction:column; gap:16px;">
+<div style="max-width:1000px; display:flex; flex-direction:column; gap:16px;">
 
-    <!-- Card principal -->
-    <div class="card">
-        <!-- Cabecera -->
-        <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid var(--gris-200);">
-            <div class="equipo-icon-lg">
-                <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            </div>
-            <div>
-                <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:700; color:var(--azul-dark);">
-                    @Model.marca @Model.modelo
+    <!-- FILA 1: Datos + Zona peligro -->
+    <div style="display:flex; gap:16px; align-items:flex-start;">
+        <div class="card" style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:22px; padding-bottom:16px; border-bottom:1px solid var(--gris-200);">
+                <div class="equipo-icon-lg">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 </div>
-                @if (Model.TipoEquipo != null)
+                <div>
+                    <div style="font-size:1.1rem; font-weight:800; color:var(--azul-dark);">@Model.marca @Model.modelo</div>
+                    <div style="font-size:0.82rem; color:var(--gris-500); margin-top:2px;">@(Model.TipoEquipo?.tipo ?? "—") · @(Model.numero_serie ?? "Sin serie")</div>
+                    <div style="margin-top:6px;"><span class="badge @ebc">@Model.estado_equipo</span></div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+                <div class="det-field"><div class="det-label">Tipo</div><div class="det-value">@(Model.TipoEquipo?.tipo ?? "—")</div></div>
+                <div class="det-field"><div class="det-label">Marca</div><div class="det-value">@(Model.marca ?? "—")</div></div>
+                <div class="det-field"><div class="det-label">Modelo</div><div class="det-value">@(Model.modelo ?? "—")</div></div>
+                <div class="det-field"><div class="det-label">N° Serie</div><div class="det-value" style="font-family:monospace;">@(Model.numero_serie ?? "—")</div></div>
+                <div class="det-field"><div class="det-label">Fecha de compra</div><div class="det-value">@Model.fecha_compra.ToString("dd/MM/yyyy")</div></div>
+                <div class="det-field"><div class="det-label">Estado</div><div class="det-value"><span class="badge @ebc">@Model.estado_equipo</span></div></div>
+
+                @if (!string.IsNullOrEmpty(Model.sistema_operativo))
                 {
-                    <span class="badge badge--azul" style="margin-top:6px; display:inline-block;">@Model.TipoEquipo.tipo</span>
+                    <div class="det-field"><div class="det-label">Sistema operativo</div><div class="det-value">@Model.sistema_operativo @Model.version</div></div>
                 }
-                <div style="margin-top:6px;">
-                    @{
-                        var bc = Model.estado_equipo switch {
-                            "Activo"        => "badge--verde",
-                            "Inactivo"      => "badge--gris",
-                            "En reparación" => "badge--amarillo",
-                            "De baja"       => "badge--rojo",
-                            _               => "badge--gris"
-                        };
+
+                @if (esTecnico)
+                {
+                    @if (!string.IsNullOrEmpty(Model.Procesador)) { <div class="det-field"><div class="det-label">Procesador</div><div class="det-value">@Model.Procesador</div></div> }
+                    @if (!string.IsNullOrEmpty(Model.TarjetaMadre)) { <div class="det-field"><div class="det-label">Tarjeta madre</div><div class="det-value">@Model.TarjetaMadre</div></div> }
+                    @if (!string.IsNullOrEmpty(Model.Ram)) { <div class="det-field"><div class="det-label">RAM</div><div class="det-value">@Model.Ram</div></div> }
+                    @if (!string.IsNullOrEmpty(Model.Disco)) { <div class="det-field"><div class="det-label">Disco</div><div class="det-value">@Model.Disco</div></div> }
+                    @if (esLaptop) {
+                        <div class="det-field"><div class="det-label">Cargador</div><div class="det-value" style="color:#16a34a; font-weight:600;">✓ Incluido</div></div>
+                    } else if (!string.IsNullOrEmpty(Model.FuenteEnergia)) {
+                        <div class="det-field"><div class="det-label">Fuente de energía</div><div class="det-value">@Model.FuenteEnergia</div></div>
                     }
-                    <span class="badge @bc">@(Model.estado_equipo ?? "—")</span>
-                </div>
+                    @if (Model.GraficosIntegrados.HasValue) {
+                        <div class="det-field">
+                            <div class="det-label">Gráficos</div>
+                            <div class="det-value">
+                                @if (Model.GraficosIntegrados == true) { <span>Integrados</span> }
+                                else { <span>Dedicada — @(Model.TarjetaGrafica ?? "—")</span> }
+                            </div>
+                        </div>
+                    }
+                }
+
+                @if (!string.IsNullOrEmpty(Model.Observaciones))
+                {
+                    <div class="det-field" style="grid-column:1/-1;">
+                        <div class="det-label">Observaciones</div>
+                        <div class="det-value" style="background:var(--gris-50); padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--gris-200);">@Model.Observaciones</div>
+                    </div>
+                }
             </div>
         </div>
 
-        <!-- Campos en grid -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-            <div class="det-field">
-                <div class="det-label">Tipo de equipo</div>
-                <div class="det-value">@(Model.TipoEquipo?.tipo ?? "—")</div>
-            </div>
-            <div class="det-field">
-                <div class="det-label">N° de serie</div>
-                <div class="det-value" style="font-family:monospace; letter-spacing:0.04em;">
-                    @(Model.numero_serie ?? "—")
-                </div>
-            </div>
-            <div class="det-field">
-                <div class="det-label">Marca</div>
-                <div class="det-value">@(Model.marca ?? "—")</div>
-            </div>
-            <div class="det-field">
-                <div class="det-label">Modelo</div>
-                <div class="det-value">@(Model.modelo ?? "—")</div>
-            </div>
-            <div class="det-field">
-                <div class="det-label">Sistema operativo</div>
-                <div class="det-value">@(Model.sistema_operativo ?? "—")</div>
-            </div>
-            <div class="det-field">
-                <div class="det-label">Versión</div>
-                <div class="det-value">@(Model.version ?? "—")</div>
-            </div>
-           
-            <div class="det-field">
-                <div class="det-label">Fecha de compra</div>
-                <div class="det-value">@Model.fecha_compra.ToString("dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-PE"))</div>
+        <!-- Zona peligro -->
+        <div style="width:220px; flex-shrink:0;">
+            <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
+                <div style="font-weight:700; color:var(--rojo); font-size:0.88rem; margin-bottom:6px;">Zona de peligro</div>
+                <div style="font-size:0.76rem; color:var(--gris-600); margin-bottom:14px;">Solo si no tiene asignaciones asociadas.</div>
+                <a asp-action="Delete" asp-route-id="@Model.idEquipo" class="btn btn--danger btn--sm" style="width:100%; justify-content:center;">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    Eliminar
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Zona peligro -->
-    <div class="card" style="border-color:var(--rojo-border); background:var(--rojo-light);">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-            <div>
-                <div style="font-weight:700; color:var(--rojo); font-size:0.88rem;">Zona de peligro</div>
-                <div style="font-size:0.76rem; color:var(--gris-600); margin-top:2px;">
-                    Solo si no tiene asignaciones ni chips asociados.
+    @if (esTecnico)
+    {
+        <!-- FILA 2: Cambio de componentes + Mantenimiento -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+            <!-- Cambio de componente -->
+            <div class="card">
+                <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+                    <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--celeste);fill:none;stroke-width:2;vertical-align:middle;margin-right:5px;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Cambio de componente
+                </div>
+                <form asp-action="CambiarComponente" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idEquipo" value="@Model.idEquipo" />
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label">Componente <span class="req">*</span></label>
+                        <select name="componente" class="form-control" required>
+                            <option value="">— Seleccionar —</option>
+                            <option value="Procesador">Procesador</option>
+                            <option value="TarjetaMadre">Tarjeta madre</option>
+                            <option value="Ram">RAM</option>
+                            <option value="Disco">Disco</option>
+                            <option value="FuenteEnergia">@(esLaptop ? "Cargador" : "Fuente de energía")</option>
+                            <option value="TarjetaGrafica">Tarjeta gráfica</option>
+                            <option value="SistemaOperativo">Sistema operativo</option>
+                            <option value="Version">Versión SO</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label">Nuevo valor <span class="req">*</span></label>
+                        <input type="text" name="valorNuevo" class="form-control" required
+                               placeholder="Ej: 32 GB DDR4, Windows 11 Pro..." />
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label class="form-label">Motivo / observación</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Ej: Falla de hardware, actualización..." />
+                    </div>
+                    <button type="submit" class="btn btn--celeste btn--sm">
+                        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        Registrar cambio
+                    </button>
+                </form>
+            </div>
+
+            <!-- Mantenimiento -->
+            <div class="card">
+                <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+                    <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#d97706;fill:none;stroke-width:2;vertical-align:middle;margin-right:5px;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                    Mantenimiento del equipo
+                </div>
+
+                @if (Model.estado_equipo == "Mantenimiento")
+                {
+                    <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:var(--r-sm); padding:10px 12px; margin-bottom:12px; font-size:0.82rem; color:#92400e;">
+                        El equipo está actualmente en mantenimiento.
+                    </div>
+                    <form asp-action="FinalizarMantenimiento" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="idEquipo" value="@Model.idEquipo" />
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label class="form-label">Observaciones de cierre</label>
+                            <input type="text" name="observaciones" class="form-control" maxlength="500"
+                                   placeholder="Ej: Se reemplazó ventilador, limpieza completa..." />
+                        </div>
+                        <button type="submit" class="btn btn--sm"
+                                style="background:#16a34a; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:600;"
+                                onclick="return confirm('¿Finalizar el mantenimiento?')">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:white;fill:none;stroke-width:2.5;stroke-linecap:round;"><polyline points="20 6 9 17 4 12"/></svg>
+                            Finalizar mantenimiento
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <form asp-action="IniciarMantenimiento" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="idEquipo" value="@Model.idEquipo" />
+                        @if (asigActiva != null)
+                        {
+                            <div style="background:rgba(59,155,232,0.06); border:1px solid rgba(59,155,232,0.2); border-radius:var(--r-sm); padding:10px 12px; margin-bottom:12px; font-size:0.82rem; color:var(--azul);">
+                                Asignado a: <strong>@asigActiva.Empleado?.nombre @asigActiva.Empleado?.paterno</strong><br/>
+                                La asignación también pasará a "En mantenimiento".
+                            </div>
+                        }
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label class="form-label">Motivo del mantenimiento</label>
+                            <input type="text" name="observaciones" class="form-control" maxlength="500"
+                                   placeholder="Ej: Mantenimiento preventivo, falla de hardware..." />
+                        </div>
+                        <button type="submit" class="btn btn--sm"
+                                style="background:#d97706; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:600;"
+                                onclick="return confirm('¿Enviar este equipo a mantenimiento?')">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:white;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                            Enviar a mantenimiento
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- FILA 3: Historial de componentes -->
+        @if (Model.ComponenteLogs.Any())
+        {
+            <div class="card" style="padding:0; overflow:hidden;">
+                <div style="padding:16px 20px; border-bottom:1px solid var(--gris-200);">
+                    <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">Historial de cambios</div>
+                    <div style="font-size:0.78rem; color:var(--gris-400); margin-top:2px;">Componentes, mantenimientos y actualizaciones</div>
+                </div>
+                <div class="table-wrapper" style="border:none; border-radius:0;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha / Hora</th>
+                                <th>Tipo</th>
+                                <th>Componente</th>
+                                <th>Anterior</th>
+                                <th>Nuevo</th>
+                                <th>Observación</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model.ComponenteLogs)
+                            {
+                                var logColor = log.TipoEvento switch {
+                                    "CambioComponente"  => "badge--azul",
+                                    "Mantenimiento"     => "badge--amarillo",
+                                    "ActualizacionSO"   => "badge--celeste",
+                                    _                   => "badge--gris"
+                                };
+                                <tr>
+                                    <td style="font-size:0.78rem; color:var(--gris-500); white-space:nowrap;">@log.FechaHora.ToString("dd/MM/yy HH:mm")</td>
+                                    <td><span class="badge @logColor" style="font-size:0.7rem;">@log.TipoEvento</span></td>
+                                    <td style="font-size:0.82rem; font-weight:500;">@(log.Componente ?? "—")</td>
+                                    <td style="font-size:0.78rem; color:var(--gris-500);">@(log.ValorAnterior ?? "—")</td>
+                                    <td style="font-size:0.82rem; font-weight:500; color:var(--azul);">@(log.ValorNuevo ?? "—")</td>
+                                    <td style="font-size:0.78rem; color:var(--gris-600);">@(log.Observaciones ?? "—")</td>
+                                    <td style="font-size:0.75rem; color:var(--gris-400);">@(log.NombreUsuario ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <a asp-action="Delete" asp-route-id="@Model.idEquipo" class="btn btn--danger btn--sm">
-                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
-                Eliminar
-            </a>
+        }
+    }
+
+    <!-- Asignaciones -->
+    <div class="card" style="padding:0; overflow:hidden;">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">Historial de asignaciones</div>
+            <span class="badge badge--azul">@Model.Asignaciones.Count</span>
         </div>
+        @if (Model.Asignaciones.Any())
+        {
+            <div class="table-wrapper" style="border:none; border-radius:0;">
+                <table>
+                    <thead><tr><th>Empleado</th><th>Fecha asignación</th><th>Estado</th><th>Último evento</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var a in Model.Asignaciones.OrderByDescending(x => x.FechaAsignacion))
+                        {
+                            var abc = a.EstadoAsignacion switch {
+                                "Activo"          => "badge--verde",
+                                "Asignado"        => "badge--azul",
+                                "En mantenimiento"=> "badge--amarillo",
+                                "Devuelto"        => "badge--gris",
+                                _                 => "badge--rojo"
+                            };
+                            var ultimoHist = a.Historiales.OrderByDescending(h => h.Fecha).FirstOrDefault();
+                            <tr>
+                                <td>@(a.Empleado?.nombre ?? "—") @(a.Empleado?.paterno ?? "")</td>
+                                <td style="font-size:0.8rem; color:var(--gris-500);">@a.FechaAsignacion.ToString("dd/MM/yyyy")</td>
+                                <td><span class="badge @abc">@a.EstadoAsignacion</span></td>
+                                <td style="font-size:0.78rem; color:var(--gris-500);">
+                                    @if (ultimoHist != null) { <span>@ultimoHist.Motivo?.TipoMotivo — @ultimoHist.Fecha.ToString("dd/MM/yy")</span> }
+                                    else { <span>—</span> }
+                                </td>
+                                <td>
+                                    <a asp-controller="Asignaciones" asp-action="Details" asp-route-id="@a.IdAsignacion"
+                                       class="btn btn--ghost btn--icon btn--sm">
+                                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else { <div style="text-align:center; padding:20px; color:var(--gris-400); font-size:0.82rem;">Sin asignaciones registradas.</div> }
     </div>
+
 </div>
 
 @section Styles {
 <style>
-.equipo-icon-lg {
-    width: 52px; height: 52px; border-radius: var(--r-md);
-    background: linear-gradient(135deg, var(--azul-dark), var(--azul-mid));
-    display: grid; place-items: center; flex-shrink: 0;
-    box-shadow: 0 4px 14px rgba(26,58,107,0.25);
-}
-.equipo-icon-lg svg {
-    width: 24px; height: 24px; stroke: var(--blanco);
-    fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-}
-.det-label {
-    font-size: 0.67rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--gris-400); margin-bottom: 3px;
-}
-.det-value { font-size: 0.88rem; font-weight: 500; color: var(--gris-900); }
+.equipo-icon-lg { width:52px; height:52px; border-radius:var(--r-md); background:linear-gradient(135deg, var(--azul-dark), var(--azul-mid)); display:grid; place-items:center; flex-shrink:0; box-shadow:0 4px 14px rgba(26,58,107,0.25); }
+.equipo-icon-lg svg { width:24px; height:24px; stroke:var(--blanco); fill:none; stroke-width:1.6; stroke-linecap:round; }
+.det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
+.det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
 </style>
 }
