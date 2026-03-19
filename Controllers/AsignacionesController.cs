@@ -194,7 +194,17 @@ namespace PROYJHOME2026.Controllers
 
                 try
                 {
-                    _context.Update(asignacion);
+                    // Actualizar solo campos editables — evita conflicto con FK de Historiales
+                    var existing = await _context.Asignaciones.FindAsync(id);
+                    if (existing == null) return NotFound();
+
+                    existing.IdEmpleado       = asignacion.IdEmpleado;
+                    existing.IdEquipo         = asignacion.IdEquipo;
+                    existing.IdChip           = asignacion.IdChip;
+                    existing.FechaAsignacion  = asignacion.FechaAsignacion;
+                    existing.CorreoEquipo     = asignacion.CorreoEquipo;
+                    existing.EstadoAsignacion = asignacion.EstadoAsignacion;
+
                     await _context.SaveChangesAsync();
                     await _auditoriaService.RegistrarAsync("Editar", "Asignacion", id,
                         $"Editó asignación #{id}");

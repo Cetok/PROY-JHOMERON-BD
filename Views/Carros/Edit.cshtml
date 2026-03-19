@@ -87,10 +87,10 @@
                 </div>
             </div>
 
-            <!-- Fechas y estado -->
+            <!-- Fechas -->
             <div style="margin-bottom:28px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Fechas y estado
+                    Fechas
                 </p>
                 <div class="form-grid">
                     <div class="form-group">
@@ -105,16 +105,6 @@
                         <label class="form-label">Fecha de compra</label>
                         <input asp-for="FechaCompra" type="date" class="form-control" />
                         <span asp-validation-for="FechaCompra" class="form-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Estado <span class="req">*</span></label>
-                        <select asp-for="Estado" class="form-control">
-                            @foreach (var op in new[] { "Activo", "Inactivo", "En mantenimiento", "De baja" }) {
-                                if (Model.Estado == op) { <option value="@op" selected>@op</option> }
-                                else                    { <option value="@op">@op</option> }
-                            }
-                        </select>
-                        <span asp-validation-for="Estado" class="form-error"></span>
                     </div>
                 </div>
             </div>

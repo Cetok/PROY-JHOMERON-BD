@@ -2,20 +2,23 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class HistorialesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext    _context;
+        private readonly AuditoriaService _auditoriaService;
 
         // Motivos que cierran la asignación E actualizan el estado del equipo
         private static readonly string[] MotivosCierre = { "Devuelto", "Perdida", "Rotura", "Baja" };
 
-        public HistorialesController(AppDbContext context)
+        public HistorialesController(AppDbContext context, AuditoriaService auditoriaService)
         {
-            _context = context;
+            _context          = context;
+            _auditoriaService = auditoriaService;
         }
 
         // ── INDEX ─────────────────────────────────────────────────
@@ -185,7 +188,14 @@ namespace PROYJHOME2026.Controllers
             {
                 try
                 {
-                    _context.Update(historial);
+                    // Actualizar solo campos editables — evita conflicto con FK de Asignacion
+                    var existing = await _context.Historiales.FindAsync(id);
+                    if (existing == null) return NotFound();
+
+                    existing.IdMotivo      = historial.IdMotivo;
+                    existing.Fecha         = historial.Fecha;
+                    existing.Observaciones = historial.Observaciones;
+
                     await _context.SaveChangesAsync();
                     TempData["Success"] = "Registro actualizado correctamente.";
                     return RedirectToAction(nameof(Details), new { id = historial.IdHistoria });
@@ -252,6 +262,59 @@ namespace PROYJHOME2026.Controllers
 
             var motivos = await _context.Motivos.OrderBy(m => m.TipoMotivo).ToListAsync();
             ViewBag.MotivosList = new SelectList(motivos, "IdMotivo", "TipoMotivo", motivoSel);
+        }
+    
+        // ── REACTIVAR POST ───────────────────────────────────────
+        // Reactiva una asignación que estaba Inactiva y registra un nuevo historial
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reactivar(int idHistoria, string observaciones)
+        {
+            var historial = await _context.Historiales
+                .Include(h => h.Asignacion).ThenInclude(a => a.Equipo)
+                .Include(h => h.Motivo)
+                .FirstOrDefaultAsync(h => h.IdHistoria == idHistoria);
+
+            if (historial == null) return NotFound();
+
+            var asignacion = historial.Asignacion;
+            if (asignacion == null) return NotFound();
+
+            // Buscar o crear motivo "Reactivado"
+            var motivoReactivado = await _context.Motivos
+                .FirstOrDefaultAsync(m => m.TipoMotivo == "Reactivado");
+
+            if (motivoReactivado == null)
+            {
+                motivoReactivado = new Motivo { TipoMotivo = "Reactivado" };
+                _context.Motivos.Add(motivoReactivado);
+                await _context.SaveChangesAsync();
+            }
+
+            // Crear nuevo registro en historial
+            var nuevoHistorial = new Historial
+            {
+                IdAsignacion  = asignacion.IdAsignacion,
+                IdMotivo      = motivoReactivado.IdMotivo,
+                Fecha         = DateTime.Now,
+                Observaciones = observaciones
+            };
+            _context.Historiales.Add(nuevoHistorial);
+
+            // Reactivar la asignación
+            asignacion.EstadoAsignacion = "Activo";
+
+            // Reactivar el equipo
+            if (asignacion.Equipo != null)
+                asignacion.Equipo.estado_equipo = "Asignado";
+
+            await _context.SaveChangesAsync();
+
+            await _auditoriaService.RegistrarAsync("CambioEstado", "Asignacion", asignacion.IdAsignacion,
+                $"Reactivó asignación #{asignacion.IdAsignacion}. Motivo: {observaciones}");
+
+            TempData["Success"] = "Asignación reactivada correctamente.";
+            return RedirectToAction(nameof(Details), new { id = idHistoria });
         }
     }
 }

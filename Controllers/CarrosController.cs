@@ -134,6 +134,14 @@ namespace PROYJHOME2026.Controllers
             var carro = await _context.Carros.FirstOrDefaultAsync(c => c.IdCarro == idCarro);
             if (carro == null) return NotFound();
 
+            // Solo permite Activo ↔ Inactivo desde este panel
+            var estadosPermitidos = new[] { "Activo", "Inactivo" };
+            if (!estadosPermitidos.Contains(nuevoEstado))
+            {
+                TempData["Error"] = "Estado no permitido desde este panel.";
+                return RedirectToAction(nameof(Details), new { id = idCarro });
+            }
+
             var estadoAnterior = carro.Estado;
             carro.Estado = nuevoEstado;
 
@@ -141,7 +149,6 @@ namespace PROYJHOME2026.Controllers
             var nombre   = HttpContext.Session.GetString("UsuarioNombre");
             int? idUsuario = int.TryParse(idStr, out int uid) ? uid : null;
 
-            // Registrar en historial de estados
             _context.CarroEstadoLogs.Add(new CarroEstadoLog
             {
                 IdCarro        = idCarro,
@@ -159,7 +166,7 @@ namespace PROYJHOME2026.Controllers
             await _auditoriaService.RegistrarAsync("CambioEstado", "Carro", idCarro,
                 $"Cambió estado vehículo #{idCarro} de {estadoAnterior} → {nuevoEstado}. Motivo: {motivo}");
 
-            TempData["Success"] = $"Estado cambiado a \"{nuevoEstado}\".";
+            TempData["Success"] = $"Estado cambiado a \"{nuevoEstado}\". Registrado en historial.";
             return RedirectToAction(nameof(Details), new { id = idCarro });
         }
 

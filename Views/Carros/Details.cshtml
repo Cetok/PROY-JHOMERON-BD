@@ -175,7 +175,7 @@
         </div>
     </div>
 
-    <!-- FILA 3: Cambio de estado (Baja / Inactivo) -->
+    <!-- FILA 3: Cambio de estado -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
             <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
@@ -185,46 +185,73 @@
             <span class="badge @bc">@Model.Estado</span>
         </div>
 
-        <form asp-action="CambiarEstado" method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="idCarro" value="@Model.IdCarro" />
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-                <div class="form-group" style="margin:0;">
-                    <label class="form-label">Nuevo estado <span class="req">*</span></label>
-                    <select name="nuevoEstado" class="form-control" required>
-                        <option value="">— Seleccionar —</option>
-                        @foreach (var op in new[] { "Activo", "Inactivo", "En mantenimiento", "De baja" }) {
-                            if (Model.Estado == op) { <option value="@op" selected>@op</option> }
-                            else                    { <option value="@op">@op</option> }
-                        }
-                    </select>
+        @{
+            // Solo permite Activo ↔ Inactivo
+            // Si está en otro estado (En mantenimiento) no muestra el form
+            bool puedeActivo   = Model.Estado == "Inactivo";
+            bool puedeInactivo = Model.Estado == "Activo";
+            bool puedecambiar  = puedeActivo || puedeInactivo;
+        }
+
+        @if (puedecambiar)
+        {
+            <form asp-action="CambiarEstado" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="idCarro" value="@Model.IdCarro" />
+                <input type="hidden" name="nuevoEstado" value="@(puedeActivo ? "Activo" : "Inactivo")" />
+
+                <div style="background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px; font-size:0.85rem;">
+                    Cambiar a:
+                    <strong style="color:@(puedeActivo ? "#16a34a" : "#b45309");">
+                        @(puedeActivo ? "Activo" : "Inactivo")
+                    </strong>
                 </div>
-                <div class="form-group" style="margin:0;">
-                    <label class="form-label">Motivo <span class="req">*</span></label>
-                    <select name="motivo" class="form-control" required>
-                        <option value="">— Seleccionar —</option>
-                        <option value="Robo">Robo</option>
-                        <option value="Venta">Venta</option>
-                        <option value="No en uso">No en uso</option>
-                        <option value="Mantenimiento">Mantenimiento</option>
-                        <option value="Accidente">Accidente</option>
-                        <option value="Recuperado">Recuperado</option>
-                        <option value="Reactivación">Reactivación</option>
-                        <option value="Otro">Otro</option>
-                    </select>
+
+                <div class="form-grid" style="margin-bottom:12px;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Motivo <span class="req">*</span></label>
+                        <select name="motivo" class="form-control" required>
+                            <option value="">— Seleccionar —</option>
+                            @if (puedeActivo)
+                            {
+                                <!-- Volviendo a Activo -->
+                                <option value="Recuperado">Recuperado</option>
+                                <option value="Reactivación">Reactivación</option>
+                                <option value="Otro">Otro</option>
+                            }
+                            else
+                            {
+                                <!-- Pasando a Inactivo -->
+                                <option value="Por pérdida">Por pérdida</option>
+                                <option value="Robo">Robo</option>
+                                <option value="Accidente">Accidente</option>
+                                <option value="No en uso">No en uso</option>
+                                <option value="Venta">Venta</option>
+                                <option value="Otro">Otro</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Observaciones</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Detalles adicionales (opcional)" />
+                    </div>
                 </div>
+
+                <button type="submit" class="btn btn--primary btn--sm"
+                        onclick="return confirm('¿Confirmar cambio de estado?')">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Registrar cambio de estado
+                </button>
+            </form>
+        }
+        else
+        {
+            <div style="font-size:0.85rem; color:var(--gris-500); padding:8px 0;">
+                El estado <strong>@Model.Estado</strong> se gestiona automáticamente por el sistema
+                (mantenimiento activo). Cuando finalice el mantenimiento volverá a Activo.
             </div>
-            <div class="form-group" style="margin-bottom:12px;">
-                <label class="form-label">Observaciones</label>
-                <input type="text" name="observaciones" class="form-control" maxlength="500"
-                       placeholder="Detalles adicionales (opcional)" />
-            </div>
-            <button type="submit" class="btn btn--primary btn--sm"
-                    onclick="return confirm('¿Confirmar cambio de estado?')">
-                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                Registrar cambio de estado
-            </button>
-        </form>
+        }
 
         <!-- Historial de estados -->
         @{

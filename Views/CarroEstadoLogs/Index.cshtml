@@ -1,0 +1,154 @@
+@model IEnumerable<PROYJHOME2026.Models.CarroEstadoLog>
+@{
+    ViewData["Title"]      = "Historial de Carros";
+    ViewData["Breadcrumb"] = "Flota Vehicular / Historial";
+    int pagina       = ViewBag.Pagina;
+    int totalPaginas = ViewBag.TotalPaginas;
+    int total        = ViewBag.Total;
+    string buscar       = ViewBag.Buscar       ?? "";
+    string estadoFiltro = ViewBag.EstadoFiltro ?? "";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular</div>
+        <h1 class="page-header__title">Historial de Carros</h1>
+        <p class="page-header__subtitle">@total registro(s) de cambios de estado</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-controller="Carros" asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver a Vehículos
+        </a>
+    </div>
+</div>
+
+<!-- FILTROS -->
+<div class="card" style="margin-bottom:20px; padding:16px 20px;">
+    <form method="get" asp-action="Index" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div style="flex:1; min-width:200px;">
+            <label class="form-label">Buscar</label>
+            <div style="position:relative;">
+                <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" name="buscar" value="@buscar" class="form-control"
+                       style="padding-left:34px;" placeholder="Placa, motivo, usuario..." />
+            </div>
+        </div>
+        <div style="min-width:160px;">
+            <label class="form-label">Estado nuevo</label>
+            <select name="estadoFiltro" class="form-control">
+                <option value="">Todos</option>
+                @foreach (var op in new[] { "Activo", "Inactivo", "De baja", "En mantenimiento" }) {
+                    if (estadoFiltro == op) { <option value="@op" selected>@op</option> }
+                    else                    { <option value="@op">@op</option> }
+                }
+            </select>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button type="submit" class="btn btn--primary">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Buscar
+            </button>
+            @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estadoFiltro)) {
+                <a asp-action="Index" class="btn btn--secondary">Limpiar</a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- TABLA -->
+<div class="card" style="padding:0; overflow:hidden;">
+    @if (Model.Any())
+    {
+        <div class="table-wrapper" style="border:none; border-radius:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Vehículo</th>
+                        <th>Estado anterior</th>
+                        <th></th>
+                        <th>Estado nuevo</th>
+                        <th>Motivo</th>
+                        <th>Observaciones</th>
+                        <th>Usuario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        var bcNuevo = log.EstadoNuevo switch {
+                            "Activo"           => "badge--verde",
+                            "Inactivo"         => "badge--gris",
+                            "De baja"          => "badge--rojo",
+                            "En mantenimiento" => "badge--amarillo",
+                            _                  => "badge--gris"
+                        };
+                        <tr>
+                            <td style="font-size:0.78rem; color:var(--gris-500); white-space:nowrap;">
+                                @log.FechaHora.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td>
+                                <a asp-controller="Carros" asp-action="Details" asp-route-id="@log.IdCarro"
+                                   style="font-family:monospace; font-weight:700; color:var(--azul); text-decoration:none;">
+                                    @log.Carro?.Placa
+                                </a>
+                                <div style="font-size:0.75rem; color:var(--gris-400);">@log.Carro?.Marca @log.Carro?.Modelo</div>
+                            </td>
+                            <td>
+                                <span class="badge badge--gris" style="font-size:0.72rem;">@log.EstadoAnterior</span>
+                            </td>
+                            <td style="text-align:center;">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;">
+                                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                                </svg>
+                            </td>
+                            <td>
+                                <span class="badge @bcNuevo" style="font-size:0.72rem;">@log.EstadoNuevo</span>
+                            </td>
+                            <td style="font-size:0.82rem; font-weight:500;">@log.Motivo</td>
+                            <td style="font-size:0.78rem; color:var(--gris-500);">
+                                @(string.IsNullOrEmpty(log.Observaciones) ? "—" : log.Observaciones)
+                            </td>
+                            <td style="font-size:0.78rem; color:var(--gris-600);">
+                                @(log.NombreUsuario ?? "—")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalPaginas > 1)
+        {
+            <div class="pagination">
+                <span style="font-size:0.75rem; color:var(--gris-400); margin-right:8px;">Página @pagina de @totalPaginas</span>
+                @if (pagina > 1) {
+                    <a asp-action="Index" asp-route-pagina="@(pagina-1)" asp-route-buscar="@buscar" asp-route-estadoFiltro="@estadoFiltro"
+                       class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                }
+                @for (int i = Math.Max(1,pagina-2); i <= Math.Min(totalPaginas,pagina+2); i++) {
+                    <a asp-action="Index" asp-route-pagina="@i" asp-route-buscar="@buscar" asp-route-estadoFiltro="@estadoFiltro"
+                       class="pagination__btn @(i==pagina?"active":"")">@i</a>
+                }
+                @if (pagina < totalPaginas) {
+                    <a asp-action="Index" asp-route-pagina="@(pagina+1)" asp-route-buscar="@buscar" asp-route-estadoFiltro="@estadoFiltro"
+                       class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state">
+            <div class="empty-state__icon">
+                <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="empty-state__title">Sin registros de historial</div>
+            <div class="empty-state__text">
+                @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estadoFiltro)) { <span>Intenta con otros filtros.</span> }
+                else { <span>Los cambios de estado de los vehículos aparecerán aquí.</span> }
+            </div>
+        </div>
+    }
+</div>
