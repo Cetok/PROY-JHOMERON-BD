@@ -2,17 +2,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class GrupoAsesoriosController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext        _context;
+        private readonly NotificacionService _notifService;
 
-        public GrupoAsesoriosController(AppDbContext context)
+        public GrupoAsesoriosController(AppDbContext context, NotificacionService notifService)
         {
-            _context = context;
+            _context      = context;
+            _notifService = notifService;
         }
 
         // ── ASIGNAR GET ──────────────────────────────────────────
@@ -58,6 +61,7 @@ namespace PROYJHOME2026.Controllers
 
                 _context.Add(vm);
                 await _context.SaveChangesAsync();
+                await _notifService.NotificarAccionAsync("Creacion", "GrupoAccesorio", "Accesorio asignado a grupo");
                 TempData["Success"] = "Accesorio asignado al grupo correctamente.";
                 return RedirectToAction("Details", "Grupos", new { id = vm.IdGrupo });
             }
@@ -123,6 +127,7 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.GrupoAsesorios.Remove(ga);
                 await _context.SaveChangesAsync();
+                await _notifService.NotificarAccionAsync("Eliminacion", "GrupoAccesorio", "Accesorio removido de grupo");
                 TempData["Success"] = "Accesorio removido del grupo.";
             }
 

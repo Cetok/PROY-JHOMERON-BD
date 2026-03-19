@@ -2,17 +2,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class CarroSegurosController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext        _context;
+        private readonly NotificacionService _notifService;
 
-        public CarroSegurosController(AppDbContext context)
+        public CarroSegurosController(AppDbContext context, NotificacionService notifService)
         {
-            _context = context;
+            _context      = context;
+            _notifService = notifService;
         }
 
         // ── ASIGNAR GET ──────────────────────────────────────────
@@ -59,6 +62,7 @@ namespace PROYJHOME2026.Controllers
 
                 _context.Add(vm);
                 await _context.SaveChangesAsync();
+                await _notifService.NotificarAccionAsync("Creacion", "CarroSeguro", "Seguro asignado a vehículo");
                 TempData["Success"] = "Seguro asignado correctamente al vehículo.";
                 return RedirectToAction("Details", "Carros", new { id = vm.IdCarro });
             }
@@ -130,6 +134,7 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.CarroSeguros.Remove(cs);
                 await _context.SaveChangesAsync();
+                await _notifService.NotificarAccionAsync("Eliminacion", "CarroSeguro", "Seguro removido de vehículo");
                 TempData["Success"] = "Seguro removido del vehículo.";
             }
 

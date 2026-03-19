@@ -2,17 +2,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
+using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
 
 namespace PROYJHOME2026.Controllers
 {
     public class EmpleadoSegurosController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext        _context;
+        private readonly NotificacionService _notifService;
 
-        public EmpleadoSegurosController(AppDbContext context)
+        public EmpleadoSegurosController(AppDbContext context, NotificacionService notifService)
         {
-            _context = context;
+            _context      = context;
+            _notifService = notifService;
         }
 
         // ── ASIGNAR GET ──────────────────────────────────────────
@@ -59,6 +62,7 @@ namespace PROYJHOME2026.Controllers
 
                 _context.Add(vm);
                 await _context.SaveChangesAsync();
+                await _notifService.NotificarAccionAsync("Creacion", "EmpleadoSeguro", "Seguro asignado a empleado");
                 TempData["Success"] = "Seguro asignado correctamente al empleado.";
                 return RedirectToAction("Details", "Empleados", new { id = vm.IdEmpleado });
             }
@@ -127,6 +131,7 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.EmpleadoSeguros.Remove(es);
                 await _context.SaveChangesAsync();
+                await _notifService.NotificarAccionAsync("Eliminacion", "EmpleadoSeguro", "Seguro removido de empleado");
                 TempData["Success"] = "Seguro removido del empleado.";
             }
 

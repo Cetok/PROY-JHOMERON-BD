@@ -110,9 +110,10 @@
                             </td>
                             <td>
                                 @{
-                                    var bc = a.EstadoAsignacion == "Activo"    ? "badge--verde"
-                                           : a.EstadoAsignacion == "Devuelto"  ? "badge--gris"
-                                           : "badge--rojo";
+                                    var bc = a.EstadoAsignacion == "Activo"           ? "badge--verde"
+                                           : a.EstadoAsignacion == "En mantenimiento" ? "badge--amarillo"
+                                           : a.EstadoAsignacion == "Inactivo"         ? "badge--rojo"
+                                           : "badge--gris";
                                 }
                                 <span class="badge @bc">@a.EstadoAsignacion</span>
                             </td>

@@ -4,6 +4,14 @@
     ViewData["Breadcrumb"] = "Empleados / Detalle";
     var grupos  = ViewBag.Grupos  as List<PROYJHOME2026.Models.Grupo>         ?? new();
     var seguros = ViewBag.Seguros as List<PROYJHOME2026.Models.EmpleadoSeguro> ?? new();
+    var estadoLog = ViewBag.EstadoLog as List<PROYJHOME2026.Models.EmpleadoEstadoLog> ?? new();
+    var ebc = Model.estado switch {
+        "Activo"    => "badge--verde",
+        "Inactivo"  => "badge--rojo",
+        "Licencia"  => "badge--amarillo",
+        "Suspendido"=> "badge--gris",
+        _           => "badge--gris"
+    };
 }
 
 <div class="page-header">
@@ -69,6 +77,69 @@
                     <div class="det-value">@(Model.direccion ?? "—")</div>
                 </div>
             </div>
+        </div>
+
+
+        <!-- Panel cambio de estado -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
+                <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                    <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#d97706;fill:none;stroke-width:1.8;vertical-align:middle;margin-right:5px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Estado del empleado
+                </div>
+                <span class="badge @ebc">@(Model.estado ?? "Activo")</span>
+            </div>
+            <form asp-action="CambiarEstado" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="idEmpleado" value="@Model.idEmpleado" />
+                <div class="form-grid" style="margin-bottom:12px;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Nuevo estado <span class="req">*</span></label>
+                        <select name="nuevoEstado" class="form-control" required>
+                            <option value="">— Seleccionar —</option>
+                            @foreach (var op in new[] { "Activo", "Inactivo", "Licencia", "Suspendido" }) {
+                                if (Model.estado == op) { <option value="@op" selected>@op</option> }
+                                else                    { <option value="@op">@op</option> }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Observación</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Motivo del cambio de estado..." />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn--primary btn--sm"
+                        onclick="return confirm('¿Confirmar cambio de estado?')">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Registrar cambio
+                </button>
+            </form>
+            @if (estadoLog.Any())
+            {
+                <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--gris-200);">
+                    <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:8px;">Historial de estados</div>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        @foreach (var log in estadoLog) {
+                            var lcb = log.EstadoNuevo switch {
+                                "Activo"     => "badge--verde",
+                                "Inactivo"   => "badge--rojo",
+                                "Licencia"   => "badge--amarillo",
+                                "Suspendido" => "badge--gris",
+                                _            => "badge--gris"
+                            };
+                            <div style="display:flex; align-items:center; gap:8px; padding:6px 10px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200); font-size:0.78rem;">
+                                <span style="color:var(--gris-400); font-size:0.7rem; flex-shrink:0;">@log.FechaHora.ToString("dd/MM/yy HH:mm")</span>
+                                <span class="badge badge--gris" style="font-size:0.65rem;">@log.EstadoAnterior</span>
+                                <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:var(--gris-400);fill:none;stroke-width:2;flex-shrink:0;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                <span class="badge @lcb" style="font-size:0.65rem;">@log.EstadoNuevo</span>
+                                @if (!string.IsNullOrEmpty(log.Observaciones)) { <span style="color:var(--gris-600);">@log.Observaciones</span> }
+                                <span style="margin-left:auto; color:var(--gris-400); font-size:0.7rem;">@(log.NombreUsuario ?? "—")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
         </div>
 
         <!-- SEGUROS DEL EMPLEADO -->

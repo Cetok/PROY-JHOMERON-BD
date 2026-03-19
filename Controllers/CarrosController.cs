@@ -115,13 +115,15 @@ namespace PROYJHOME2026.Controllers
                 });
                 await _auditoriaService.RegistrarAsync("Editar", "Carro", idCarro,
                     $"Asignó conductor IdEmpleado={idEmpleado} al vehículo #{idCarro}");
-                TempData["Success"] = "Conductor asignado correctamente.";
+                await _notifService.NotificarAccionAsync("Creacion", "Conductor", "Conductor asignado a vehículo");
+            TempData["Success"] = "Conductor asignado correctamente.";
             }
             else
             {
                 await _auditoriaService.RegistrarAsync("Editar", "Carro", idCarro,
                     $"Removió conductor del vehículo #{idCarro}");
-                TempData["Success"] = "Conductor removido del vehículo.";
+                await _notifService.NotificarAccionAsync("Eliminacion", "Conductor", "Conductor removido del vehículo");
+            TempData["Success"] = "Conductor removido del vehículo.";
             }
 
             await _context.SaveChangesAsync();

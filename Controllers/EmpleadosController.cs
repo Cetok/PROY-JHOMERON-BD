@@ -85,7 +85,19 @@ namespace PROYJHOME2026.Controllers
                 .Select(eg => eg.Grupo)
                 .ToListAsync();
 
-            ViewBag.Grupos = grupos;
+            var seguros = await _context.EmpleadoSeguros
+                .Include(es => es.Seguro)
+                .Where(es => es.IdEmpleado == id)
+                .ToListAsync();
+
+            var estadoLog = await _context.EmpleadoEstadoLogs
+                .Where(l => l.IdEmpleado == id)
+                .OrderByDescending(l => l.FechaHora)
+                .ToListAsync();
+
+            ViewBag.Grupos    = grupos;
+            ViewBag.Seguros   = seguros;
+            ViewBag.EstadoLog = estadoLog;
             return View(empleado);
         }
 
@@ -115,6 +127,8 @@ namespace PROYJHOME2026.Controllers
         {
             // Quitar validaciones de Grupos (vienen como lista auxiliar)
             ModelState.Remove("Grupos");
+            ModelState.Remove("Empleado.estado");
+            vm.Empleado.estado = "Activo";
 
             if (ModelState.IsValid)
             {
@@ -309,6 +323,44 @@ namespace PROYJHOME2026.Controllers
                     Marcado = idsActuales.Contains(g.idGrupo)
                 })
                 .ToListAsync();
+        }
+        // ── CAMBIAR ESTADO EMPLEADO POST ────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CambiarEstado(int idEmpleado, string nuevoEstado, string? observaciones)
+        {
+            var empleado = await _context.Empleados.FindAsync(idEmpleado);
+            if (empleado == null) return NotFound();
+
+            var estadoAnterior = empleado.estado ?? "Activo";
+            empleado.estado    = nuevoEstado;
+
+            var idStr  = HttpContext.Session.GetString("UsuarioId");
+            var nombre = HttpContext.Session.GetString("UsuarioNombre");
+            int? idUsuario = int.TryParse(idStr, out int uid) ? uid : null;
+
+            _context.EmpleadoEstadoLogs.Add(new EmpleadoEstadoLog
+            {
+                IdEmpleado     = idEmpleado,
+                IdUsuario      = idUsuario,
+                NombreUsuario  = nombre,
+                EstadoAnterior = estadoAnterior,
+                EstadoNuevo    = nuevoEstado,
+                Observaciones  = observaciones,
+                FechaHora      = DateTime.Now
+            });
+
+            await _context.SaveChangesAsync();
+
+            await _auditoriaService.RegistrarAsync("CambioEstado", "Empleado", idEmpleado,
+                $"Cambió estado empleado #{idEmpleado} de {estadoAnterior} → {nuevoEstado}");
+
+            await _notifService.NotificarAccionAsync("CambioEstado", "Empleado",
+                $"Estado de empleado cambió a {nuevoEstado}",
+                $"/Empleados/Details/{idEmpleado}");
+
+            TempData["Success"] = $"Estado cambiado a '{nuevoEstado}'. Registrado en historial.";
+            return RedirectToAction(nameof(Details), new { id = idEmpleado });
         }
     }
 }
