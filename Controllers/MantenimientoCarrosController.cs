@@ -48,9 +48,8 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var mantenimientos = await (orden == "asc"
-                ? query.OrderBy(m => m.FechaProgramada)
-                : query.OrderByDescending(m => m.FechaProgramada))
+            var mantenimientos = await query
+                .OrderByDescending(m => m.IdMante)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

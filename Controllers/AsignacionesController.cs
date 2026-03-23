@@ -47,9 +47,7 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var asignaciones = await (orden == "za"
-                ? query.OrderByDescending(a => a.Empleado.paterno)
-                : query.OrderBy(a => a.Empleado.paterno))
+            var asignaciones = await query.OrderByDescending(a => a.IdAsignacion)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

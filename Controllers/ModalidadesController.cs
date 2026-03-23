@@ -45,8 +45,7 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var modalidades = await query
-                .OrderBy(m => m.TipoModalidad)
+            var modalidades = await query.OrderByDescending(m => m.IdModalidad)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

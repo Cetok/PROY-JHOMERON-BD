@@ -31,9 +31,7 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var grupos = await (orden == "za"
-                ? query.OrderByDescending(g => g.area)
-                : query.OrderBy(g => g.area))
+            var grupos = await query.OrderByDescending(g => g.idGrupo)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

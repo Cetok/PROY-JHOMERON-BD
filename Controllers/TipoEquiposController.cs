@@ -31,9 +31,7 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var tipos = await (orden == "za"
-                ? query.OrderByDescending(t => t.tipo)
-                : query.OrderBy(t => t.tipo))
+            var tipos = await query.OrderByDescending(t => t.idTipoEquipo)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

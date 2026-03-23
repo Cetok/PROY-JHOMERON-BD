@@ -44,7 +44,7 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
             var carros = await query
-                .OrderBy(c => c.Placa)
+                .OrderByDescending(c => c.IdCarro)
                 .Skip((pagina - 1) * porPagina).Take(porPagina).ToListAsync();
 
             var categorias = await _context.Carros

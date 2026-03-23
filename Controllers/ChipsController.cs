@@ -31,9 +31,7 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var chips = await (orden == "za"
-                ? query.OrderByDescending(c => c.NumeroCelular)
-                : query.OrderBy(c => c.NumeroCelular))
+            var chips = await query.OrderByDescending(c => c.IdChip)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

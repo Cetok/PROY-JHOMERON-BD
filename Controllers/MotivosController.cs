@@ -31,9 +31,7 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var motivos = await (orden == "za"
-                ? query.OrderByDescending(m => m.TipoMotivo)
-                : query.OrderBy(m => m.TipoMotivo))
+            var motivos = await query.OrderByDescending(m => m.IdMotivo)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

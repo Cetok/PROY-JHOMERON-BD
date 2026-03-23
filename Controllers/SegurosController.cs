@@ -35,7 +35,7 @@ namespace PROYJHOME2026.Controllers
             int total = await query.CountAsync();
 
             var seguros = await query
-                .OrderBy(s => s.TipoSeguro)
+                .OrderByDescending(s => s.IdSeguro)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

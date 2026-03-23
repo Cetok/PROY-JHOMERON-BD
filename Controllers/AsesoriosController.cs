@@ -34,8 +34,7 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var asesorios = await query
-                .OrderBy(a => a.TipoAsesorio)
+            var asesorios = await query.OrderByDescending(a => a.IdAsesorio)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();

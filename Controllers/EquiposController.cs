@@ -26,7 +26,7 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, string? orden = "az", int pagina = 1)
+        public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, int pagina = 1)
         {
             int porPagina = 10;
             var query = _context.Equipos.Include(e => e.TipoEquipo).AsQueryable();
@@ -39,22 +39,25 @@ namespace PROYJHOME2026.Controllers
                     (e.sistema_operativo != null && e.sistema_operativo.Contains(buscar)));
 
             if (!string.IsNullOrWhiteSpace(estado))
-                query = query.Where(e => e.estado_equipo == estado);
+            {
+                if (estado == "otros")
+                    query = query.Where(e => e.estado_equipo != "Activo" && e.estado_equipo != "Asignado" && e.estado_equipo != "Mantenimiento");
+                else
+                    query = query.Where(e => e.estado_equipo == estado);
+            }
 
             if (tipoId.HasValue)
                 query = query.Where(e => e.idTipoEquipo == tipoId);
 
             int total   = await query.CountAsync();
-            var equipos = await (orden == "za"
-                ? query.OrderByDescending(e => e.marca)
-                : query.OrderBy(e => e.marca))
+            var equipos = await query.OrderByDescending(e => e.idEquipo)
                 .Skip((pagina - 1) * porPagina).Take(porPagina).ToListAsync();
 
             var tipos   = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
             var estados = new List<string> { "Activo", "Devuelto", "Perdida", "Rotura", "Baja", "Mantenimiento", "Asignado" };
 
             ViewBag.Buscar = buscar; ViewBag.Estado = estado; ViewBag.TipoId = tipoId;
-            ViewBag.Tipos = tipos; ViewBag.Estados = estados; ViewBag.Orden = orden;
+            ViewBag.Tipos = tipos; ViewBag.Estados = estados;
             ViewBag.Pagina = pagina; ViewBag.Total = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
             return View(equipos);

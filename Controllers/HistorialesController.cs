@@ -49,9 +49,8 @@ namespace PROYJHOME2026.Controllers
 
             int total = await query.CountAsync();
 
-            var historiales = await (orden == "az"
-                ? query.OrderBy(h => h.Fecha)
-                : query.OrderByDescending(h => h.Fecha))
+            var historiales = await query
+                .OrderByDescending(h => h.Fecha)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
