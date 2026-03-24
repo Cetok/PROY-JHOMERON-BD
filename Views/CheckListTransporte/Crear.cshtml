@@ -1,0 +1,226 @@
+@{
+    ViewData["Title"]      = "Check List de Inspección — Transporte";
+    ViewData["Breadcrumb"] = "Flota Vehicular / Check List";
+    var carro      = ViewBag.Carro as PROYJHOME2026.Models.Carro;
+    var estructura = ViewBag.Estructura as List<(int Sec, string NombreSec, string Elemento)> ?? new();
+    var hora       = ViewBag.Hora as string ?? DateTime.Now.ToString("HH:mm");
+
+    // Agrupar por sección
+    var secciones = estructura
+        .GroupBy(e => new { e.Sec, e.NombreSec })
+        .OrderBy(g => g.Key.Sec)
+        .ToList();
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular</div>
+        <h1 class="page-header__title">Check List de Inspección</h1>
+        <p class="page-header__subtitle">@carro?.Placa — @carro?.Marca @carro?.Modelo</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-controller="Carros" asp-action="Details" asp-route-id="@carro?.IdCarro" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<form asp-action="Crear" method="post" id="formChecklist">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="idCarro" value="@carro?.IdCarro" />
+
+    <div style="max-width:860px; display:flex; flex-direction:column; gap:16px;">
+
+        <!-- ENCABEZADO ────────────────────────────────────────── -->
+        <div class="card">
+            <div style="text-align:center; padding-bottom:14px; border-bottom:1px solid var(--gris-200); margin-bottom:18px;">
+                <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-400);">Check List de Inspecciones de Seguridad y Salud en el Trabajo</div>
+                <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:var(--azul-dark); margin-top:4px;">ÁREA DE TRANSPORTE</div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+                <div>
+                    <div class="det-label">Fecha de inspección</div>
+                    <div class="det-value" style="font-weight:700; color:var(--azul);">@DateTime.Today.ToString("dd/MM/yyyy")</div>
+                </div>
+                <div>
+                    <div class="det-label">Hora</div>
+                    <div class="det-value" id="horaDisplay" style="font-weight:700; color:var(--azul);">@hora</div>
+                </div>
+                <div>
+                    <div class="det-label">Sede o Área</div>
+                    <div class="det-value" style="font-weight:700;">Transporte</div>
+                </div>
+                <div>
+                    <div class="det-label">Placa</div>
+                    <div class="det-value" style="font-family:monospace; font-weight:700; color:var(--azul); font-size:1rem;">@carro?.Placa</div>
+                </div>
+                <div style="grid-column:span 2;">
+                    <label class="form-label">Nombre responsable <span class="req">*</span></label>
+                    <input type="text" name="nombreResponsable" class="form-control" required maxlength="200"
+                           placeholder="Nombre completo del responsable" />
+                </div>
+            </div>
+        </div>
+
+        <!-- ÍTEMS POR SECCIÓN ──────────────────────────────────── -->
+        @{ int itemIndex = 0; }
+        @foreach (var secGroup in secciones)
+        {
+            <div class="card">
+                <!-- Título sección -->
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+                    <div style="width:28px; height:28px; border-radius:50%; background:var(--azul-dark); display:grid; place-items:center; flex-shrink:0;">
+                        <span style="font-family:var(--font-display); font-weight:800; font-size:0.8rem; color:var(--blanco);">@secGroup.Key.Sec</span>
+                    </div>
+                    <div style="font-weight:700; font-size:0.92rem; color:var(--gris-900); text-transform:uppercase; letter-spacing:0.04em;">
+                        @secGroup.Key.NombreSec
+                    </div>
+                </div>
+
+                <!-- Cabecera tabla -->
+                <div style="display:grid; grid-template-columns:1fr 60px 60px 1fr; gap:8px; padding:6px 10px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px;">
+                    <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500);">Elemento a inspeccionar</div>
+                    <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--verde); text-align:center;">SI</div>
+                    <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--rojo, #dc2626); text-align:center;">NO</div>
+                    <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500);">Observaciones</div>
+                </div>
+
+                <!-- Filas de ítems -->
+                @foreach (var item in secGroup)
+                {
+                    var idx = itemIndex;
+                    <div style="display:grid; grid-template-columns:1fr 60px 60px 1fr; gap:8px; align-items:center; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px;" class="checklist-row">
+                        <div style="font-size:0.84rem; color:var(--gris-900);">@item.Elemento</div>
+
+                        <!-- SI -->
+                        <div style="text-align:center;">
+                            <label style="cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                                <input type="radio" name="cumple[@idx]" value="true"
+                                       style="width:18px; height:18px; accent-color:var(--verde);" />
+                            </label>
+                        </div>
+
+                        <!-- NO -->
+                        <div style="text-align:center;">
+                            <label style="cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                                <input type="radio" name="cumple[@idx]" value="false"
+                                       style="width:18px; height:18px; accent-color:#dc2626;" />
+                            </label>
+                        </div>
+
+                        <!-- Observación -->
+                        <div>
+                            <input type="text" name="observacion[@idx]" class="form-control"
+                                   style="font-size:0.8rem; padding:5px 8px;"
+                                   maxlength="500" placeholder="Opcional..." />
+                        </div>
+                    </div>
+                    itemIndex++;
+                }
+            </div>
+        }
+
+        <!-- OBSERVACIONES GENERALES ────────────────────────────── -->
+        <div class="card">
+            <label class="form-label">Observaciones generales</label>
+            <textarea name="observacionesGenerales" class="form-control" rows="3" maxlength="1000"
+                      placeholder="Observaciones adicionales sobre la inspección..."></textarea>
+            <div class="form-hint">NA = No aplicable o no procede.</div>
+        </div>
+
+        <!-- FIRMA DEL RESPONSABLE ──────────────────────────────── -->
+        <div class="card">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                Firma del Responsable <span class="req">*</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start;">
+                <div style="position:relative; border:2px dashed var(--gris-300); border-radius:var(--r-md); overflow:hidden; background:var(--blanco);">
+                    <canvas id="firmaCanvas" width="500" height="160"
+                            style="display:block; cursor:crosshair; touch-action:none;"></canvas>
+                    <div id="firmaPlaceholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:var(--gris-300);font-size:0.85rem;">
+                        Dibuje su firma aquí
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" onclick="limpiarFirma()" class="btn btn--secondary btn--sm">
+                        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                        Limpiar firma
+                    </button>
+                </div>
+                <input type="hidden" name="firmaBase64" id="firmaBase64Input" />
+            </div>
+        </div>
+
+        <!-- BOTÓN GUARDAR ──────────────────────────────────────── -->
+        <div style="display:flex; gap:10px; justify-content:flex-end; padding-bottom:32px;">
+            <a asp-controller="Carros" asp-action="Details" asp-route-id="@carro?.IdCarro" class="btn btn--secondary">
+                Cancelar
+            </a>
+            <button type="submit" class="btn btn--celeste" onclick="return prepararEnvio()">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Guardar Check List
+            </button>
+        </div>
+
+    </div>
+</form>
+
+@section Styles {
+<style>
+.checklist-row:hover { background: var(--gris-50); }
+.det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
+.det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
+</style>
+}
+
+@section Scripts {
+<script>
+// ── Canvas de firma ──────────────────────────────────────────
+const canvas      = document.getElementById('firmaCanvas');
+const ctx         = canvas.getContext('2d');
+const placeholder = document.getElementById('firmaPlaceholder');
+let dibujando = false;
+let tieneFirma = false;
+
+ctx.strokeStyle = '#1a3a6b';
+ctx.lineWidth   = 2.2;
+ctx.lineCap     = 'round';
+ctx.lineJoin    = 'round';
+
+function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const src  = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+}
+
+canvas.addEventListener('mousedown',  e => { dibujando = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); });
+canvas.addEventListener('mousemove',  e => { if (!dibujando) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); tieneFirma = true; placeholder.style.display = 'none'; });
+canvas.addEventListener('mouseup',    () => dibujando = false);
+canvas.addEventListener('mouseleave', () => dibujando = false);
+
+canvas.addEventListener('touchstart', e => { e.preventDefault(); dibujando = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); }, { passive: false });
+canvas.addEventListener('touchmove',  e => { e.preventDefault(); if (!dibujando) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); tieneFirma = true; placeholder.style.display = 'none'; }, { passive: false });
+canvas.addEventListener('touchend',   () => dibujando = false);
+
+function limpiarFirma() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    tieneFirma = false;
+    placeholder.style.display = 'flex';
+    document.getElementById('firmaBase64Input').value = '';
+}
+
+// ── Validación y envío ───────────────────────────────────────
+function prepararEnvio() {
+    if (!tieneFirma) {
+        alert('La firma del responsable es obligatoria. Por favor dibuje su firma.');
+        return false;
+    }
+    document.getElementById('firmaBase64Input').value = canvas.toDataURL('image/png');
+    return true;
+}
+</script>
+}

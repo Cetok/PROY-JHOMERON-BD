@@ -31,6 +31,8 @@ namespace PROYJHOME2026.Data
         public DbSet<EquipoComponenteLog> EquipoComponenteLogs { get; set; }
         public DbSet<CarroConductorLog> CarroConductorLogs { get; set; }
         public DbSet<EmpleadoEstadoLog> EmpleadoEstadoLogs { get; set; }
+        public DbSet<CheckListTransporte>     CheckListTransportes      { get; set; }
+        public DbSet<CheckListTransporteItem> CheckListTransporteItems  { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }
@@ -122,6 +124,14 @@ namespace PROYJHOME2026.Data
 
             modelBuilder.Entity<Usuario>()
                 .HasIndex(u => u.username).IsUnique();
+
+            modelBuilder.Entity<CheckListTransporte>()
+                .HasOne(cl => cl.Carro).WithMany()
+                .HasForeignKey(cl => cl.IdCarro).OnDelete(DeleteBehavior.Cascade);
+ 
+            modelBuilder.Entity<CheckListTransporteItem>()
+                .HasOne(i => i.CheckList).WithMany(cl => cl.Items)
+                .HasForeignKey(i => i.IdCheckList).OnDelete(DeleteBehavior.Cascade);    
         }
     }
 }

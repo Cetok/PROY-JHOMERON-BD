@@ -1,0 +1,119 @@
+@model List<PROYJHOME2026.Models.CheckListTransporte>
+@{
+    ViewData["Title"]      = "Historial Check List — Transporte";
+    ViewData["Breadcrumb"] = "Flota Vehicular / Check List / Historial";
+    var carro = ViewBag.Carro as PROYJHOME2026.Models.Carro;
+    var hoy   = DateOnly.FromDateTime(DateTime.Today);
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular</div>
+        <h1 class="page-header__title">Historial Check List</h1>
+        <p class="page-header__subtitle">@carro?.Placa — @carro?.Marca @carro?.Modelo</p>
+    </div>
+    <div class="page-header__actions">
+        @{
+            bool yaHoyExiste = Model.Any(cl => cl.FechaInspeccion == hoy);
+        }
+        @if (!yaHoyExiste)
+        {
+            <a asp-action="Crear" asp-route-idCarro="@carro?.IdCarro" class="btn btn--celeste">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nuevo Check List
+            </a>
+        }
+        else
+        {
+            <span class="badge badge--verde" style="font-size:0.78rem; padding:6px 12px;">
+                ✓ Check List registrado hoy
+            </span>
+        }
+        <a asp-controller="Carros" asp-action="Details" asp-route-id="@carro?.IdCarro" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver al vehículo
+        </a>
+    </div>
+</div>
+
+<div style="max-width:900px;">
+    @if (!Model.Any())
+    {
+        <div class="card" style="text-align:center; padding:40px 20px; color:var(--gris-400);">
+            <svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--gris-300);fill:none;stroke-width:1.4;margin:0 auto 12px;display:block;"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+            <div style="font-size:0.9rem;">No hay check lists registrados para este vehículo.</div>
+            <a asp-action="Crear" asp-route-idCarro="@carro?.IdCarro" class="btn btn--celeste" style="margin-top:16px; display:inline-flex;">
+                Registrar primer Check List
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="card" style="padding:0; overflow:hidden;">
+            <!-- Cabecera tabla -->
+            <div style="display:grid; grid-template-columns:120px 1fr 90px 1fr 80px; gap:12px; padding:10px 18px; background:var(--gris-100); border-bottom:1px solid var(--gris-200);">
+                <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500);">Fecha y hora</div>
+                <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500);">Responsable</div>
+                <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500); text-align:center;">Cumplimiento</div>
+                <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500);">Observaciones</div>
+                <div></div>
+            </div>
+
+            @foreach (var cl in Model)
+            {
+                // Calcular porcentaje de cumplimiento (solo ítems con respuesta)
+                int totalRespondidos = cl.Items.Count(i => i.Cumple.HasValue);
+                int totalSi          = cl.Items.Count(i => i.Cumple == true);
+                int pct              = totalRespondidos > 0 ? (int)Math.Round((double)totalSi / totalRespondidos * 100) : 0;
+
+                string colorPct = pct >= 80 ? "var(--verde)" : pct >= 50 ? "#d97706" : "#dc2626";
+                bool esHoy      = cl.FechaInspeccion == hoy;
+
+                <div style="display:grid; grid-template-columns:120px 1fr 90px 1fr 80px; gap:12px; padding:12px 18px; border-bottom:1px solid var(--gris-100); align-items:center; @(esHoy ? "background:rgba(34,197,94,0.04);" : "")">
+
+                    <!-- Fecha y hora -->
+                    <div>
+                        <div style="font-size:0.84rem; font-weight:600; color:var(--gris-900);">
+                            @cl.FechaInspeccion.ToString("dd/MM/yyyy")
+                            @if (esHoy) { <span class="badge badge--verde" style="font-size:0.62rem; margin-left:4px;">Hoy</span> }
+                        </div>
+                        <div style="font-size:0.72rem; color:var(--gris-400);">@cl.HoraInspeccion.ToString("HH:mm")</div>
+                    </div>
+
+                    <!-- Responsable -->
+                    <div>
+                        <div style="font-size:0.84rem; color:var(--gris-900);">@cl.NombreResponsable</div>
+                        @if (!string.IsNullOrEmpty(cl.NombreUsuario))
+                        {
+                            <div style="font-size:0.72rem; color:var(--gris-400);">Registrado por: @cl.NombreUsuario</div>
+                        }
+                    </div>
+
+                    <!-- Cumplimiento -->
+                    <div style="text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:800; color:@colorPct; font-family:var(--font-display);">@pct%</div>
+                        <div style="font-size:0.68rem; color:var(--gris-400);">@totalSi/@totalRespondidos SI</div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div style="font-size:0.8rem; color:var(--gris-600);">
+                        @if (!string.IsNullOrEmpty(cl.ObservacionesGenerales))
+                        {
+                            <span>@(cl.ObservacionesGenerales.Length > 80 ? cl.ObservacionesGenerales[..80] + "..." : cl.ObservacionesGenerales)</span>
+                        }
+                        else { <span style="color:var(--gris-300);">—</span> }
+                    </div>
+
+                    <!-- Acción -->
+                    <div>
+                        <a asp-action="Ver" asp-route-id="@cl.IdCheckList"
+                           class="btn btn--ghost btn--sm" style="font-size:0.78rem;">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Ver
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
