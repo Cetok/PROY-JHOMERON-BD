@@ -1,0 +1,109 @@
+@model List<PROYJHOME2026.Models.InspeccionBotiquinTransporte>
+@{
+    ViewData["Title"]      = "Historial Inspección Botiquín — Transporte";
+    ViewData["Breadcrumb"] = "Flota Vehicular / Inspección Botiquín / Historial";
+    var carro = ViewBag.Carro as PROYJHOME2026.Models.Carro;
+    var hoy   = DateOnly.FromDateTime(DateTime.Today);
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular</div>
+        <h1 class="page-header__title">Historial Inspección Botiquín</h1>
+        <p class="page-header__subtitle">@carro?.Placa — @carro?.Marca @carro?.Modelo</p>
+    </div>
+    <div class="page-header__actions">
+        @{ bool yaHoy = Model.Any(i => i.FechaInspeccion == hoy); }
+        @if (!yaHoy)
+        {
+            <a asp-action="Crear" asp-route-idCarro="@carro?.IdCarro" class="btn btn--celeste">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nueva Inspección
+            </a>
+        }
+        else
+        {
+            <span class="badge badge--verde" style="font-size:0.78rem; padding:6px 12px;">✓ Inspección registrada hoy</span>
+        }
+        <a asp-controller="Carros" asp-action="Details" asp-route-id="@carro?.IdCarro" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver al vehículo
+        </a>
+    </div>
+</div>
+
+<div style="max-width:900px;">
+    @if (!Model.Any())
+    {
+        <div class="card" style="text-align:center; padding:40px 20px; color:var(--gris-400);">
+            <svg viewBox="0 0 24 24" style="width:40px;height:40px;stroke:var(--gris-300);fill:none;stroke-width:1.4;margin:0 auto 12px;display:block;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <div style="font-size:0.9rem;">No hay inspecciones de botiquín registradas para este vehículo.</div>
+            <a asp-action="Crear" asp-route-idCarro="@carro?.IdCarro" class="btn btn--celeste" style="margin-top:16px; display:inline-flex;">
+                Registrar primera inspección
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="card" style="padding:0; overflow:hidden;">
+            <!-- Cabecera -->
+            <div style="display:grid; grid-template-columns:110px 80px 1fr 120px 90px 70px; gap:10px; padding:10px 18px; background:var(--gris-100); border-bottom:1px solid var(--gris-200);">
+                <div class="th-label">Fecha</div>
+                <div class="th-label">N° Botiquín</div>
+                <div class="th-label">Inspeccionado por</div>
+                <div class="th-label" style="text-align:center;">Condiciones</div>
+                <div class="th-label" style="text-align:center;">Elementos OK</div>
+                <div></div>
+            </div>
+
+            @foreach (var ins in Model)
+            {
+                // Condiciones del encabezado: cuántas están en SI
+                int condOk  = (ins.UbicadoEnSuLugar ? 1 : 0) + (ins.LocalizadoVisible ? 1 : 0)
+                            + (ins.LibreDeObstaculos ? 1 : 0) + (ins.Senalizado ? 1 : 0);
+                // Elementos que se encuentran
+                int elemOk  = ins.Items.Count(it => it.SeEncuentra);
+                int elemTot = ins.Items.Count;
+                bool esHoy  = ins.FechaInspeccion == hoy;
+
+                string condColor = condOk == 4 ? "var(--verde)" : condOk >= 2 ? "#d97706" : "#dc2626";
+                string elemColor = elemOk == elemTot ? "var(--verde)" : elemOk >= elemTot / 2 ? "#d97706" : "#dc2626";
+
+                <div style="display:grid; grid-template-columns:110px 80px 1fr 120px 90px 70px; gap:10px; padding:12px 18px; border-bottom:1px solid var(--gris-100); align-items:center; @(esHoy ? "background:rgba(34,197,94,0.04);" : "")">
+                    <div>
+                        <div style="font-size:0.84rem; font-weight:600; color:var(--gris-900);">@ins.FechaInspeccion.ToString("dd/MM/yyyy")</div>
+                        @if (esHoy) { <span class="badge badge--verde" style="font-size:0.62rem;">Hoy</span> }
+                    </div>
+                    <div style="font-size:0.84rem; font-family:monospace; font-weight:600; color:var(--azul);">@ins.NumeroBotiquin</div>
+                    <div>
+                        <div style="font-size:0.84rem; color:var(--gris-900);">@ins.InspeccionadoPor</div>
+                        @if (!string.IsNullOrEmpty(ins.NombreUsuario))
+                        {
+                            <div style="font-size:0.72rem; color:var(--gris-400);">Por: @ins.NombreUsuario</div>
+                        }
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:800; color:@condColor; font-family:var(--font-display);">@condOk/4</div>
+                        <div style="font-size:0.68rem; color:var(--gris-400);">condiciones</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:800; color:@elemColor; font-family:var(--font-display);">@elemOk/@elemTot</div>
+                        <div style="font-size:0.68rem; color:var(--gris-400);">elementos</div>
+                    </div>
+                    <div>
+                        <a asp-action="Ver" asp-route-id="@ins.IdInspeccion" class="btn btn--ghost btn--sm" style="font-size:0.78rem;">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Ver
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Styles {
+<style>
+.th-label { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500); }
+</style>
+}

@@ -1,0 +1,258 @@
+@{
+    ViewData["Title"]      = "Inspección de Botiquín — Transporte";
+    ViewData["Breadcrumb"] = "Flota Vehicular / Inspección Botiquín";
+    var carro    = ViewBag.Carro    as PROYJHOME2026.Models.Carro;
+    var elementos = ViewBag.Elementos as List<string> ?? new();
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular</div>
+        <h1 class="page-header__title">Inspección de Botiquín</h1>
+        <p class="page-header__subtitle">@carro?.Placa — @carro?.Marca @carro?.Modelo</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-controller="Carros" asp-action="Details" asp-route-id="@carro?.IdCarro" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<form asp-action="Crear" method="post" id="formBotiquin">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="idCarro" value="@carro?.IdCarro" />
+
+    <div style="max-width:900px; display:flex; flex-direction:column; gap:16px;">
+
+        <!-- ENCABEZADO ──────────────────────────────────────────── -->
+        <div class="card">
+            <div style="text-align:center; padding-bottom:14px; border-bottom:1px solid var(--gris-200); margin-bottom:18px;">
+                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-400);">FMT-SST-019 · Versión 00</div>
+                <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:var(--azul-dark); margin-top:4px;">INSPECCIÓN DE BOTIQUINES — TRANSPORTE</div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px;">
+                <div>
+                    <div class="det-label">Fecha de inspección</div>
+                    <div class="det-value" style="font-weight:700; color:var(--azul);">@DateTime.Today.ToString("dd/MM/yyyy")</div>
+                </div>
+                <div>
+                    <label class="form-label">N° de Botiquín <span class="req">*</span></label>
+                    <input type="text" name="numeroBotiquin" class="form-control" required
+                           maxlength="50" placeholder="Ej: BOT-01" />
+                </div>
+                <div>
+                    <div class="det-label">Placa</div>
+                    <div class="det-value" style="font-family:monospace; font-weight:700; color:var(--azul); font-size:1rem;">@carro?.Placa</div>
+                </div>
+            </div>
+
+            <!-- 4 checks del encabezado ──────────────────────────── -->
+            <div style="background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-md); padding:14px 16px;">
+                <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:12px;">
+                    Marque según las condiciones observadas
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+
+                    @{
+                        var checks = new[]
+                        {
+                            ("ubicadoEnSuLugar",  "El botiquín se encuentra ubicado en su lugar"),
+                            ("localizadoVisible", "Localizado en un lugar visible"),
+                            ("libreDeObstaculos", "El botiquín se encuentra libre de obstáculos"),
+                            ("senalizado",        "El botiquín se encuentra señalizado"),
+                        };
+                    }
+
+                    @foreach (var (nombre, label) in checks)
+                    {
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--blanco); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
+                            <span style="font-size:0.84rem; color:var(--gris-800);">@label</span>
+                            <div style="display:flex; gap:6px; flex-shrink:0; margin-left:12px;">
+                                <label class="toggle-check toggle-si">
+                                    <input type="radio" name="@nombre" value="true" required />
+                                    <span>SI</span>
+                                </label>
+                                <label class="toggle-check toggle-no">
+                                    <input type="radio" name="@nombre" value="false" />
+                                    <span>NO</span>
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA DE ELEMENTOS ──────────────────────────────────── -->
+        <div class="card">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Elementos del Botiquín
+            </div>
+
+            <!-- Cabecera -->
+            <div style="display:grid; grid-template-columns:2fr 80px 90px 130px 1fr; gap:8px; padding:7px 12px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px;">
+                <div class="th-label">Elemento</div>
+                <div class="th-label" style="text-align:center;">Se encuentra</div>
+                <div class="th-label" style="text-align:center;">Cantidad</div>
+                <div class="th-label" style="text-align:center;">Fecha vencimiento</div>
+                <div class="th-label">Observaciones</div>
+            </div>
+
+            <!-- Filas -->
+            @for (int i = 0; i < elementos.Count; i++)
+            {
+                <div style="display:grid; grid-template-columns:2fr 80px 90px 130px 1fr; gap:8px; align-items:center; padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px;" class="elem-row">
+                    <div style="font-size:0.84rem; color:var(--gris-900);">@elementos[i]</div>
+
+                    <!-- SE ENCUENTRA SI/NO -->
+                    <div style="display:flex; gap:4px; justify-content:center;">
+                        <label class="toggle-check toggle-si">
+                            <input type="radio" name="seencuentra_@i" value="si" required />
+                            <span>SI</span>
+                        </label>
+                        <label class="toggle-check toggle-no">
+                            <input type="radio" name="seencuentra_@i" value="no" />
+                            <span>NO</span>
+                        </label>
+                    </div>
+
+                    <!-- CANTIDAD -->
+                    <div>
+                        <input type="number" name="cantidad_@i" class="form-control" required
+                               min="0" max="9999" style="text-align:center; padding:5px 6px; font-size:0.82rem;" />
+                    </div>
+
+                    <!-- FECHA VENCIMIENTO -->
+                    <div>
+                        <input type="date" name="fvenc_@i" class="form-control" required
+                               style="padding:5px 6px; font-size:0.82rem;" />
+                    </div>
+
+                    <!-- OBSERVACIONES -->
+                    <div>
+                        <input type="text" name="obs_@i" class="form-control" maxlength="500"
+                               placeholder="Opcional..." style="padding:5px 6px; font-size:0.82rem;" />
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- FIRMA ───────────────────────────────────────────────── -->
+        <div class="card">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+                Inspección realizada por <span class="req">*</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+                <div>
+                    <label class="form-label">Nombre completo <span class="req">*</span></label>
+                    <input type="text" name="inspeccionadoPor" class="form-control" required
+                           maxlength="200" placeholder="Nombre del inspector" />
+                </div>
+                <div>
+                    <label class="form-label">Firma <span class="req">*</span></label>
+                    <div style="position:relative; border:2px dashed var(--gris-300); border-radius:var(--r-md); overflow:hidden; background:#fff; width:100%;">
+                        <canvas id="firmaCanvas" width="400" height="130"
+                                style="display:block; cursor:crosshair; touch-action:none; width:100%; height:auto;"></canvas>
+                        <div id="firmaPlaceholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:var(--gris-300);font-size:0.82rem;">
+                            Dibuje su firma aquí
+                        </div>
+                    </div>
+                    <button type="button" onclick="limpiarFirma()" class="btn btn--secondary btn--sm" style="margin-top:6px;">
+                        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                        Limpiar
+                    </button>
+                    <input type="hidden" name="firmaBase64" id="firmaBase64Input" />
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONES ─────────────────────────────────────────────── -->
+        <div style="display:flex; gap:10px; justify-content:flex-end; padding-bottom:32px;">
+            <a asp-controller="Carros" asp-action="Details" asp-route-id="@carro?.IdCarro" class="btn btn--secondary">
+                Cancelar
+            </a>
+            <button type="submit" class="btn btn--celeste" onclick="return prepararEnvio()">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Guardar Inspección
+            </button>
+        </div>
+
+    </div>
+</form>
+
+@section Styles {
+<style>
+.det-label  { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
+.det-value  { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
+.th-label   { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500); }
+.elem-row:hover { background:var(--gris-50); }
+
+/* Toggle SI / NO */
+.toggle-check { cursor:pointer; }
+.toggle-check input[type="radio"] { display:none; }
+.toggle-check span {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:38px; height:24px; border-radius:20px;
+    border:1.5px solid var(--gris-300); background:var(--gris-100);
+    font-size:0.68rem; font-weight:700; color:var(--gris-400);
+    transition:all 0.15s ease;
+}
+.toggle-si input[type="radio"]:checked ~ span { background:#dcfce7; border-color:#16a34a; color:#16a34a; }
+.toggle-no input[type="radio"]:checked ~ span { background:#fee2e2; border-color:#dc2626; color:#dc2626; }
+.toggle-check:hover span { border-color:var(--gris-400); }
+</style>
+}
+
+@section Scripts {
+<script>
+// ── Canvas firma ─────────────────────────────────────────────
+const canvas      = document.getElementById('firmaCanvas');
+const ctx         = canvas.getContext('2d');
+const placeholder = document.getElementById('firmaPlaceholder');
+let dibujando = false, tieneFirma = false;
+
+ctx.strokeStyle = '#1a3a6b';
+ctx.lineWidth   = 2.2;
+ctx.lineCap     = 'round';
+ctx.lineJoin    = 'round';
+
+function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - rect.left) * scaleX, y: (src.clientY - rect.top) * scaleY };
+}
+
+canvas.addEventListener('mousedown',  e => { dibujando = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); });
+canvas.addEventListener('mousemove',  e => { if (!dibujando) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); marcar(); });
+canvas.addEventListener('mouseup',    () => dibujando = false);
+canvas.addEventListener('mouseleave', () => dibujando = false);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); dibujando = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); }, { passive: false });
+canvas.addEventListener('touchmove',  e => { e.preventDefault(); if (!dibujando) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); marcar(); }, { passive: false });
+canvas.addEventListener('touchend',   () => dibujando = false);
+
+function marcar() { tieneFirma = true; placeholder.style.display = 'none'; }
+
+function limpiarFirma() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    tieneFirma = false;
+    placeholder.style.display = 'flex';
+    document.getElementById('firmaBase64Input').value = '';
+}
+
+function prepararEnvio() {
+    if (!tieneFirma) {
+        alert('La firma es obligatoria.');
+        canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
+    document.getElementById('firmaBase64Input').value = canvas.toDataURL('image/png');
+    return true;
+}
+</script>
+}

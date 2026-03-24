@@ -1,0 +1,139 @@
+@model PROYJHOME2026.Models.InspeccionBotiquinTransporte
+@{
+    ViewData["Title"]      = "Detalle Inspección Botiquín";
+    ViewData["Breadcrumb"] = "Flota Vehicular / Inspección Botiquín / Detalle";
+
+    int elemOk  = Model.Items.Count(i => i.SeEncuentra);
+    int elemTot = Model.Items.Count;
+    int condOk  = (Model.UbicadoEnSuLugar ? 1 : 0) + (Model.LocalizadoVisible ? 1 : 0)
+                + (Model.LibreDeObstaculos ? 1 : 0) + (Model.Senalizado ? 1 : 0);
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular / Inspección Botiquín</div>
+        <h1 class="page-header__title">Detalle de Inspección</h1>
+        <p class="page-header__subtitle">
+            @Model.Carro?.Placa — @Model.Carro?.Marca @Model.Carro?.Modelo ·
+            @Model.FechaInspeccion.ToString("dd/MM/yyyy")
+        </p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Historial" asp-route-idCarro="@Model.IdCarro" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver al historial
+        </a>
+    </div>
+</div>
+
+<div style="max-width:900px; display:flex; flex-direction:column; gap:16px;">
+
+    <!-- ENCABEZADO ──────────────────────────────────────────── -->
+    <div class="card">
+        <div style="text-align:center; padding-bottom:14px; border-bottom:1px solid var(--gris-200); margin-bottom:18px;">
+            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-400);">FMT-SST-019 · Versión 00</div>
+            <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:800; color:var(--azul-dark); margin-top:4px;">INSPECCIÓN DE BOTIQUINES — TRANSPORTE</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:18px;">
+            <div>
+                <div class="det-label">Fecha de inspección</div>
+                <div class="det-value" style="font-weight:700; color:var(--azul);">@Model.FechaInspeccion.ToString("dd/MM/yyyy")</div>
+            </div>
+            <div>
+                <div class="det-label">N° de Botiquín</div>
+                <div class="det-value" style="font-family:monospace; font-weight:700; color:var(--azul);">@Model.NumeroBotiquin</div>
+            </div>
+            <div>
+                <div class="det-label">Placa</div>
+                <div class="det-value" style="font-family:monospace; font-weight:700; color:var(--azul);">@Model.Carro?.Placa</div>
+            </div>
+            <div>
+                <div class="det-label">Inspeccionado por</div>
+                <div class="det-value">@Model.InspeccionadoPor</div>
+            </div>
+            <div>
+                <div class="det-label">Registrado por</div>
+                <div class="det-value">@(Model.NombreUsuario ?? "—")</div>
+            </div>
+        </div>
+
+        <!-- Resumen condiciones -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            @{
+                var condiciones = new[]
+                {
+                    ("Ubicado en su lugar",         Model.UbicadoEnSuLugar),
+                    ("Localizado en lugar visible",  Model.LocalizadoVisible),
+                    ("Libre de obstáculos",          Model.LibreDeObstaculos),
+                    ("Señalizado",                   Model.Senalizado),
+                };
+            }
+            @foreach (var (label, valor) in condiciones)
+            {
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
+                    <span style="font-size:0.84rem; color:var(--gris-800);">@label</span>
+                    <span class="badge @(valor ? "badge--verde" : "badge--rojo")" style="font-size:0.72rem;">@(valor ? "SI" : "NO")</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- TABLA DE ELEMENTOS ──────────────────────────────────── -->
+    <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">Elementos del Botiquín</div>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <span style="font-size:0.8rem; color:var(--gris-500);">Encontrados:</span>
+                <span style="font-size:1.1rem; font-weight:800; color:@(elemOk == elemTot ? "var(--verde)" : "#d97706"); font-family:var(--font-display);">@elemOk/@elemTot</span>
+            </div>
+        </div>
+
+        <!-- Cabecera -->
+        <div style="display:grid; grid-template-columns:2fr 70px 80px 120px 1fr; gap:8px; padding:7px 12px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px;">
+            <div class="th-label">Elemento</div>
+            <div class="th-label" style="text-align:center;">Encontrado</div>
+            <div class="th-label" style="text-align:center;">Cantidad</div>
+            <div class="th-label" style="text-align:center;">Vencimiento</div>
+            <div class="th-label">Observaciones</div>
+        </div>
+
+        @foreach (var item in Model.Items.OrderBy(i => i.IdItem))
+        {
+            <div style="display:grid; grid-template-columns:2fr 70px 80px 120px 1fr; gap:8px; align-items:center; padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px; @(!item.SeEncuentra ? "background:rgba(220,38,38,0.03);" : "")">
+                <div style="font-size:0.84rem; color:var(--gris-900);">@item.Elemento</div>
+                <div style="text-align:center;">
+                    <span class="badge @(item.SeEncuentra ? "badge--verde" : "badge--rojo")" style="font-size:0.7rem;">
+                        @(item.SeEncuentra ? "SI" : "NO")
+                    </span>
+                </div>
+                <div style="text-align:center; font-size:0.84rem; font-weight:600; color:var(--gris-900);">@item.Cantidad</div>
+                <div style="text-align:center; font-size:0.82rem; color:var(--gris-700);">@item.FechaVencimiento.ToString("dd/MM/yyyy")</div>
+                <div style="font-size:0.8rem; color:var(--gris-600);">
+                    @(string.IsNullOrEmpty(item.Observaciones) ? "—" : item.Observaciones)
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- FIRMA ───────────────────────────────────────────────── -->
+    <div class="card">
+        <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+            Firma del Inspector
+        </div>
+        <div class="det-label" style="margin-bottom:6px;">@Model.InspeccionadoPor</div>
+        <div style="border:1px solid var(--gris-200); border-radius:var(--r-md); overflow:hidden; display:inline-block; background:#fff;">
+            <img src="@Model.FirmaBase64" alt="Firma" style="display:block; max-width:400px; height:130px; object-fit:contain;" />
+        </div>
+    </div>
+
+</div>
+
+@section Styles {
+<style>
+.det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
+.det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
+.th-label  { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500); }
+.badge--rojo { background:rgba(220,38,38,0.1); color:#dc2626; }
+</style>
+}
