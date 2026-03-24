@@ -58,6 +58,13 @@ namespace PROYJHOME2026.Models
         [StringLength(200)]
         public string? TarjetaGrafica { get; set; }
 
+        // ── Campos Celular ────────────────────────────────────
+        [StringLength(50)]
+        public string? IMEI { get; set; }
+
+        // ── Campos Mouse ──────────────────────────────────────
+        public bool? EsInalambrico { get; set; }
+
         // Navegación
         public ICollection<Asignacion> Asignaciones { get; set; } = new List<Asignacion>();
         public ICollection<EquipoComponenteLog> ComponenteLogs { get; set; } = new List<EquipoComponenteLog>();

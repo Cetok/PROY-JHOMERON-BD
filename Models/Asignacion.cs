@@ -1,4 +1,3 @@
-
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -24,6 +23,10 @@ namespace PROYJHOME2026.Models
         // Correo corporativo asignado junto al equipo (opcional)
         [StringLength(150)]
         public string? CorreoEquipo { get; set; }
+
+        // Número de cargo — relaciona con código de hoja física
+        [StringLength(50)]
+        public string? NumeroCargo { get; set; }
 
         // Solo "Activo" o "Inactivo" — se maneja automáticamente
         public string EstadoAsignacion { get; set; } = "Activo";

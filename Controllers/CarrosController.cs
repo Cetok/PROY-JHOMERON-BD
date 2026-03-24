@@ -9,7 +9,7 @@ namespace PROYJHOME2026.Controllers
 {
     public class CarrosController : Controller
     {
-        private readonly AppDbContext     _context;
+        private readonly AppDbContext        _context;
         private readonly AuditoriaService    _auditoriaService;
         private readonly NotificacionService _notifService;
 
@@ -79,8 +79,14 @@ namespace PROYJHOME2026.Controllers
                 .Where(l => l.IdCarro == id)
                 .OrderByDescending(l => l.FechaHora)
                 .ToListAsync();
-
             ViewBag.EstadoLog = estadoLog;
+
+            // Historial de conductores
+            var conductorLog = await _context.CarroConductorLogs
+                .Where(l => l.IdCarro == id)
+                .OrderByDescending(l => l.FechaHora)
+                .ToListAsync();
+            ViewBag.ConductorLog = conductorLog;
 
             // Lista de empleados activos para el select de conductor
             var empleados = await _context.Empleados
@@ -99,34 +105,79 @@ namespace PROYJHOME2026.Controllers
         // ── ASIGNAR CONDUCTOR POST ───────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AsignarConductor(int idCarro, int? idEmpleado)
+        public async Task<IActionResult> AsignarConductor(int idCarro, int? idEmpleado, bool sinConductor = false)
         {
-            // Remover conductor actual
+            // 1. Obtener conductor ANTERIOR antes de borrar
+            var actual = await _context.EmpleadosCarros
+                .Include(ec => ec.Empleado)
+                .FirstOrDefaultAsync(ec => ec.IdCarro == idCarro);
+
+            int?    idAnterior      = actual?.IdEmpleado;
+            string? nombreAnterior  = actual?.Empleado != null
+                ? $"{actual.Empleado.nombre} {actual.Empleado.paterno} {actual.Empleado.materno}".Trim()
+                : null;
+
+            // 2. Remover conductor actual
             var actuales = await _context.EmpleadosCarros
                 .Where(ec => ec.IdCarro == idCarro).ToListAsync();
             _context.EmpleadosCarros.RemoveRange(actuales);
 
-            if (idEmpleado.HasValue && idEmpleado.Value > 0)
+            // 3. Asignar nuevo conductor (si no se pulsó "Sin conductor")
+            int?    idNuevo      = null;
+            string? nombreNuevo  = null;
+
+            if (!sinConductor && idEmpleado.HasValue && idEmpleado.Value > 0)
             {
+                var empleado = await _context.Empleados.FindAsync(idEmpleado.Value);
+                idNuevo     = idEmpleado.Value;
+                nombreNuevo = empleado != null
+                    ? $"{empleado.nombre} {empleado.paterno} {empleado.materno}".Trim()
+                    : null;
+
                 _context.EmpleadosCarros.Add(new EmpleadoCarro
                 {
                     IdCarro    = idCarro,
                     IdEmpleado = idEmpleado.Value
                 });
-                await _auditoriaService.RegistrarAsync("Editar", "Carro", idCarro,
-                    $"Asignó conductor IdEmpleado={idEmpleado} al vehículo #{idCarro}");
-                await _notifService.NotificarAccionAsync("Creacion", "Conductor", "Conductor asignado a vehículo");
-            TempData["Success"] = "Conductor asignado correctamente.";
             }
-            else
+
+            // 4. Registrar en CarroConductorLog SOLO si hubo cambio real
+            bool huboCambio = idAnterior != idNuevo;
+            if (huboCambio)
             {
-                await _auditoriaService.RegistrarAsync("Editar", "Carro", idCarro,
-                    $"Removió conductor del vehículo #{idCarro}");
-                await _notifService.NotificarAccionAsync("Eliminacion", "Conductor", "Conductor removido del vehículo");
-            TempData["Success"] = "Conductor removido del vehículo.";
+                var idStr      = HttpContext.Session.GetString("UsuarioId");
+                var nombre     = HttpContext.Session.GetString("UsuarioNombre");
+                int? idUsuario = int.TryParse(idStr, out int uid) ? uid : null;
+
+                _context.CarroConductorLogs.Add(new CarroConductorLog
+                {
+                    IdCarro                 = idCarro,
+                    IdUsuario               = idUsuario,
+                    NombreUsuario           = nombre,
+                    IdEmpleadoAnterior      = idAnterior,
+                    NombreConductorAnterior = nombreAnterior,
+                    IdEmpleadoNuevo         = idNuevo,
+                    NombreConductorNuevo    = nombreNuevo,
+                    FechaHora               = DateTime.Now
+                });
             }
 
             await _context.SaveChangesAsync();
+
+            await _auditoriaService.RegistrarAsync("Editar", "Carro", idCarro,
+                idNuevo.HasValue
+                    ? $"Asignó conductor '{nombreNuevo}' al vehículo #{idCarro}"
+                    : $"Removió conductor del vehículo #{idCarro}");
+
+            await _notifService.NotificarAccionAsync(
+                idNuevo.HasValue ? "Creacion" : "Eliminacion",
+                "Conductor",
+                idNuevo.HasValue ? "Conductor asignado a vehículo" : "Conductor removido del vehículo");
+
+            TempData["Success"] = idNuevo.HasValue
+                ? $"Conductor asignado: {nombreNuevo}."
+                : "Conductor removido del vehículo.";
+
             return RedirectToAction(nameof(Details), new { id = idCarro });
         }
 
@@ -138,7 +189,6 @@ namespace PROYJHOME2026.Controllers
             var carro = await _context.Carros.FirstOrDefaultAsync(c => c.IdCarro == idCarro);
             if (carro == null) return NotFound();
 
-            // Solo permite Activo ↔ Inactivo desde este panel
             var estadosPermitidos = new[] { "Activo", "Inactivo" };
             if (!estadosPermitidos.Contains(nuevoEstado))
             {
@@ -149,8 +199,8 @@ namespace PROYJHOME2026.Controllers
             var estadoAnterior = carro.Estado;
             carro.Estado = nuevoEstado;
 
-            var idStr    = HttpContext.Session.GetString("UsuarioId");
-            var nombre   = HttpContext.Session.GetString("UsuarioNombre");
+            var idStr      = HttpContext.Session.GetString("UsuarioId");
+            var nombre     = HttpContext.Session.GetString("UsuarioNombre");
             int? idUsuario = int.TryParse(idStr, out int uid) ? uid : null;
 
             _context.CarroEstadoLogs.Add(new CarroEstadoLog
@@ -189,7 +239,6 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("MantenimientosCarros");
             ModelState.Remove("Estado");
 
-            // Siempre Activo al registrar
             carro.Estado = "Activo";
 
             if (ModelState.IsValid)
@@ -206,7 +255,10 @@ namespace PROYJHOME2026.Controllers
                 await _auditoriaService.RegistrarAsync("Crear", "Carro", carro.IdCarro,
                     $"Registró vehículo {carro.Placa} — {carro.Marca} {carro.Modelo}");
 
-                await _notifService.NotificarAccionAsync("Creacion", "Carro", $"Registró vehículo {carro.Placa} — {carro.Marca} {carro.Modelo}", $"/Carros/Details/{carro.IdCarro}");
+                await _notifService.NotificarAccionAsync("Creacion", "Carro",
+                    $"Registró vehículo {carro.Placa} — {carro.Marca} {carro.Modelo}",
+                    $"/Carros/Details/{carro.IdCarro}");
+
                 TempData["Success"] = $"Vehículo {carro.Placa} registrado correctamente.";
                 return RedirectToAction(nameof(Details), new { id = carro.IdCarro });
             }
@@ -244,7 +296,6 @@ namespace PROYJHOME2026.Controllers
 
                 try
                 {
-                    // Preservar estado actual — no se edita desde aquí
                     var estadoActual = await _context.Carros
                         .Where(c => c.IdCarro == id).Select(c => c.Estado).FirstAsync();
                     carro.Estado = estadoActual;
@@ -255,7 +306,10 @@ namespace PROYJHOME2026.Controllers
                     await _auditoriaService.RegistrarAsync("Editar", "Carro", id,
                         $"Editó vehículo {carro.Placa}");
 
-                    await _notifService.NotificarAccionAsync("Edicion", "Carro", $"Editó vehículo {carro.Placa}", $"/Carros/Details/{id}");
+                    await _notifService.NotificarAccionAsync("Edicion", "Carro",
+                        $"Editó vehículo {carro.Placa}",
+                        $"/Carros/Details/{id}");
+
                     TempData["Success"] = $"Vehículo {carro.Placa} actualizado.";
                     return RedirectToAction(nameof(Details), new { id = carro.IdCarro });
                 }
@@ -287,9 +341,13 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.Carros.Remove(carro);
                 await _context.SaveChangesAsync();
+
                 await _auditoriaService.RegistrarAsync("Eliminar", "Carro", id,
                     $"Eliminó vehículo {carro.Placa}");
-                await _notifService.NotificarAccionAsync("Eliminacion", "Carro", $"Eliminó vehículo {carro.Placa}");
+
+                await _notifService.NotificarAccionAsync("Eliminacion", "Carro",
+                    $"Eliminó vehículo {carro.Placa}");
+
                 TempData["Success"] = $"Vehículo {carro.Placa} eliminado.";
             }
             catch (DbUpdateException)

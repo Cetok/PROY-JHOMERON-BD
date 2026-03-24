@@ -29,6 +29,7 @@ namespace PROYJHOME2026.Data
         public DbSet<AuditoriaLog> AuditoriaLogs { get; set; }
         public DbSet<CarroEstadoLog> CarroEstadoLogs { get; set; }
         public DbSet<EquipoComponenteLog> EquipoComponenteLogs { get; set; }
+        public DbSet<CarroConductorLog> CarroConductorLogs { get; set; }
         public DbSet<EmpleadoEstadoLog> EmpleadoEstadoLogs { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
@@ -114,6 +115,10 @@ namespace PROYJHOME2026.Data
             modelBuilder.Entity<EmpleadoEstadoLog>()
                 .HasOne(l => l.Empleado).WithMany()
                 .HasForeignKey(l => l.IdEmpleado).OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CarroConductorLog>()
+                .HasOne(l => l.Carro).WithMany()
+                .HasForeignKey(l => l.IdCarro).OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Usuario>()
                 .HasIndex(u => u.username).IsUnique();

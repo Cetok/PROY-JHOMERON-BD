@@ -134,13 +134,14 @@
                             <td>
                                 @{
                                     var bc = e.estado_equipo switch {
-                                        "Activo"       => "badge--verde",
-                                        "Devuelto"     => "badge--gris",
-                                        "Perdida"      => "badge--rojo",
-                                        "Rotura"       => "badge--amarillo",
-                                        "Baja"         => "badge--rojo",
-                                        "Mantenimiento"=> "badge--celeste",
-                                        _              => "badge--gris"
+                                        "Activo"        => "badge--verde",
+                                        "Asignado"      => "badge--azul",
+                                        "Mantenimiento" => "badge--amarillo",
+                                        "Devuelto"      => "badge--gris",
+                                        "Perdida"       => "badge--rojo",
+                                        "Rotura"        => "badge--rojo",
+                                        "Baja"          => "badge--rojo",
+                                        _               => "badge--gris"
                                     };
                                 }
                                 <span class="badge @bc">@(e.estado_equipo ?? "—")</span>

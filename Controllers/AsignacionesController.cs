@@ -204,6 +204,7 @@ namespace PROYJHOME2026.Controllers
                     existing.IdChip           = asignacion.IdChip;
                     existing.FechaAsignacion  = asignacion.FechaAsignacion;
                     existing.CorreoEquipo     = asignacion.CorreoEquipo;
+                    existing.NumeroCargo      = asignacion.NumeroCargo;
                     existing.EstadoAsignacion = asignacion.EstadoAsignacion;
 
                     await _context.SaveChangesAsync();
