@@ -2,44 +2,117 @@
 @{
     ViewData["Title"]      = "Editar Accesorio de Vehículo";
     ViewData["Breadcrumb"] = "Flota / Editar Accesorio";
+    bool esExtintor      = (bool)(ViewBag.EsExtintor ?? false);
+    string tipoActual    = Model.TipoExtintor ?? "";
 }
+
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Flota Vehicular</div>
         <h1 class="page-header__title">Editar Accesorio</h1>
-        <p class="page-header__subtitle">@Model.Carro?.Placa — @Model.Asesorio?.TipoAsesorio</p>
+        <p class="page-header__subtitle">@Model.Carro?.Placa — @Model.Carro?.Marca @Model.Carro?.Modelo</p>
     </div>
     <div class="page-header__actions">
         <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro" class="btn btn--secondary">
             <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            Volver
+            Volver al vehículo
         </a>
     </div>
 </div>
-<div style="max-width:540px;">
+
+<div style="max-width:560px;">
     <div class="card">
-        <form asp-action="Editar" asp-route-idCarro="@Model.IdCarro" asp-route-idAsesorio="@Model.IdAsesorio" method="post">
+
+        <!-- Info del accesorio (solo lectura) -->
+        <div style="display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200); margin-bottom:18px;">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:2;flex-shrink:0;"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            <span style="font-weight:600; font-size:0.9rem; color:var(--gris-900);">@Model.Asesorio?.TipoAsesorio</span>
+            @if (esExtintor)
+            {
+                <span class="badge badge--rojo" style="font-size:0.72rem; margin-left:4px;">🧯 Extintor</span>
+            }
+        </div>
+
+        <form asp-action="Editar" asp-route-idCarro="@Model.IdCarro"
+              asp-route-idAsesorio="@Model.IdAsesorio" method="post">
             @Html.AntiForgeryToken()
-            <div style="background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:18px; font-size:0.85rem; color:var(--gris-700);">
-                <strong>Accesorio:</strong> @Model.Asesorio?.TipoAsesorio &nbsp;·&nbsp;
-                <strong>Vehículo:</strong> @Model.Carro?.Placa @Model.Carro?.Marca @Model.Carro?.Modelo
-            </div>
+            <input type="hidden" asp-for="IdCarro" />
+            <input type="hidden" asp-for="IdAsesorio" />
+
             <div class="form-group">
                 <label class="form-label">Fecha de asignación</label>
                 <input asp-for="FechaAsignada" type="date" class="form-control" />
             </div>
+
             <div class="form-group">
                 <label class="form-label">Observaciones</label>
-                <textarea asp-for="Observaciones" class="form-control" rows="2" maxlength="500"></textarea>
+                <textarea asp-for="Observaciones" class="form-control" rows="2"
+                          maxlength="500" placeholder="Notas opcionales..."></textarea>
             </div>
+
+            <!-- ── Campos extintor (solo si es extintor) ────────── -->
+            @if (esExtintor)
+            {
+                <div style="background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.25); border-radius:var(--r-md); padding:16px; margin-bottom:12px;">
+                    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#dc2626; margin-bottom:14px; display:flex; align-items:center; gap:6px;">
+                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#dc2626;fill:none;stroke-width:2;"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Datos del Extintor
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+
+                        <!-- Tipo extintor con SelectList para evitar el error de tag helper -->
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Tipo <span class="req">*</span></label>
+                            <select name="tipoExtintor" class="form-control" required>
+                                <option value="">— Seleccionar —</option>
+                                @foreach (var op in new[] { "PQS", "CO2" })
+                                {
+                                    if (op == tipoActual)
+                                    {
+                                        <option value="@op" selected>@op</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@op">@op</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Peso <span class="req">*</span></label>
+                            <input type="text" name="pesoExtintor" class="form-control" required
+                                   maxlength="50" placeholder="Ej: 6 kg, 10 LB"
+                                   value="@Model.PesoExtintor" />
+                        </div>
+
+                        <div class="form-group" style="margin:0; grid-column:span 2;">
+                            <label class="form-label">Fecha de vencimiento <span class="req">*</span></label>
+                            @{
+                                string fechaVencStr = Model.FechaVencimientoExtintor.HasValue
+                                    ? Model.FechaVencimientoExtintor.Value.ToString("yyyy-MM-dd")
+                                    : "";
+                            }
+                            <input type="date" name="fechaVencimientoExtintorStr" class="form-control" required
+                                   value="@fechaVencStr" />
+                        </div>
+
+                    </div>
+                </div>
+            }
+
             <div style="display:flex; gap:10px; padding-top:12px; border-top:1px solid var(--gris-200); margin-top:8px;">
                 <button type="submit" class="btn btn--celeste btn--lg">
                     <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Guardar cambios
                 </button>
-                <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro" class="btn btn--secondary btn--lg">Cancelar</a>
+                <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro"
+                   class="btn btn--secondary btn--lg">Cancelar</a>
             </div>
         </form>
     </div>
 </div>
-@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }
+
+@section Scripts {
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

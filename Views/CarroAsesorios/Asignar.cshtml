@@ -2,8 +2,10 @@
 @{
     ViewData["Title"]      = "Asignar Accesorio a Vehículo";
     ViewData["Breadcrumb"] = "Flota / Asignar Accesorio";
-    var carro = ViewBag.Carro as PROYJHOME2026.Models.Carro;
+    var carro          = ViewBag.Carro as PROYJHOME2026.Models.Carro;
+    var accesoriosJson = ViewBag.AccesoriosJson as string ?? "[]";
 }
+
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Flota Vehicular</div>
@@ -17,34 +19,101 @@
         </a>
     </div>
 </div>
-<div style="max-width:540px;">
+
+<div style="max-width:560px;">
     <div class="card">
         <form asp-action="Asignar" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="IdCarro" />
+
             <div class="form-group">
                 <label class="form-label">Accesorio <span class="req">*</span></label>
-                <select asp-for="IdAsesorio" asp-items="ViewBag.Disponibles" class="form-control">
+                <select asp-for="IdAsesorio" asp-items="ViewBag.Disponibles"
+                        class="form-control" id="selectAccesorio" required>
                     <option value="">— Seleccionar accesorio —</option>
                 </select>
                 <span asp-validation-for="IdAsesorio" class="form-error"></span>
             </div>
+
             <div class="form-group">
                 <label class="form-label">Fecha de asignación</label>
                 <input asp-for="FechaAsignada" type="date" class="form-control" />
             </div>
+
             <div class="form-group">
                 <label class="form-label">Observaciones</label>
-                <textarea asp-for="Observaciones" class="form-control" rows="2" maxlength="500" placeholder="Notas opcionales..."></textarea>
+                <textarea asp-for="Observaciones" class="form-control" rows="2"
+                          maxlength="500" placeholder="Notas opcionales..."></textarea>
             </div>
+
+            <!-- ── Campos extra solo para Extintor ─────────────── -->
+            <div id="camposExtintor" style="display:none;">
+                <div style="background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.25); border-radius:var(--r-md); padding:16px; margin-top:4px; margin-bottom:12px;">
+                    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#dc2626; margin-bottom:14px; display:flex; align-items:center; gap:6px;">
+                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#dc2626;fill:none;stroke-width:2;"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Datos del Extintor
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Tipo <span class="req">*</span></label>
+                            <select name="tipoExtintor" class="form-control" id="selectTipoExtintor">
+                                <option value="">— Seleccionar —</option>
+                                <option value="PQS">PQS</option>
+                                <option value="CO2">CO2</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Peso <span class="req">*</span></label>
+                            <input type="text" name="pesoExtintor" class="form-control"
+                                   maxlength="50" placeholder="Ej: 6 kg, 10 LB" />
+                        </div>
+                        <div class="form-group" style="margin:0; grid-column:span 2;">
+                            <label class="form-label">Fecha de vencimiento <span class="req">*</span></label>
+                            <input type="date" name="fechaVencimientoExtintorStr" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div style="display:flex; gap:10px; padding-top:12px; border-top:1px solid var(--gris-200); margin-top:8px;">
                 <button type="submit" class="btn btn--celeste btn--lg">
                     <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Asignar accesorio
                 </button>
-                <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro" class="btn btn--secondary btn--lg">Cancelar</a>
+                <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro"
+                   class="btn btn--secondary btn--lg">Cancelar</a>
             </div>
         </form>
     </div>
 </div>
-@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }
+
+@section Scripts {
+<script>
+// ── FIX: JSON serializado con propiedades en minúscula (id / tipo) ──
+const accesorios = @Html.Raw(accesoriosJson);
+const selectAcc  = document.getElementById('selectAccesorio');
+const camposExt  = document.getElementById('camposExtintor');
+
+function esExtintor(idAsesorio) {
+    const acc = accesorios.find(a => a.id == idAsesorio);
+    return acc ? acc.tipo?.toLowerCase().includes('extintor') : false;
+}
+
+function toggleCamposExtintor() {
+    const visible        = esExtintor(selectAcc.value);
+    camposExt.style.display = visible ? 'block' : 'none';
+
+    const selectTipo = document.getElementById('selectTipoExtintor');
+    const inputPeso  = camposExt.querySelector('[name="pesoExtintor"]');
+    const inputFecha = camposExt.querySelector('[name="fechaVencimientoExtintorStr"]');
+
+    selectTipo.required = visible;
+    inputPeso.required  = visible;
+    inputFecha.required = visible;
+}
+
+selectAcc.addEventListener('change', toggleCamposExtintor);
+toggleCamposExtintor();
+</script>
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

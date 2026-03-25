@@ -34,6 +34,17 @@ namespace PROYJHOME2026.Models
         [StringLength(500)]
         public string? Observaciones { get; set; }
 
+        /// <summary>Tipo de extintor: "PQS" o "CO2". Solo aplica si el accesorio es Extintor.</summary>
+        [StringLength(10)]
+        public string? TipoExtintor { get; set; }
+
+        /// <summary>Peso del extintor (texto libre, ej: "6 kg", "10 LB").</summary>
+        [StringLength(50)]
+        public string? PesoExtintor { get; set; }
+
+        /// <summary>Fecha de vencimiento del extintor.</summary>
+        public DateOnly? FechaVencimientoExtintor { get; set; }
+
         // Navegación
         [ForeignKey("IdCarro")]
         public Carro Carro { get; set; } = null!;
@@ -57,6 +68,17 @@ namespace PROYJHOME2026.Models
 
         [StringLength(500)]
         public string? Observaciones { get; set; }
+
+        /// <summary>Tipo de extintor: "PQS" o "CO2". Solo aplica si el accesorio es Extintor.</summary>
+        [StringLength(10)]
+        public string? TipoExtintor { get; set; }
+
+        /// <summary>Peso del extintor (texto libre, ej: "6 kg", "10 LB").</summary>
+        [StringLength(50)]
+        public string? PesoExtintor { get; set; }
+
+        /// <summary>Fecha de vencimiento del extintor.</summary>
+        public DateOnly? FechaVencimientoExtintor { get; set; }
 
         // Navegación
         [ForeignKey("IdGrupo")]

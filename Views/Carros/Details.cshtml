@@ -381,13 +381,39 @@
                     <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
                         <div>
                             <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@ca.Asesorio?.TipoAsesorio</div>
-                            @if (ca.FechaAsignada.HasValue) { <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px;">@ca.FechaAsignada.Value.ToString("dd/MM/yyyy")</div> }
-                            @if (!string.IsNullOrEmpty(ca.Observaciones)) { <div style="font-size:0.72rem; color:var(--gris-400); font-style:italic;">@ca.Observaciones</div> }
+                            @if (ca.FechaAsignada.HasValue)
+                            {
+                                <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px;">@ca.FechaAsignada.Value.ToString("dd/MM/yyyy")</div>
+                            }
+                            @if (!string.IsNullOrEmpty(ca.Observaciones))
+                            {
+                                <div style="font-size:0.72rem; color:var(--gris-400); font-style:italic;">@ca.Observaciones</div>
+                            }
+                            @if (!string.IsNullOrEmpty(ca.TipoExtintor))
+                            {
+                                <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
+                                    <span class="badge badge--rojo" style="font-size:0.68rem;">🧯 @ca.TipoExtintor</span>
+                                    @if (!string.IsNullOrEmpty(ca.PesoExtintor))
+                                    {
+                                        <span style="font-size:0.72rem; color:var(--gris-600);">@ca.PesoExtintor</span>
+                                    }
+                                    @if (ca.FechaVencimientoExtintor.HasValue)
+                                    {
+                                        var vence    = ca.FechaVencimientoExtintor.Value;
+                                        var diasRest = vence.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber;
+                                        var colVenc  = diasRest <= 30 ? "#dc2626" : diasRest <= 90 ? "#d97706" : "var(--gris-500)";
+                                        <span style="font-size:0.72rem; color:@colVenc; font-weight:600;">
+                                            Vence: @vence.ToString("dd/MM/yyyy")
+                                            @if (diasRest <= 90) { <span>(@diasRest días)</span> }
+                                        </span>
+                                    }
+                                </div>
+                            }
                         </div>
                         <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
                             <a asp-controller="CarroAsesorios" asp-action="Editar"
-                               asp-route-idCarro="@Model.IdCarro" asp-route-idAsesorio="@ca.IdAsesorio"
-                               class="btn btn--ghost btn--icon btn--sm" title="Editar">
+                            asp-route-idCarro="@Model.IdCarro" asp-route-idAsesorio="@ca.IdAsesorio"
+                            class="btn btn--ghost btn--icon btn--sm" title="Editar">
                                 <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             </a>
                             <form asp-controller="CarroAsesorios" asp-action="Quitar" method="post" style="display:inline;">

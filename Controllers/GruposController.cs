@@ -8,7 +8,7 @@ namespace PROYJHOME2026.Controllers
 {
     public class GruposController : Controller
     {
-        private readonly AppDbContext    _context;
+        private readonly AppDbContext        _context;
         private readonly AuditoriaService    _auditoriaService;
         private readonly NotificacionService _notifService;
 
@@ -53,6 +53,15 @@ namespace PROYJHOME2026.Controllers
                 .FirstOrDefaultAsync(g => g.idGrupo == id);
 
             if (grupo == null) return NotFound();
+
+            // ✅ Cargar accesorios del grupo con sus datos
+            var asesorios = await _context.GrupoAsesorios
+                .Include(ga => ga.Asesorio)
+                .Where(ga => ga.IdGrupo == id)
+                .ToListAsync();
+
+            ViewBag.Asesorios = asesorios;
+
             return View(grupo);
         }
 
@@ -77,6 +86,12 @@ namespace PROYJHOME2026.Controllers
 
                 _context.Add(grupo);
                 await _context.SaveChangesAsync();
+
+                await _auditoriaService.RegistrarAsync("Crear", "Grupo", grupo.idGrupo,
+                    $"Registró grupo '{grupo.area}'");
+                await _notifService.NotificarAccionAsync("Creacion", "Grupo",
+                    $"Registró grupo '{grupo.area}'", $"/Grupos/Details/{grupo.idGrupo}");
+
                 TempData["Success"] = $"Grupo '{grupo.area}' registrado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
@@ -115,6 +130,12 @@ namespace PROYJHOME2026.Controllers
                 {
                     _context.Update(grupo);
                     await _context.SaveChangesAsync();
+
+                    await _auditoriaService.RegistrarAsync("Editar", "Grupo", id,
+                        $"Editó grupo '{grupo.area}'");
+                    await _notifService.NotificarAccionAsync("Edicion", "Grupo",
+                        $"Editó grupo '{grupo.area}'", $"/Grupos/Details/{id}");
+
                     TempData["Success"] = $"Grupo '{grupo.area}' actualizado correctamente.";
                     return RedirectToAction(nameof(Index));
                 }
@@ -152,6 +173,12 @@ namespace PROYJHOME2026.Controllers
             {
                 _context.Grupos.Remove(grupo);
                 await _context.SaveChangesAsync();
+
+                await _auditoriaService.RegistrarAsync("Eliminar", "Grupo", id,
+                    $"Eliminó grupo '{grupo.area}'");
+                await _notifService.NotificarAccionAsync("Eliminacion", "Grupo",
+                    $"Eliminó grupo '{grupo.area}'");
+
                 TempData["Success"] = $"Grupo '{grupo.area}' eliminado correctamente.";
             }
             catch (DbUpdateException)

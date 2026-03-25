@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PROYJHOME2026.Data;
 
@@ -11,9 +12,11 @@ using PROYJHOME2026.Data;
 namespace PROYJHOME2026.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260325142511_AgregarCamposExtintor")]
+    partial class AgregarCamposExtintor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -738,20 +741,9 @@ namespace PROYJHOME2026.Migrations
                     b.Property<DateTime?>("FechaAsignada")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateOnly?>("FechaVencimientoExtintor")
-                        .HasColumnType("date");
-
                     b.Property<string>("Observaciones")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("PesoExtintor")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("TipoExtintor")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
 
                     b.HasKey("IdGrupo", "IdAsesorio");
 

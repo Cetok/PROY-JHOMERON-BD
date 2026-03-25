@@ -38,20 +38,43 @@
             <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:10px;">
                 @foreach (var ca in Model.CarroAsesorios)
                 {
+                    bool caEsExtintor = !string.IsNullOrEmpty(ca.TipoExtintor);
                     <div style="padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
                         <div style="font-weight:600; font-size:0.85rem; font-family:monospace; color:var(--azul);">@ca.Carro?.Placa</div>
                         <div style="font-size:0.76rem; color:var(--gris-500);">@ca.Carro?.Marca @ca.Carro?.Modelo</div>
-                        @if (ca.FechaAsignada.HasValue) {
+                        @if (ca.FechaAsignada.HasValue)
+                        {
                             <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px;">Desde @ca.FechaAsignada.Value.ToString("dd/MM/yyyy")</div>
                         }
-                        @if (!string.IsNullOrEmpty(ca.Observaciones)) {
+                        @if (!string.IsNullOrEmpty(ca.Observaciones))
+                        {
                             <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px; font-style:italic;">@ca.Observaciones</div>
+                        }
+                        @if (caEsExtintor)
+                        {
+                            var vence    = ca.FechaVencimientoExtintor;
+                            var diasRest = vence.HasValue ? vence.Value.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber : (int?)null;
+                            var colVenc  = diasRest.HasValue ? (diasRest <= 30 ? "#dc2626" : diasRest <= 90 ? "#d97706" : "var(--gris-500)") : "var(--gris-500)";
+                            <div style="display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap;">
+                                <span class="badge" style="background:rgba(220,38,38,0.1); color:#dc2626; font-size:0.68rem;">🧯 @ca.TipoExtintor</span>
+                                @if (!string.IsNullOrEmpty(ca.PesoExtintor)) { <span style="font-size:0.72rem; color:var(--gris-600);">@ca.PesoExtintor</span> }
+                                @if (vence.HasValue)
+                                {
+                                    <span style="font-size:0.72rem; color:@colVenc; font-weight:600;">
+                                        Vence: @vence.Value.ToString("dd/MM/yyyy")
+                                        @if (diasRest.HasValue && diasRest <= 90) { <span>(@diasRest días)</span> }
+                                    </span>
+                                }
+                            </div>
                         }
                     </div>
                 }
             </div>
         }
-        else { <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Ningún vehículo tiene este accesorio.</div> }
+        else
+        {
+            <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Ningún vehículo tiene este accesorio.</div>
+        }
     </div>
 
     <!-- Grupos -->
@@ -68,19 +91,42 @@
             <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:10px;">
                 @foreach (var ga in Model.GrupoAsesorios)
                 {
+                    bool gaEsExtintor = !string.IsNullOrEmpty(ga.TipoExtintor);
                     <div style="padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
                         <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@ga.Grupo?.area</div>
-                        @if (ga.FechaAsignada.HasValue) {
+                        @if (ga.FechaAsignada.HasValue)
+                        {
                             <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px;">Desde @ga.FechaAsignada.Value.ToString("dd/MM/yyyy")</div>
                         }
-                        @if (!string.IsNullOrEmpty(ga.Observaciones)) {
+                        @if (!string.IsNullOrEmpty(ga.Observaciones))
+                        {
                             <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px; font-style:italic;">@ga.Observaciones</div>
+                        }
+                        @if (gaEsExtintor)
+                        {
+                            var vence    = ga.FechaVencimientoExtintor;
+                            var diasRest = vence.HasValue ? vence.Value.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber : (int?)null;
+                            var colVenc  = diasRest.HasValue ? (diasRest <= 30 ? "#dc2626" : diasRest <= 90 ? "#d97706" : "var(--gris-500)") : "var(--gris-500)";
+                            <div style="display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap;">
+                                <span class="badge" style="background:rgba(220,38,38,0.1); color:#dc2626; font-size:0.68rem;">🧯 @ga.TipoExtintor</span>
+                                @if (!string.IsNullOrEmpty(ga.PesoExtintor)) { <span style="font-size:0.72rem; color:var(--gris-600);">@ga.PesoExtintor</span> }
+                                @if (vence.HasValue)
+                                {
+                                    <span style="font-size:0.72rem; color:@colVenc; font-weight:600;">
+                                        Vence: @vence.Value.ToString("dd/MM/yyyy")
+                                        @if (diasRest.HasValue && diasRest <= 90) { <span>(@diasRest días)</span> }
+                                    </span>
+                                }
+                            </div>
                         }
                     </div>
                 }
             </div>
         }
-        else { <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Ningún grupo tiene este accesorio.</div> }
+        else
+        {
+            <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Ningún grupo tiene este accesorio.</div>
+        }
     </div>
 
 </div>
