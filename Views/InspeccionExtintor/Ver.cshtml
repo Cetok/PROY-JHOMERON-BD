@@ -1,0 +1,155 @@
+@model PROYJHOME2026.Models.InspeccionExtintor
+@{
+    ViewData["Title"]      = "Detalle Inspección Extintores";
+    ViewData["Breadcrumb"] = "Accesorios / Inspección Extintores / Detalle";
+    var obsDict = ViewBag.Observaciones as Dictionary<int, string> ?? new();
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Accesorios / Inspección Extintores</div>
+        <h1 class="page-header__title">Detalle de Inspección</h1>
+        <p class="page-header__subtitle">@Model.Asesorio?.TipoAsesorio · @Model.FechaInspeccion.ToString("dd/MM/yyyy")</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Historial" asp-route-idAsesorio="@Model.IdAsesorio" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver al historial
+        </a>
+    </div>
+</div>
+
+<div style="max-width:1000px; display:flex; flex-direction:column; gap:16px;">
+
+    <!-- ENCABEZADO ──────────────────────────────────────────── -->
+    <div class="card">
+        <div style="text-align:center; padding-bottom:14px; border-bottom:1px solid var(--gris-200); margin-bottom:18px;">
+            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-400);">FMT-SST-018 · Sistema de Gestión de Seguridad y Salud en el Trabajo</div>
+            <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:800; color:var(--azul-dark); margin-top:4px;">INSPECCIÓN DE EXTINTORES</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+            <div><div class="det-label">Fecha</div><div class="det-value" style="font-weight:700;color:var(--azul);">@Model.FechaInspeccion.ToString("dd/MM/yyyy")</div></div>
+            <div><div class="det-label">Inspeccionado por</div><div class="det-value">@Model.InspeccionadoPor</div></div>
+            <div><div class="det-label">Registrado por</div><div class="det-value">@(Model.NombreUsuario ?? "—")</div></div>
+        </div>
+    </div>
+
+    <!-- FILAS POR GRUPO ─────────────────────────────────────── -->
+    @foreach (var fila in Model.Filas.OrderBy(f => f.NombreGrupo))
+    {
+        var marcadas  = (fila.ObservacionesMarcadas ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => int.TryParse(s.Trim(), out int n) ? n : 0)
+            .Where(n => n > 0).ToHashSet();
+
+        bool tieneObs = marcadas.Any();
+        var vence     = fila.FechaVencimiento;
+        var diasRest  = vence.HasValue
+            ? vence.Value.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber
+            : (int?)null;
+        var colVenc   = diasRest.HasValue
+            ? (diasRest <= 30 ? "#dc2626" : diasRest <= 90 ? "#d97706" : "var(--verde)")
+            : "var(--gris-400)";
+
+        <div class="card" style="@(tieneObs ? "border-left:3px solid #d97706;" : "border-left:3px solid var(--verde);")">
+
+            <!-- Cabecera fila -->
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200); flex-wrap:wrap;">
+                <div style="font-weight:700; font-size:0.95rem; color:var(--gris-900); flex:1;">@fila.NombreGrupo</div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    @if (!string.IsNullOrEmpty(fila.TipoExtintor))
+                    {
+                        <span class="badge" style="background:rgba(220,38,38,0.1);color:#dc2626;font-size:0.7rem;">🧯 @fila.TipoExtintor</span>
+                    }
+                    @if (!string.IsNullOrEmpty(fila.PesoExtintor))
+                    {
+                        <span style="font-size:0.78rem;color:var(--gris-600);font-weight:600;">@fila.PesoExtintor</span>
+                    }
+                    @if (vence.HasValue)
+                    {
+                        <span style="font-size:0.78rem;color:@colVenc;font-weight:700;">
+                            Vence: @vence.Value.ToString("dd/MM/yyyy")
+                            @if (diasRest.HasValue && diasRest <= 90) { <span>(@diasRest días)</span> }
+                        </span>
+                    }
+                    @if (tieneObs)
+                    {
+                        <span class="badge badge--amarillo" style="font-size:0.7rem;">⚠ @marcadas.Count obs.</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge--verde" style="font-size:0.7rem;">✓ OK</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Comentario -->
+            @if (!string.IsNullOrEmpty(fila.Comentario))
+            {
+                <div style="font-size:0.82rem; color:var(--gris-700); background:var(--gris-50); border-radius:var(--r-sm); padding:8px 12px; margin-bottom:12px; border-left:3px solid var(--azul);">
+                    <span style="font-weight:600; color:var(--azul-dark);">Comentario:</span> @fila.Comentario
+                </div>
+            }
+
+            <!-- Observaciones marcadas -->
+            @if (tieneObs)
+            {
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    @foreach (var num in marcadas.OrderBy(n => n))
+                    {
+                        <div style="display:flex; align-items:flex-start; gap:8px; padding:6px 10px; background:rgba(220,38,38,0.05); border-radius:var(--r-sm); border:1px solid rgba(220,38,38,0.15); font-size:0.8rem;">
+                            <span style="font-weight:800; color:#dc2626; flex-shrink:0;">@num.</span>
+                            <span style="color:var(--gris-800);">
+                                @if (num == 18)
+                                {
+                                    <span>Otros: <strong>@fila.Observacion18</strong></span>
+                                }
+                                else if (obsDict.TryGetValue(num, out var texto))
+                                {
+                                    @texto
+                                }
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div style="font-size:0.82rem; color:var(--verde); font-weight:600;">✓ Sin observaciones — extintor en condiciones OK</div>
+            }
+        </div>
+    }
+
+    <!-- LEYENDA ─────────────────────────────────────────────── -->
+    <div class="card">
+        <div style="font-weight:700; font-size:0.88rem; color:var(--gris-900); margin-bottom:10px;">Leyenda de Observaciones</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
+            @foreach (var obs in obsDict)
+            {
+                <div style="font-size:0.72rem; color:var(--gris-600); padding:3px 8px;">
+                    <span style="font-weight:700; color:var(--azul-dark);">@obs.Key.</span> @obs.Value
+                </div>
+            }
+            <div style="font-size:0.72rem; color:var(--gris-600); padding:3px 8px;">
+                <span style="font-weight:700; color:var(--azul-dark);">18.</span> Otros (Indicar)
+            </div>
+        </div>
+    </div>
+
+    <!-- FIRMA ───────────────────────────────────────────────── -->
+    <div class="card">
+        <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">Firma del Inspector</div>
+        <div class="det-label" style="margin-bottom:6px;">@Model.InspeccionadoPor</div>
+        <div style="border:1px solid var(--gris-200);border-radius:var(--r-md);overflow:hidden;display:inline-block;background:#fff;">
+            <img src="@Model.FirmaBase64" alt="Firma" style="display:block;max-width:500px;height:160px;object-fit:contain;" />
+        </div>
+    </div>
+
+</div>
+
+@section Styles {
+<style>
+.det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
+.det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
+</style>
+}

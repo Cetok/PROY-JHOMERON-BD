@@ -37,6 +37,8 @@ namespace PROYJHOME2026.Data
         public DbSet<InspeccionBotiquinTransporteItem> InspeccionBotiquinTransporteItems { get; set; }
         public DbSet<InspeccionBotiquinGrupo>     InspeccionBotiquinGrupos     { get; set; }
         public DbSet<InspeccionBotiquinGrupoItem> InspeccionBotiquinGrupoItems { get; set; }
+        public DbSet<InspeccionExtintor>      InspeccionExtintores      { get; set; }
+        public DbSet<InspeccionExtintorFila>  InspeccionExtintorFilas   { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }
@@ -149,7 +151,18 @@ namespace PROYJHOME2026.Data
  
             modelBuilder.Entity<InspeccionBotiquinGrupoItem>()
                 .HasOne(i => i.Inspeccion).WithMany(ins => ins.Items)
-                .HasForeignKey(i => i.IdInspeccion).OnDelete(DeleteBehavior.Cascade);    
+                .HasForeignKey(i => i.IdInspeccion).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<InspeccionExtintor>()
+                .HasOne(i => i.Asesorio).WithMany()
+                .HasForeignKey(i => i.IdAsesorio).OnDelete(DeleteBehavior.Cascade);
+ 
+            modelBuilder.Entity<InspeccionExtintorFila>()
+                .HasOne(f => f.Inspeccion).WithMany(i => i.Filas)
+                .HasForeignKey(f => f.IdInspeccion).OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<InspeccionExtintorFila>()
+                .HasOne(f => f.Grupo).WithMany()
+                .HasForeignKey(f => f.IdGrupo).OnDelete(DeleteBehavior.Restrict);    
         }
     }
 }
