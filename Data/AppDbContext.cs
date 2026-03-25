@@ -35,6 +35,8 @@ namespace PROYJHOME2026.Data
         public DbSet<CheckListTransporteItem> CheckListTransporteItems  { get; set; }
         public DbSet<InspeccionBotiquinTransporte>     InspeccionBotiquinTransportes     { get; set; }
         public DbSet<InspeccionBotiquinTransporteItem> InspeccionBotiquinTransporteItems { get; set; }
+        public DbSet<InspeccionBotiquinGrupo>     InspeccionBotiquinGrupos     { get; set; }
+        public DbSet<InspeccionBotiquinGrupoItem> InspeccionBotiquinGrupoItems { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }
@@ -139,6 +141,13 @@ namespace PROYJHOME2026.Data
                 .HasForeignKey(i => i.IdCarro).OnDelete(DeleteBehavior.Cascade);
  
             modelBuilder.Entity<InspeccionBotiquinTransporteItem>()
+                .HasOne(i => i.Inspeccion).WithMany(ins => ins.Items)
+                .HasForeignKey(i => i.IdInspeccion).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<InspeccionBotiquinGrupo>()
+                .HasOne(i => i.Grupo).WithMany()
+                .HasForeignKey(i => i.IdGrupo).OnDelete(DeleteBehavior.Cascade);
+ 
+            modelBuilder.Entity<InspeccionBotiquinGrupoItem>()
                 .HasOne(i => i.Inspeccion).WithMany(ins => ins.Items)
                 .HasForeignKey(i => i.IdInspeccion).OnDelete(DeleteBehavior.Cascade);    
         }
