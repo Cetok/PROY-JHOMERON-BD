@@ -17,21 +17,21 @@ namespace PROYJHOME2026.Models
 
         public int? IdChip { get; set; }
 
+        /// <summary>Grupo/Área al que pertenece esta asignación.</summary>
+        public int? IdGrupo { get; set; }
+
         [Required]
         public DateTime FechaAsignacion { get; set; }
 
-        // Correo corporativo asignado junto al equipo (opcional)
         [StringLength(150)]
         public string? CorreoEquipo { get; set; }
 
-        // Número de cargo — relaciona con código de hoja física
-        [StringLength(50)]
+        [StringLength(100)]
         public string? NumeroCargo { get; set; }
 
-        // Solo "Activo" o "Inactivo" — se maneja automáticamente
         public string EstadoAsignacion { get; set; } = "Activo";
 
-        // Navegación
+        // ── Navegación ───────────────────────────────────────────
         [ForeignKey("IdEmpleado")]
         public Empleado Empleado { get; set; } = null!;
 
@@ -40,6 +40,9 @@ namespace PROYJHOME2026.Models
 
         [ForeignKey("IdChip")]
         public Chip? Chip { get; set; }
+
+        [ForeignKey("IdGrupo")]
+        public Grupo? Grupo { get; set; }
 
         public ICollection<Historial> Historiales { get; set; } = new List<Historial>();
     }

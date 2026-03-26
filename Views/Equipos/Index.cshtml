@@ -2,14 +2,14 @@
 @{
     ViewData["Title"]      = "Equipos";
     ViewData["Breadcrumb"] = "Equipos TI";
-    int pagina       = ViewBag.Pagina;
-    int totalPaginas = ViewBag.TotalPaginas;
-    int total        = ViewBag.Total;
-    string buscar    = ViewBag.Buscar ?? "";
-    string estado    = ViewBag.Estado ?? "";
-    string orden     = ViewBag.Orden  ?? "az";
-    int? tipoId      = ViewBag.TipoId;
-    var tipos        = ViewBag.Tipos as List<PROYJHOME2026.Models.TipoEquipo> ?? new();
+    int    pagina       = ViewBag.Pagina;
+    int    totalPaginas = ViewBag.TotalPaginas;
+    int    total        = ViewBag.Total;
+    string buscar       = ViewBag.Buscar ?? "";
+    string estado       = ViewBag.Estado ?? "";
+    int?   tipoId       = ViewBag.TipoId;
+    var    tipos        = ViewBag.Tipos as List<PROYJHOME2026.Models.TipoEquipo> ?? new();
+    int    porPagina    = 10;
 }
 
 <div class="page-header">
@@ -48,13 +48,9 @@
                 @foreach (var t in tipos)
                 {
                     if (tipoId == t.idTipoEquipo)
-                    {
-                        <option value="@t.idTipoEquipo" selected>@t.tipo</option>
-                    }
+                    { <option value="@t.idTipoEquipo" selected>@t.tipo</option> }
                     else
-                    {
-                        <option value="@t.idTipoEquipo">@t.tipo</option>
-                    }
+                    { <option value="@t.idTipoEquipo">@t.tipo</option> }
                 }
             </select>
         </div>
@@ -64,8 +60,8 @@
                 <option value="">Todos</option>
                 @if (estado == "Activo")        { <option value="Activo" selected>✓ Activo</option> }
                 else                            { <option value="Activo">✓ Activo</option> }
-                @if (estado == "Asignado")      { <option value="Asignado" selected>✓ Asignado</option> }
-                else                            { <option value="Asignado">✓ Asignado</option> }
+                @if (estado == "Asignado")      { <option value="Asignado" selected>↗ Asignado</option> }
+                else                            { <option value="Asignado">↗ Asignado</option> }
                 @if (estado == "Mantenimiento") { <option value="Mantenimiento" selected>⚙ Mantenimiento</option> }
                 else                            { <option value="Mantenimiento">⚙ Mantenimiento</option> }
                 @if (estado == "otros")         { <option value="otros" selected>Otros (baja/rotura/pérdida)</option> }
@@ -104,10 +100,12 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @{ int itemNum = (pagina - 1) * porPagina + 1; }
                     @foreach (var e in Model)
                     {
                         <tr>
-                            <td style="color:var(--gris-400); font-size:0.78rem; font-weight:400;">@e.idEquipo</td>
+                            <!-- ✅ Número correlativo con paginación -->
+                            <td style="color:var(--gris-400); font-size:0.78rem; font-weight:400;">@itemNum</td>
                             <td>
                                 <div style="font-weight:600; color:var(--gris-900);">
                                     @(e.marca ?? "—") @(e.modelo ?? "")
@@ -115,9 +113,7 @@
                             </td>
                             <td>
                                 @if (e.TipoEquipo != null)
-                                {
-                                    <span class="badge badge--azul">@e.TipoEquipo.tipo</span>
-                                }
+                                { <span class="badge badge--azul">@e.TipoEquipo.tipo</span> }
                                 else { <span style="color:var(--gris-400);">—</span> }
                             </td>
                             <td style="font-family:monospace; font-size:0.82rem; letter-spacing:0.03em;">
@@ -156,10 +152,10 @@
                                        class="btn btn--secondary btn--icon" title="Editar">
                                         <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                     </a>
-                                    
                                 </div>
                             </td>
                         </tr>
+                        itemNum++;
                     }
                 </tbody>
             </table>
@@ -174,22 +170,23 @@
                 @if (pagina > 1)
                 {
                     <a asp-action="Index" asp-route-pagina="@(pagina-1)"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-tipoId="@tipoId" asp-route-orden="@orden"
-                       class="pagination__btn">
+                       asp-route-buscar="@buscar" asp-route-estado="@estado"
+                       asp-route-tipoId="@tipoId" class="pagination__btn">
                         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                     </a>
                 }
                 @for (int i = Math.Max(1, pagina - 2); i <= Math.Min(totalPaginas, pagina + 2); i++)
                 {
                     <a asp-action="Index" asp-route-pagina="@i"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-tipoId="@tipoId" asp-route-orden="@orden"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado"
+                       asp-route-tipoId="@tipoId"
                        class="pagination__btn @(i == pagina ? "active" : "")">@i</a>
                 }
                 @if (pagina < totalPaginas)
                 {
                     <a asp-action="Index" asp-route-pagina="@(pagina+1)"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-tipoId="@tipoId" asp-route-orden="@orden"
-                       class="pagination__btn">
+                       asp-route-buscar="@buscar" asp-route-estado="@estado"
+                       asp-route-tipoId="@tipoId" class="pagination__btn">
                         <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </a>
                 }

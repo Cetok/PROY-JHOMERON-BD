@@ -18,8 +18,8 @@ builder.Services.AddSession(options =>
     options.IdleTimeout         = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly     = true;
     options.Cookie.IsEssential  = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite     = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;//cambie esto
+    options.Cookie.SameSite     = SameSiteMode.Lax;//cambie esto
 });
 
 // ── HttpContextAccessor (necesario para AuditoriaService) ───
@@ -66,7 +66,14 @@ app.Use(async (context, next) =>
 app.MapControllerRoute(
     name:    "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
-
+//agregue lo de abajo
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider
+                  .GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+//"Server=miapp-db.cdieqi08ih0k.sa-east-1.rds.amazonaws.com,1433;Database=NombreDeTuBD;User Id=admin;Password=TuPassword;TrustServerCertificate=True;"
 // ── Seed ─────────────────────────────────────────────────────
 await DbSeeder.SeedAdminAsync(app.Services);
 

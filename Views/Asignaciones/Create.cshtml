@@ -2,6 +2,7 @@
 @{
     ViewData["Title"]      = "Nueva Asignación";
     ViewData["Breadcrumb"] = "Asignaciones / Nueva";
+    var equiposJson = ViewBag.EquiposJson as string ?? "[]";
 }
 
 <div class="page-header">
@@ -23,10 +24,10 @@
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
 
-            <!-- Empleado y equipo -->
+            <!-- Empleado y Equipo -->
             <div style="margin-bottom:24px;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Empleado y equipo
+                    Empleado y Equipo
                 </p>
                 <div class="form-grid">
                     <div class="form-group form-group--full">
@@ -38,26 +39,63 @@
                     </div>
                     <div class="form-group form-group--full">
                         <label class="form-label">Equipo <span class="req">*</span></label>
-                        <select asp-for="IdEquipo" asp-items="ViewBag.EquiposList" class="form-control">
-                            <option value="">— Seleccionar equipo —</option>
+                        <select asp-for="IdEquipo" asp-items="ViewBag.EquiposList"
+                                class="form-control" id="selectEquipo" onchange="toggleChip()">
+                            <option value="">— Seleccionar equipo disponible —</option>
                         </select>
                         <span asp-validation-for="IdEquipo" class="form-error"></span>
-                        <div class="form-hint">Solo equipos activos sin asignación vigente. Se muestra: Tipo — Marca Modelo [Serie]</div>
-                    </div>
-                    <div class="form-group form-group--full">
-                        <label class="form-label">Chip / SIM <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
-                        <select asp-for="IdChip" asp-items="ViewBag.ChipsList" class="form-control">
-                            <option value="">— Sin chip —</option>
-                        </select>
-                        <span asp-validation-for="IdChip" class="form-error"></span>
+                        <div class="form-hint">Solo se muestran equipos activos y sin asignación activa.</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Datos adicionales -->
-            <div style="margin-bottom:28px;">
+            <!-- Chip — solo visible si el equipo es Celular -->
+            <div id="seccionChip" style="margin-bottom:24px; display:none;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                    Datos adicionales
+                    Chip / SIM
+                </p>
+                <div class="form-group">
+                    <label class="form-label">Chip / SIM <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
+                    <select asp-for="IdChip" asp-items="ViewBag.ChipsList" class="form-control">
+                        <option value="">— Sin chip —</option>
+                    </select>
+                    <span asp-validation-for="IdChip" class="form-error"></span>
+                </div>
+            </div>
+
+            <!-- Área / Grupo y Correo -->
+            <div style="margin-bottom:24px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Área y datos adicionales
+                </p>
+                <div class="form-grid">
+                    <div class="form-group form-group--full">
+                        <label class="form-label">Área / Grupo <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
+                        <select asp-for="IdGrupo" asp-items="ViewBag.GruposList" class="form-control">
+                            <option value="">— Sin área —</option>
+                        </select>
+                        <span asp-validation-for="IdGrupo" class="form-error"></span>
+                        <div class="form-hint">Área o departamento al que pertenece esta asignación.</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Correo corporativo <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
+                        <input asp-for="CorreoEquipo" type="email" class="form-control"
+                               placeholder="usuario@empresa.com" maxlength="150" />
+                        <span asp-validation-for="CorreoEquipo" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">N° de cargo <span style="color:var(--gris-400); font-weight:400;">(opcional)</span></label>
+                        <input asp-for="NumeroCargo" type="text" class="form-control"
+                               placeholder="Ej: CARGO-001" maxlength="100" />
+                        <span asp-validation-for="NumeroCargo" class="form-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fecha -->
+            <div style="margin-bottom:24px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Fecha
                 </p>
                 <div class="form-grid">
                     <div class="form-group">
@@ -65,24 +103,10 @@
                         <input asp-for="FechaAsignacion" type="date" class="form-control" />
                         <span asp-validation-for="FechaAsignacion" class="form-error"></span>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Número de cargo</label>
-                        <input asp-for="NumeroCargo" class="form-control"
-                               placeholder="Ej: C-001, EQ-2024-05..." />
-                        <span asp-validation-for="NumeroCargo" class="form-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Correo del equipo</label>
-                        <input asp-for="CorreoEquipo" type="email" class="form-control"
-                               placeholder="Ej: juan.perez@empresa.com" />
-                        <span asp-validation-for="CorreoEquipo" class="form-error"></span>
-                        <div class="form-hint">Correo asignado junto al equipo.</div>
-                    </div>
                 </div>
-                <input asp-for="EstadoAsignacion" type="hidden" value="Activo" />
                 <div class="form-hint" style="margin-top:8px;">
                     <svg style="width:13px;height:13px;stroke:var(--celeste);fill:none;stroke-width:2;vertical-align:middle;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    La asignación se crea como <strong>Activa</strong>. Para cerrarla registra un evento en el historial.
+                    La asignación se crea como <strong>Activa</strong>. Para darla de baja, usa el botón "Registrar evento" en el detalle.
                 </div>
             </div>
 
@@ -98,5 +122,25 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script>
+const equipos     = @Html.Raw(equiposJson);
+const selectEquipo = document.getElementById('selectEquipo');
+const seccionChip  = document.getElementById('seccionChip');
+
+function toggleChip() {
+    const equipo = equipos.find(e => e.id == selectEquipo.value);
+    const esCelular = equipo ? equipo.tipo?.toLowerCase().includes('celular') : false;
+    seccionChip.style.display = esCelular ? 'block' : 'none';
+
+    // Limpiar chip si no es celular
+    if (!esCelular) {
+        const sel = seccionChip.querySelector('select');
+        if (sel) sel.value = '';
+    }
+}
+
+// Ejecutar al cargar por si viene preseleccionado
+toggleChip();
+</script>
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

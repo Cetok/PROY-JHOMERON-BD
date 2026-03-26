@@ -99,6 +99,10 @@ namespace PROYJHOME2026.Data
             modelBuilder.Entity<Asignacion>()
                 .HasOne(a => a.Chip).WithMany(c => c.Asignaciones)
                 .HasForeignKey(a => a.IdChip).OnDelete(DeleteBehavior.SetNull);
+                
+            modelBuilder.Entity<Asignacion>()
+                .HasOne(a => a.Grupo).WithMany()
+                .HasForeignKey(a => a.IdGrupo).OnDelete(DeleteBehavior.SetNull);  
 
             modelBuilder.Entity<MantenimientoCarro>()
                 .HasOne(m => m.TipoMantenimiento).WithMany(t => t.MantenimientosCarros)

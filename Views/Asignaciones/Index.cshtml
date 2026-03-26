@@ -2,11 +2,12 @@
 @{
     ViewData["Title"]      = "Asignaciones";
     ViewData["Breadcrumb"] = "Asignaciones";
-    int pagina       = ViewBag.Pagina;
-    int totalPaginas = ViewBag.TotalPaginas;
-    int total        = ViewBag.Total;
-    string buscar    = ViewBag.Buscar ?? "";
-    string estado    = ViewBag.Estado ?? "";
+    int    pagina       = ViewBag.Pagina;
+    int    totalPaginas = ViewBag.TotalPaginas;
+    int    total        = ViewBag.Total;
+    int    porPagina    = ViewBag.PorPagina ?? 10;
+    string buscar       = ViewBag.Buscar ?? "";
+    string estado       = ViewBag.Estado ?? "";
 }
 
 <div class="page-header">
@@ -31,7 +32,7 @@
             <div style="position:relative;">
                 <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" name="buscar" value="@buscar" class="form-control"
-                       style="padding-left:34px;" placeholder="Empleado, equipo..." />
+                       style="padding-left:34px;" placeholder="Empleado, equipo, serie, área..." />
             </div>
         </div>
         <div style="min-width:160px;">
@@ -70,29 +71,47 @@
                         <th>#</th>
                         <th>Empleado</th>
                         <th>Equipo</th>
-                        <th>Chip</th>
+                        <th>Área / Grupo</th>
                         <th>Fecha asignación</th>
                         <th>Estado</th>
                         <th style="text-align:center;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @{ int itemNum = (pagina - 1) * porPagina + 1; }
                     @foreach (var a in Model)
                     {
                         <tr>
+                            <!-- ✅ Número correlativo con paginación -->
                             <td style="color:var(--gris-400); font-size:0.78rem; font-weight:400; width:50px;">
-                                @a.IdAsignacion
+                                @itemNum
                             </td>
                             <td>
                                 <div style="font-weight:600; font-size:0.86rem; color:var(--gris-900);">
                                     @(a.Empleado?.nombre ?? "—") @(a.Empleado?.paterno ?? "")
                                 </div>
+                                @if (!string.IsNullOrEmpty(a.Empleado?.dni))
+                                {
+                                    <div style="font-size:0.74rem; color:var(--gris-400);">@a.Empleado.dni</div>
+                                }
                             </td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">
                                 @(a.Equipo?.marca ?? "—") @(a.Equipo?.modelo ?? "")
+                                @if (!string.IsNullOrEmpty(a.Equipo?.numero_serie))
+                                {
+                                    <div style="font-size:0.72rem; font-family:monospace; color:var(--gris-400);">@a.Equipo.numero_serie</div>
+                                }
                             </td>
-                            <td style="font-family:monospace; font-size:0.82rem; color:var(--gris-600);">
-                               @(a.Chip != null ? a.Chip.NumeroCelular : "Sin chip")
+                            <!-- ✅ Área/Grupo en lugar de chip -->
+                            <td style="font-size:0.82rem; color:var(--gris-600);">
+                                @if (a.Grupo != null)
+                                {
+                                    <span class="badge badge--azul" style="font-size:0.72rem;">@a.Grupo.area</span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--gris-300);">—</span>
+                                }
                             </td>
                             <td style="font-size:0.8rem; color:var(--gris-600);">
                                 @a.FechaAsignacion.ToString("dd/MM/yyyy")
@@ -119,10 +138,10 @@
                                             <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                         </a>
                                     }
-                                    
                                 </div>
                             </td>
                         </tr>
+                        itemNum++;
                     }
                 </tbody>
             </table>
@@ -168,13 +187,8 @@
             <div class="empty-state__title">No se encontraron asignaciones</div>
             <div class="empty-state__text">
                 @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estado))
-                {
-                    <span>Intenta con otros filtros.</span>
-                }
-                else
-                {
-                    <span>Aún no hay asignaciones registradas.</span>
-                }
+                { <span>Intenta con otros filtros.</span> }
+                else { <span>Aún no hay asignaciones registradas.</span> }
             </div>
         </div>
     }
