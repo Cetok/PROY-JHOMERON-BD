@@ -17,9 +17,20 @@
 
 <div class="page-header">
     <div class="page-header__info">
-        <div class="page-header__eyebrow">Equipos TI — @(Model.TipoEquipo?.tipo ?? "—")</div>
-        <h1 class="page-header__title">@Model.marca @Model.modelo</h1>
-        <p class="page-header__subtitle">Serie: @(Model.numero_serie ?? "—")</p>
+        <div class="page-header__eyebrow">Equipos TI</div>
+        @* ✅ Primero el tipo (badge azul pequeño) *@
+        @if (Model.TipoEquipo != null)
+        {
+            <div style="margin-bottom:4px;">
+                <span class="badge badge--azul" style="font-size:0.72rem;">@Model.TipoEquipo.tipo</span>
+            </div>
+        }
+        @* ✅ Luego marca + modelo en grande y azul *@
+        <h1 class="page-header__title" style="color:var(--azul);">@Model.marca @Model.modelo</h1>
+        @* ✅ Abajo solo la serie *@
+        <p class="page-header__subtitle" style="font-family:monospace; letter-spacing:0.06em;">
+            @(Model.numero_serie ?? "Sin serie")
+        </p>
     </div>
     <div class="page-header__actions">
         <a asp-action="Edit" asp-route-id="@Model.idEquipo" class="btn btn--celeste">
@@ -32,6 +43,7 @@
         </a>
     </div>
 </div>
+
 
 <div style="max-width:1000px; display:flex; flex-direction:column; gap:16px;">
 
