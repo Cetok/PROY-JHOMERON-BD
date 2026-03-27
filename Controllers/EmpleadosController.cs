@@ -128,6 +128,9 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("Empleado.estado");
             vm.Empleado.estado = "Activo";
 
+            if (string.IsNullOrEmpty(vm.Empleado.TipoDocumento))
+                vm.Empleado.TipoDocumento = "DNI";
+
             if (ModelState.IsValid)
             {
                 bool dniExiste = await _context.Empleados

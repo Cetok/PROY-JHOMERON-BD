@@ -2,6 +2,7 @@
 @{
     ViewData["Title"]      = "Nuevo Empleado";
     ViewData["Breadcrumb"] = "Empleados / Nuevo";
+    var tipoDoc = Model.Empleado.TipoDocumento ?? "DNI";
 }
 
 <div class="page-header">
@@ -45,10 +46,20 @@
                         <input asp-for="Empleado.materno" class="form-control" placeholder="Ej: López" />
                         <span asp-validation-for="Empleado.materno" class="form-error"></span>
                     </div>
+
+                    <!-- Tipo de documento + DNI/Carnet -->
                     <div class="form-group">
-                        <label class="form-label">DNI / CARNET DE EXTRANJERIA<span class="req">*</span></label>
-                        <input asp-for="Empleado.dni" class="form-control"
-                               placeholder="12345678" maxlength="9" inputmode="numeric" />
+                        <label class="form-label">Tipo de documento <span class="req">*</span></label>
+                        <select asp-for="Empleado.TipoDocumento" class="form-control" id="tipoDocSelect">
+                            <option value="DNI">DNI (8 dígitos)</option>
+                            <option value="Carnet">Carnet de Extranjería (9 dígitos)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" id="dniLabel">Número de documento <span class="req">*</span></label>
+                        <input asp-for="Empleado.dni" class="form-control" id="dniInput"
+                               placeholder="12345678" maxlength="8" inputmode="numeric" />
+                        <span id="dniHint" style="font-size:0.75rem; color:var(--gris-400); margin-top:3px; display:block;">8 dígitos numéricos</span>
                         <span asp-validation-for="Empleado.dni" class="form-error"></span>
                     </div>
                 </div>
@@ -72,8 +83,6 @@
                     </div>
                 </div>
             </div>
-
-
 
         </div>
 
@@ -143,8 +152,6 @@
     border-bottom: 1px solid var(--gris-200);
     margin-bottom: 14px;
 }
-
-/* Checkbox estilizado */
 .grupo-check {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 12px;
@@ -155,9 +162,7 @@
     user-select: none;
 }
 .grupo-check:hover { border-color: var(--celeste); background: var(--celeste-glow); }
-
 .grupo-check input[type="checkbox"] { display: none; }
-
 .grupo-check__box {
     width: 18px; height: 18px;
     border: 2px solid var(--gris-300);
@@ -173,29 +178,66 @@
     stroke-width: 3; stroke-linecap: round;
     opacity: 0; transition: opacity var(--t);
 }
-
-/* Cuando está marcado */
 .grupo-check input[type="checkbox"]:checked ~ .grupo-check__box {
-    background: var(--celeste);
-    border-color: var(--celeste);
+    background: var(--celeste); border-color: var(--celeste);
 }
 .grupo-check input[type="checkbox"]:checked ~ .grupo-check__box svg { opacity: 1; }
-.grupo-check input[type="checkbox"]:checked ~ span {
-    color: var(--azul-dark); font-weight: 600;
-}
-
-/* Reordenar: el checkbox va antes del box */
+.grupo-check input[type="checkbox"]:checked ~ span { color: var(--azul-dark); font-weight: 600; }
 .grupo-check { flex-direction: row; }
 .grupo-check input { order: -1; }
 .grupo-check .grupo-check__box { order: 0; }
 .grupo-check span { order: 1; font-size: 0.87rem; color: var(--gris-700); }
-
-@@media (max-width: 760px) {
-    form > div { grid-template-columns: 1fr !important; }
-}
+@@media (max-width: 760px) { form > div { grid-template-columns: 1fr !important; } }
 </style>
 }
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script>
+(function() {
+    const sel   = document.getElementById('tipoDocSelect');
+    const input = document.getElementById('dniInput');
+    const hint  = document.getElementById('dniHint');
+
+    function actualizarDoc() {
+        if (sel.value === 'Carnet') {
+            input.maxLength   = 9;
+            input.placeholder = '123456789';
+            hint.textContent  = '9 dígitos numéricos';
+        } else {
+            input.maxLength   = 8;
+            input.placeholder = '12345678';
+            hint.textContent  = '8 dígitos numéricos';
+        }
+        // Limpiar si el valor actual no es válido para el nuevo tipo
+        const largo = sel.value === 'Carnet' ? 9 : 8;
+        if (input.value.length > largo) input.value = '';
+    }
+
+    sel.addEventListener('change', actualizarDoc);
+
+    // Solo permitir números
+    input.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+    });
+
+    // Validar al submit
+    input.closest('form').addEventListener('submit', function(e) {
+        const largo = sel.value === 'Carnet' ? 9 : 8;
+        if (input.value.length !== largo) {
+            e.preventDefault();
+            input.focus();
+            hint.style.color = 'var(--rojo, #dc2626)';
+            hint.textContent = `⚠ Debe tener exactamente ${largo} dígitos`;
+            setTimeout(() => {
+                hint.style.color = 'var(--gris-400)';
+                hint.textContent = `${largo} dígitos numéricos`;
+            }, 3000);
+        }
+    });
+
+    // Inicializar con valor del modelo
+    actualizarDoc();
+})();
+</script>
 }

@@ -21,14 +21,14 @@
     </div>
 </div>
 
-<div style="max-width:760px;">
+<div style="max-width:860px;">
     <div class="card">
         <form asp-action="Create" method="post" id="formEquipo">
             @Html.AntiForgeryToken()
 
-            <!-- Información básica -->
+            <!-- Tipo de equipo -->
             <div style="margin-bottom:24px;">
-                <p class="form-section-title">Información básica</p>
+                <p class="form-section-title">Tipo de equipo</p>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Tipo de equipo <span class="req">*</span></label>
@@ -38,142 +38,299 @@
                         </select>
                         <span asp-validation-for="idTipoEquipo" class="form-error"></span>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Marca <span class="req">*</span></label>
-                        <input asp-for="marca" class="form-control" placeholder="Ej: HP, Dell, Lenovo" />
-                        <span asp-validation-for="marca" class="form-error"></span>
+                </div>
+            </div>
+
+            <!-- ── CAMPOS ESTÁNDAR (oculto en PC Completo) ── -->
+            <div id="seccionEstandar">
+                <div style="margin-bottom:24px;">
+                    <p class="form-section-title">Información básica</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Marca <span class="req">*</span></label>
+                            <input asp-for="marca" class="form-control" placeholder="Ej: HP, Dell, Lenovo" />
+                            <span asp-validation-for="marca" class="form-error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo</label>
+                            <input asp-for="modelo" class="form-control" placeholder="Ej: ProBook 450 G8" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Número de serie</label>
+                            <input asp-for="numero_serie" class="form-control" placeholder="Ej: 5CG1234567" />
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Modelo <span class="req">*</span></label>
-                        <input asp-for="modelo" class="form-control" placeholder="Ej: ProBook 450 G8" />
-                        <span asp-validation-for="modelo" class="form-error"></span>
+                </div>
+
+                <!-- Campos técnicos CPU/Laptop -->
+                <div id="seccionTecnica" style="display:none; margin-bottom:24px;">
+                    <p class="form-section-title">Especificaciones técnicas</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Procesador</label>
+                            <input asp-for="Procesador" class="form-control" placeholder="Ej: Intel Core i5-12400" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tarjeta madre</label>
+                            <input asp-for="TarjetaMadre" class="form-control" placeholder="Ej: ASUS B660M" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">RAM</label>
+                            <input asp-for="Ram" class="form-control" placeholder="Ej: 16 GB DDR4 3200MHz" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Disco</label>
+                            <input asp-for="Disco" class="form-control" placeholder="Ej: SSD 512 GB NVMe" />
+                        </div>
+                        <div class="form-group" id="campoFuente" style="display:none;">
+                            <label class="form-label">Fuente de energía</label>
+                            <input asp-for="FuenteEnergia" class="form-control" placeholder="Ej: 600W 80 Plus Bronze" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sistema operativo</label>
+                            <input asp-for="sistema_operativo" class="form-control" placeholder="Ej: Windows" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Versión</label>
+                            <input asp-for="version" class="form-control" placeholder="Ej: Windows 11 Pro" />
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Número de serie</label>
-                        <input asp-for="numero_serie" class="form-control" placeholder="Ej: 5CG1234567" />
-                        <span asp-validation-for="numero_serie" class="form-error"></span>
+                    <div style="margin-top:12px; padding:14px 16px; background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-sm);">
+                        <label class="form-label" style="margin-bottom:10px;">Gráficos</label>
+                        <div style="display:flex; gap:20px; margin-bottom:12px;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                                <input type="radio" name="GraficosIntegrados" value="true"
+                                       @(Model?.GraficosIntegrados == true ? "checked" : "")
+                                       onchange="toggleTarjetaGrafica()" style="accent-color:var(--azul);" />
+                                Gráficos integrados
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                                <input type="radio" name="GraficosIntegrados" value="false"
+                                       @(Model?.GraficosIntegrados == false ? "checked" : "")
+                                       onchange="toggleTarjetaGrafica()" style="accent-color:var(--azul);" />
+                                Tarjeta gráfica dedicada
+                            </label>
+                        </div>
+                        <div id="campoTarjetaGrafica" style="display:none;">
+                            <label class="form-label">Tarjeta gráfica</label>
+                            <input asp-for="TarjetaGrafica" class="form-control" placeholder="Ej: NVIDIA GTX 1650 4GB" />
+                        </div>
                     </div>
+                </div>
+
+                <!-- Celular -->
+                <div id="campoCelular" style="display:none; margin-bottom:24px;">
+                    <p class="form-section-title">Datos del celular</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">IMEI</label>
+                            <input asp-for="IMEI" class="form-control" placeholder="Ej: 353123450000001" maxlength="50" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sistema operativo</label>
+                            <input asp-for="sistema_operativo" class="form-control" placeholder="Ej: Android, iOS" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Versión</label>
+                            <input asp-for="version" class="form-control" placeholder="Ej: Android 14" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mouse -->
+                <div id="campoMouse" style="display:none; margin-bottom:24px;">
+                    <p class="form-section-title">Datos del mouse</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">¿Es inalámbrico?</label>
+                            <div style="display:flex; gap:20px; margin-top:8px;">
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                                    <input type="radio" name="EsInalambrico" value="true"
+                                           @(Model?.EsInalambrico == true ? "checked" : "")
+                                           style="accent-color:var(--azul);" /> Sí, inalámbrico
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                                    <input type="radio" name="EsInalambrico" value="false"
+                                           @(Model?.EsInalambrico == false ? "checked" : "")
+                                           style="accent-color:var(--azul);" /> Con cable
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PC COMPLETO (solo visible si tipo = PC Completo) ── -->
+            <div id="seccionPcCompleto" style="display:none;">
+
+                <!-- Monitor -->
+                <div style="margin-bottom:24px;">
+                    <p class="form-section-title" style="border-color:#8b5cf6; color:#8b5cf6;">🖥 Monitor</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Marca</label>
+                            <input asp-for="PcMonitorMarca" class="form-control" placeholder="Ej: LG, Samsung" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo</label>
+                            <input asp-for="PcMonitorModelo" class="form-control" placeholder="Ej: 24MK430H" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">N° Serie</label>
+                            <input asp-for="PcMonitorSerie" class="form-control" placeholder="Ej: 001NTKB..." />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CPU -->
+                <div style="margin-bottom:24px;">
+                    <p class="form-section-title" style="border-color:#3b82f6; color:#3b82f6;">🖥 CPU</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Marca</label>
+                            <input asp-for="PcCpuMarca" class="form-control" placeholder="Ej: HP, Dell" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo</label>
+                            <input asp-for="PcCpuModelo" class="form-control" placeholder="Ej: EliteDesk 800" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">N° Serie</label>
+                            <input asp-for="PcCpuSerie" class="form-control" placeholder="Ej: 5CG1234567" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Procesador</label>
+                            <input asp-for="PcCpuProcesador" class="form-control" placeholder="Ej: Intel Core i5-12400" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tarjeta madre</label>
+                            <input asp-for="PcCpuTarjetaMadre" class="form-control" placeholder="Ej: ASUS B660M" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">RAM</label>
+                            <input asp-for="PcCpuRam" class="form-control" placeholder="Ej: 16 GB DDR4" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Disco</label>
+                            <input asp-for="PcCpuDisco" class="form-control" placeholder="Ej: SSD 512 GB NVMe" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fuente de energía</label>
+                            <input asp-for="PcCpuFuenteEnergia" class="form-control" placeholder="Ej: 600W 80 Plus Bronze" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sistema operativo</label>
+                            <input asp-for="PcCpuSistemaOperativo" class="form-control" placeholder="Ej: Windows" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Versión SO</label>
+                            <input asp-for="PcCpuVersionSO" class="form-control" placeholder="Ej: Windows 11 Pro" />
+                        </div>
+                    </div>
+                    <!-- Gráficos CPU -->
+                    <div style="margin-top:12px; padding:14px 16px; background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-sm);">
+                        <label class="form-label" style="margin-bottom:10px;">Gráficos</label>
+                        <div style="display:flex; gap:20px; margin-bottom:12px;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                                <input type="radio" name="PcCpuGraficosIntegrados" value="true"
+                                       @(Model?.PcCpuGraficosIntegrados == true ? "checked" : "")
+                                       onchange="toggleGraficosPC()" style="accent-color:var(--azul);" />
+                                Integrados
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                                <input type="radio" name="PcCpuGraficosIntegrados" value="false"
+                                       @(Model?.PcCpuGraficosIntegrados == false ? "checked" : "")
+                                       onchange="toggleGraficosPC()" style="accent-color:var(--azul);" />
+                                Tarjeta dedicada
+                            </label>
+                        </div>
+                        <div id="campoPcGrafica" style="display:@(Model?.PcCpuGraficosIntegrados == false ? "block" : "none");">
+                            <label class="form-label">Tarjeta gráfica</label>
+                            <input asp-for="PcCpuTarjetaGrafica" class="form-control" placeholder="Ej: NVIDIA GTX 1650" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mouse PC -->
+                <div style="margin-bottom:24px;">
+                    <p class="form-section-title" style="border-color:#10b981; color:#10b981;">🖱 Mouse</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Marca</label>
+                            <input asp-for="PcMouseMarca" class="form-control" placeholder="Ej: Logitech, HP" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo</label>
+                            <input asp-for="PcMouseModelo" class="form-control" placeholder="Ej: M90" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">N° Serie</label>
+                            <input asp-for="PcMouseSerie" class="form-control" placeholder="Opcional" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">¿Inalámbrico?</label>
+                            <div style="display:flex; gap:20px; margin-top:8px;">
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                                    <input type="radio" name="PcMouseEsInalambrico" value="true"
+                                           @(Model?.PcMouseEsInalambrico == true ? "checked" : "")
+                                           style="accent-color:var(--azul);" /> Sí
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
+                                    <input type="radio" name="PcMouseEsInalambrico" value="false"
+                                           @(Model?.PcMouseEsInalambrico == false ? "checked" : "")
+                                           style="accent-color:var(--azul);" /> Con cable
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teclado -->
+                <div style="margin-bottom:24px;">
+                    <p class="form-section-title" style="border-color:#f59e0b; color:#f59e0b;">⌨ Teclado</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Marca</label>
+                            <input asp-for="PcTecladoMarca" class="form-control" placeholder="Ej: HP, Logitech" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo</label>
+                            <input asp-for="PcTecladoModelo" class="form-control" placeholder="Ej: K120" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">N° Serie</label>
+                            <input asp-for="PcTecladoSerie" class="form-control" placeholder="Opcional" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mousepad -->
+                <div style="margin-bottom:24px;">
+                    <p class="form-section-title" style="border-color:#6b7280; color:#6b7280;">🖱 Mousepad</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Marca</label>
+                            <input asp-for="PcMousepadMarca" class="form-control" placeholder="Ej: Logitech, Razer" />
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Fecha de compra y Observaciones (siempre al final) -->
+            <div style="margin-bottom:24px;">
+                <p class="form-section-title">General</p>
+                <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Fecha de compra</label>
                         <input asp-for="fecha_compra" type="date" class="form-control" />
                         <span asp-validation-for="fecha_compra" class="form-error"></span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Campos técnicos CPU/Laptop (dinámicos) -->
-            <div id="seccionTecnica" style="display:none; margin-bottom:24px;">
-                <p class="form-section-title" id="tituloTecnico">Especificaciones técnicas</p>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Procesador</label>
-                        <input asp-for="Procesador" class="form-control" placeholder="Ej: Intel Core i5-12400" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Tarjeta madre</label>
-                        <input asp-for="TarjetaMadre" class="form-control" placeholder="Ej: ASUS B660M" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">RAM</label>
-                        <input asp-for="Ram" class="form-control" placeholder="Ej: 16 GB DDR4 3200MHz" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Disco</label>
-                        <input asp-for="Disco" class="form-control" placeholder="Ej: SSD 512 GB NVMe" />
-                    </div>
-                    <div class="form-group" id="campoFuente" style="display:none;">
-                        <label class="form-label">Fuente de energía</label>
-                        <input asp-for="FuenteEnergia" class="form-control"
-                               placeholder="Ej: 600W 80 Plus Bronze" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Sistema operativo</label>
-                        <input asp-for="sistema_operativo" class="form-control" placeholder="Ej: Windows" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Versión</label>
-                        <input asp-for="version" class="form-control" placeholder="Ej: Windows 11 Pro" />
-                    </div>
-                </div>
-
-                <!-- Gráficos -->
-                <div style="margin-top:12px; padding:14px 16px; background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-sm);">
-                    <label class="form-label" style="margin-bottom:10px;">Gráficos</label>
-                    <div style="display:flex; gap:20px; margin-bottom:12px;">
-                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
-                            <input type="radio" name="GraficosIntegrados" value="true"
-                                   @(Model?.GraficosIntegrados == true ? "checked" : "")
-                                   onchange="toggleTarjetaGrafica()" style="accent-color:var(--azul);" />
-                            Gráficos integrados
-                        </label>
-                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
-                            <input type="radio" name="GraficosIntegrados" value="false"
-                                   @(Model?.GraficosIntegrados == false ? "checked" : "")
-                                   onchange="toggleTarjetaGrafica()" style="accent-color:var(--azul);" />
-                            Tarjeta gráfica dedicada
-                        </label>
-                    </div>
-                    <div id="campoTarjetaGrafica" style="display:@(Model?.GraficosIntegrados == false ? "block" : "none");">
-                        <label class="form-label">Tarjeta gráfica</label>
-                        <input asp-for="TarjetaGrafica" class="form-control"
-                               placeholder="Ej: NVIDIA GTX 1650 4GB" />
-                    </div>
-                </div>
-            </div>
-
-
-                    <!-- ── CELULAR: IMEI + SO ──────────────────── -->
-                    <div id="campoCelular" style="display:none;">
-                        <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                            Datos del celular
-                        </p>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">IMEI</label>
-                                <input asp-for="IMEI" class="form-control" placeholder="Ej: 353123450000001" maxlength="50" />
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Sistema operativo</label>
-                                <input asp-for="sistema_operativo" id="soCelular" class="form-control" placeholder="Ej: Android, iOS" />
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Versión</label>
-                                <input asp-for="version" id="versionCelular" class="form-control" placeholder="Ej: Android 14, iOS 17" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ── MOUSE ────────────────────────────────── -->
-                    <div id="campoMouse" style="display:none;">
-                        <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
-                            Datos del mouse
-                        </p>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">¿Es inalámbrico?</label>
-                                <div style="display:flex; gap:20px; margin-top:8px;">
-                                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
-                                        <input type="radio" name="EsInalambrico" value="true"
-                                               @(Model?.EsInalambrico == true ? "checked" : "")
-                                               style="accent-color:var(--azul);" />
-                                        Sí, inalámbrico
-                                    </label>
-                                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem;">
-                                        <input type="radio" name="EsInalambrico" value="false"
-                                               @(Model?.EsInalambrico == false ? "checked" : "")
-                                               style="accent-color:var(--azul);" />
-                                        Con cable
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            <!-- Observaciones (todos) -->
-            <div style="margin-bottom:24px;">
-                <p class="form-section-title">Observaciones</p>
-                <div class="form-group">
+                <div class="form-group" style="margin-top:12px;">
+                    <label class="form-label">Observaciones generales</label>
                     <textarea asp-for="Observaciones" class="form-control" rows="3" maxlength="1000"
-                              placeholder="Estado del equipo, si es nuevo, condición, detalles adicionales..."></textarea>
+                              placeholder="Estado del equipo, condición, detalles adicionales..."></textarea>
                 </div>
             </div>
 
@@ -201,51 +358,49 @@
 @section Scripts {
 @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 <script>
-// Tipos que muestran campos técnicos
-const TIPOS_TECNICOS = ['CPU', 'LAPTOP'];
+const TIPOS_TECNICOS   = ['CPU', 'LAPTOP'];
+const TIPO_PC_COMPLETO = 'PC COMPLETO';
 
-// Todos los nombres de tipo disponibles (se llena desde el select)
 function getNombreTipo() {
     const sel = document.getElementById('selectTipo');
-    return sel.options[sel.selectedIndex]?.text?.toUpperCase() ?? '';
+    return sel.options[sel.selectedIndex]?.text?.toUpperCase().trim() ?? '';
 }
 
 function toggleCamposTecnicos() {
-    const tipo     = getNombreTipo();
-    const esTec    = TIPOS_TECNICOS.some(t => tipo.includes(t));
-    const esLaptop = tipo.includes('LAPTOP');
-    const esCpu    = tipo.includes('CPU');
-    const esCelular= tipo.includes('CELULAR');
-    const esMouse  = tipo.includes('MOUSE');
+    const tipo        = getNombreTipo();
+    const esTec       = TIPOS_TECNICOS.some(t => tipo.includes(t));
+    const esLaptop    = tipo.includes('LAPTOP');
+    const esCpu       = tipo.includes('CPU') && !tipo.includes('PC COMPLETO');
+    const esCelular   = tipo.includes('CELULAR');
+    const esMouse     = tipo === 'MOUSE';
+    const esPcCompleto = tipo.includes(TIPO_PC_COMPLETO);
 
-    // Sección técnica completa solo para CPU y Laptop
-    document.getElementById('seccionTecnica').style.display = esTec ? 'block' : 'none';
+    document.getElementById('seccionEstandar').style.display  = esPcCompleto ? 'none' : 'block';
+    document.getElementById('seccionPcCompleto').style.display = esPcCompleto ? 'block' : 'none';
 
-    if (esTec) {
-        document.getElementById('campoFuente').style.display = esCpu ? 'block' : 'none';
-        toggleTarjetaGrafica();
-    }
-
-    // Campos específicos por tipo
-    document.getElementById('campoCelular').style.display = esCelular ? 'block' : 'none';
-    document.getElementById('campoMouse').style.display   = esMouse   ? 'block' : 'none';
-
-    // SO y versión también para Celular (Android/iOS)
-    const seccionSO = document.getElementById('seccionSO');
-    if (seccionSO) {
-        seccionSO.style.display = (!esTec && esCelular) ? 'block' : 'none';
+    if (!esPcCompleto) {
+        document.getElementById('seccionTecnica').style.display = esTec ? 'block' : 'none';
+        if (esTec) {
+            document.getElementById('campoFuente').style.display = esCpu ? 'block' : 'none';
+            toggleTarjetaGrafica();
+        }
+        document.getElementById('campoCelular').style.display = esCelular ? 'block' : 'none';
+        document.getElementById('campoMouse').style.display   = esMouse   ? 'block' : 'none';
     }
 }
 
 function toggleTarjetaGrafica() {
     const dedicada = document.querySelector('input[name="GraficosIntegrados"]:checked')?.value === 'false';
     document.getElementById('campoTarjetaGrafica').style.display = dedicada ? 'block' : 'none';
-    if (!dedicada) document.querySelector('[name="TarjetaGrafica"]').value = '';
+    if (!dedicada) { const el = document.querySelector('[name="TarjetaGrafica"]'); if(el) el.value = ''; }
 }
 
-// Ejecutar al cargar por si hay valor pre-seleccionado
-document.addEventListener('DOMContentLoaded', () => {
-    toggleCamposTecnicos();
-});
+function toggleGraficosPC() {
+    const dedicada = document.querySelector('input[name="PcCpuGraficosIntegrados"]:checked')?.value === 'false';
+    document.getElementById('campoPcGrafica').style.display = dedicada ? 'block' : 'none';
+    if (!dedicada) { const el = document.querySelector('[name="PcCpuTarjetaGrafica"]'); if(el) el.value = ''; }
+}
+
+document.addEventListener('DOMContentLoaded', () => { toggleCamposTecnicos(); });
 </script>
 }

@@ -31,11 +31,11 @@ namespace PROYJHOME2026.Models
 
         public DateTime fecha_compra { get; set; }
 
-        // ── Observaciones (todos los equipos) ────────────────────
+        // ── Observaciones generales (todos los equipos) ──────────
         [StringLength(1000)]
         public string? Observaciones { get; set; }
 
-        // ── Campos técnicos (solo CPU y Laptop) ──────────────────
+        // ── Campos técnicos (CPU y Laptop) ───────────────────────
         [StringLength(200)]
         public string? Procesador { get; set; }
 
@@ -48,22 +48,76 @@ namespace PROYJHOME2026.Models
         [StringLength(200)]
         public string? Disco { get; set; }
 
-        // Solo CPU — fuente de energía
         [StringLength(200)]
         public string? FuenteEnergia { get; set; }
 
-        // null = no aplica, true = integrados, false = tarjeta dedicada
         public bool? GraficosIntegrados { get; set; }
 
         [StringLength(200)]
         public string? TarjetaGrafica { get; set; }
 
-        // ── Campos Celular ────────────────────────────────────
+        // ── Campos Celular ────────────────────────────────────────
         [StringLength(50)]
         public string? IMEI { get; set; }
 
-        // ── Campos Mouse ──────────────────────────────────────
+        // ── Campos Mouse ──────────────────────────────────────────
         public bool? EsInalambrico { get; set; }
+
+        // ── Campos PC Completo ────────────────────────────────────
+
+        // CPU
+        [StringLength(100)]
+        public string? PcCpuMarca { get; set; }
+        [StringLength(100)]
+        public string? PcCpuModelo { get; set; }
+        [StringLength(100)]
+        public string? PcCpuSerie { get; set; }
+        [StringLength(200)]
+        public string? PcCpuProcesador { get; set; }
+        [StringLength(200)]
+        public string? PcCpuTarjetaMadre { get; set; }
+        [StringLength(100)]
+        public string? PcCpuRam { get; set; }
+        [StringLength(200)]
+        public string? PcCpuDisco { get; set; }
+        [StringLength(200)]
+        public string? PcCpuFuenteEnergia { get; set; }
+        public bool? PcCpuGraficosIntegrados { get; set; }
+        [StringLength(200)]
+        public string? PcCpuTarjetaGrafica { get; set; }
+        [StringLength(100)]
+        public string? PcCpuSistemaOperativo { get; set; }
+        [StringLength(100)]
+        public string? PcCpuVersionSO { get; set; }
+
+        // Monitor
+        [StringLength(100)]
+        public string? PcMonitorMarca { get; set; }
+        [StringLength(100)]
+        public string? PcMonitorModelo { get; set; }
+        [StringLength(100)]
+        public string? PcMonitorSerie { get; set; }
+
+        // Mouse
+        [StringLength(100)]
+        public string? PcMouseMarca { get; set; }
+        [StringLength(100)]
+        public string? PcMouseModelo { get; set; }
+        [StringLength(100)]
+        public string? PcMouseSerie { get; set; }
+        public bool? PcMouseEsInalambrico { get; set; }
+
+        // Teclado
+        [StringLength(100)]
+        public string? PcTecladoMarca { get; set; }
+        [StringLength(100)]
+        public string? PcTecladoModelo { get; set; }
+        [StringLength(100)]
+        public string? PcTecladoSerie { get; set; }
+
+        // Mousepad
+        [StringLength(100)]
+        public string? PcMousepadMarca { get; set; }
 
         // Navegación
         public ICollection<Asignacion> Asignaciones { get; set; } = new List<Asignacion>();
@@ -85,12 +139,10 @@ namespace PROYJHOME2026.Models
         [StringLength(100)]
         public string? NombreUsuario { get; set; }
 
-        // Tipo: CambioComponente | Mantenimiento | ActualizacionSO
         [Required]
         [StringLength(50)]
         public string TipoEvento { get; set; } = string.Empty;
 
-        // Componente afectado: Procesador, RAM, Disco, SO, etc.
         [StringLength(100)]
         public string? Componente { get; set; }
 
@@ -105,7 +157,6 @@ namespace PROYJHOME2026.Models
 
         public DateTime FechaHora { get; set; } = DateTime.Now;
 
-        // Navegación
         [ForeignKey("IdEquipo")]
         public Equipo Equipo { get; set; } = null!;
     }

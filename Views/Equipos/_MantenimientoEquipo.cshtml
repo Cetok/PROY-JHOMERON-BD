@@ -1,0 +1,59 @@
+@model PROYJHOME2026.Models.Equipo
+@{
+    var asigActiva = Model.Asignaciones.FirstOrDefault(a =>
+        a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado");
+}
+
+<div class="card">
+    <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#d97706;fill:none;stroke-width:2;vertical-align:middle;margin-right:5px;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        Mantenimiento del equipo
+    </div>
+
+    @if (Model.estado_equipo == "Mantenimiento")
+    {
+        <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:var(--r-sm); padding:10px 12px; margin-bottom:12px; font-size:0.82rem; color:#92400e;">
+            El equipo está actualmente en mantenimiento.
+        </div>
+        <form asp-action="FinalizarMantenimiento" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="idEquipo" value="@Model.idEquipo" />
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Observaciones de cierre</label>
+                <input type="text" name="observaciones" class="form-control" maxlength="500"
+                       placeholder="Ej: Se limpió, se reemplazó pieza..." />
+            </div>
+            <button type="submit" class="btn btn--sm"
+                    style="background:#16a34a; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:600;"
+                    onclick="return confirm('¿Finalizar el mantenimiento?')">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:white;fill:none;stroke-width:2.5;stroke-linecap:round;"><polyline points="20 6 9 17 4 12"/></svg>
+                Finalizar mantenimiento
+            </button>
+        </form>
+    }
+    else
+    {
+        <form asp-action="IniciarMantenimiento" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="idEquipo" value="@Model.idEquipo" />
+            @if (asigActiva != null)
+            {
+                <div style="background:rgba(59,155,232,0.06); border:1px solid rgba(59,155,232,0.2); border-radius:var(--r-sm); padding:10px 12px; margin-bottom:12px; font-size:0.82rem; color:var(--azul);">
+                    Asignado a: <strong>@asigActiva.Empleado?.nombre @asigActiva.Empleado?.paterno</strong><br/>
+                    La asignación también pasará a "En mantenimiento".
+                </div>
+            }
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Motivo del mantenimiento</label>
+                <input type="text" name="observaciones" class="form-control" maxlength="500"
+                       placeholder="Ej: Mantenimiento preventivo, falla..." />
+            </div>
+            <button type="submit" class="btn btn--sm"
+                    style="background:#d97706; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:600;"
+                    onclick="return confirm('¿Enviar este equipo a mantenimiento?')">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:white;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                Enviar a mantenimiento
+            </button>
+        </form>
+    }
+</div>

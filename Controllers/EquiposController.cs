@@ -13,7 +13,8 @@ namespace PROYJHOME2026.Controllers
         private readonly AuditoriaService    _auditoriaService;
         private readonly NotificacionService _notifService;
 
-        private static readonly string[] TiposTecnicos = { "CPU", "Laptop" };
+        private static readonly string[] TiposTecnicos  = { "CPU", "LAPTOP" };
+        private static readonly string   TipoPcCompleto  = "PC COMPLETO";
 
         public EquiposController(
             AppDbContext        context,
@@ -95,22 +96,50 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("estado_equipo");
             equipo.estado_equipo = "Activo";
 
-            // Si gráficos integrados = true, limpiar tarjeta gráfica
-            if (equipo.GraficosIntegrados == true)
-                equipo.TarjetaGrafica = null;
+            var tipo     = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
+            var tipoUpper = tipo?.tipo?.ToUpper().Trim() ?? "";
+            var esPcCompleto = tipoUpper.Contains(TipoPcCompleto);
+            var esTecnico    = TiposTecnicos.Any(t => tipoUpper.Contains(t));
 
-            // Si no es CPU/Laptop, limpiar campos técnicos
-            var tipo = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
-            if (tipo == null || !TiposTecnicos.Contains(tipo.tipo?.ToUpper()))
+            // Limpiar campos que no aplican según tipo
+            if (esPcCompleto)
             {
+                // PC Completo: limpiar campos de equipo simple
+                equipo.marca = equipo.modelo = equipo.numero_serie = null;
                 equipo.Procesador = equipo.TarjetaMadre = equipo.Ram = equipo.Disco = null;
                 equipo.FuenteEnergia = equipo.TarjetaGrafica = null;
                 equipo.GraficosIntegrados = null;
+                equipo.IMEI = null; equipo.EsInalambrico = null;
+                // Gráficos PC
+                if (equipo.PcCpuGraficosIntegrados == true) equipo.PcCpuTarjetaGrafica = null;
+            }
+            else
+            {
+                // Equipo simple: limpiar campos PC Completo
+                equipo.PcCpuMarca = equipo.PcCpuModelo = equipo.PcCpuSerie = null;
+                equipo.PcCpuProcesador = equipo.PcCpuTarjetaMadre = equipo.PcCpuRam = equipo.PcCpuDisco = null;
+                equipo.PcCpuFuenteEnergia = equipo.PcCpuTarjetaGrafica = null;
+                equipo.PcCpuGraficosIntegrados = null;
+                equipo.PcCpuSistemaOperativo = equipo.PcCpuVersionSO = null;
+                equipo.PcMonitorMarca = equipo.PcMonitorModelo = equipo.PcMonitorSerie = null;
+                equipo.PcMouseMarca = equipo.PcMouseModelo = equipo.PcMouseSerie = null;
+                equipo.PcMouseEsInalambrico = null;
+                equipo.PcTecladoMarca = equipo.PcTecladoModelo = equipo.PcTecladoSerie = null;
+                equipo.PcMousepadMarca = null;
+
+                if (!esTecnico)
+                {
+                    equipo.Procesador = equipo.TarjetaMadre = equipo.Ram = equipo.Disco = null;
+                    equipo.FuenteEnergia = equipo.TarjetaGrafica = null;
+                    equipo.GraficosIntegrados = null;
+                }
+                else if (equipo.GraficosIntegrados == true)
+                    equipo.TarjetaGrafica = null;
             }
 
             if (ModelState.IsValid)
             {
-                if (!string.IsNullOrEmpty(equipo.numero_serie) &&
+                if (!esPcCompleto && !string.IsNullOrEmpty(equipo.numero_serie) &&
                     await _context.Equipos.AnyAsync(e => e.numero_serie == equipo.numero_serie))
                 {
                     ModelState.AddModelError("numero_serie", "Ya existe un equipo con ese número de serie.");
@@ -121,14 +150,16 @@ namespace PROYJHOME2026.Controllers
                 _context.Add(equipo);
                 await _context.SaveChangesAsync();
 
-                await _auditoriaService.RegistrarAsync("Crear", "Equipo", equipo.idEquipo,
-                    $"Registró equipo {equipo.marca} {equipo.modelo} (Serie: {equipo.numero_serie})");
+                var desc = esPcCompleto
+                    ? $"Se registró PC Completo — {tipo?.tipo}"
+                    : $"Se registró el equipo {equipo.marca} {equipo.modelo} — {tipo?.tipo}";
 
-                await _notifService.NotificarAccionAsync("Creacion", "Equipo",
-                    $"Se registró el equipo {equipo.marca} {equipo.modelo} — {tipo?.tipo}",
-                    $"/Equipos/Details/{equipo.idEquipo}");
+                await _auditoriaService.RegistrarAsync("Crear", "Equipo", equipo.idEquipo, desc);
+                await _notifService.NotificarAccionAsync("Creacion", "Equipo", desc, $"/Equipos/Details/{equipo.idEquipo}");
 
-                TempData["Success"] = $"Equipo {equipo.marca} {equipo.modelo} registrado correctamente.";
+                TempData["Success"] = esPcCompleto
+                    ? "PC Completo registrado correctamente."
+                    : $"Equipo {equipo.marca} {equipo.modelo} registrado correctamente.";
                 return RedirectToAction(nameof(Details), new { id = equipo.idEquipo });
             }
 
@@ -155,20 +186,46 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("Asignaciones");
             ModelState.Remove("ComponenteLogs");
 
-            if (equipo.GraficosIntegrados == true)
-                equipo.TarjetaGrafica = null;
+            var tipo      = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
+            var tipoUpper = tipo?.tipo?.ToUpper().Trim() ?? "";
+            var esPcCompleto = tipoUpper.Contains(TipoPcCompleto);
+            var esTecnico    = TiposTecnicos.Any(t => tipoUpper.Contains(t));
 
-            var tipo = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
-            if (tipo == null || !TiposTecnicos.Contains(tipo.tipo?.ToUpper()))
+            if (esPcCompleto)
             {
+                equipo.marca = equipo.modelo = equipo.numero_serie = null;
                 equipo.Procesador = equipo.TarjetaMadre = equipo.Ram = equipo.Disco = null;
                 equipo.FuenteEnergia = equipo.TarjetaGrafica = null;
                 equipo.GraficosIntegrados = null;
+                equipo.IMEI = null; equipo.EsInalambrico = null;
+                if (equipo.PcCpuGraficosIntegrados == true) equipo.PcCpuTarjetaGrafica = null;
+            }
+            else
+            {
+                equipo.PcCpuMarca = equipo.PcCpuModelo = equipo.PcCpuSerie = null;
+                equipo.PcCpuProcesador = equipo.PcCpuTarjetaMadre = equipo.PcCpuRam = equipo.PcCpuDisco = null;
+                equipo.PcCpuFuenteEnergia = equipo.PcCpuTarjetaGrafica = null;
+                equipo.PcCpuGraficosIntegrados = null;
+                equipo.PcCpuSistemaOperativo = equipo.PcCpuVersionSO = null;
+                equipo.PcMonitorMarca = equipo.PcMonitorModelo = equipo.PcMonitorSerie = null;
+                equipo.PcMouseMarca = equipo.PcMouseModelo = equipo.PcMouseSerie = null;
+                equipo.PcMouseEsInalambrico = null;
+                equipo.PcTecladoMarca = equipo.PcTecladoModelo = equipo.PcTecladoSerie = null;
+                equipo.PcMousepadMarca = null;
+
+                if (!esTecnico)
+                {
+                    equipo.Procesador = equipo.TarjetaMadre = equipo.Ram = equipo.Disco = null;
+                    equipo.FuenteEnergia = equipo.TarjetaGrafica = null;
+                    equipo.GraficosIntegrados = null;
+                }
+                else if (equipo.GraficosIntegrados == true)
+                    equipo.TarjetaGrafica = null;
             }
 
             if (ModelState.IsValid)
             {
-                if (!string.IsNullOrEmpty(equipo.numero_serie) &&
+                if (!esPcCompleto && !string.IsNullOrEmpty(equipo.numero_serie) &&
                     await _context.Equipos.AnyAsync(e => e.numero_serie == equipo.numero_serie && e.idEquipo != id))
                 {
                     ModelState.AddModelError("numero_serie", "Ya existe otro equipo con ese número de serie.");
@@ -178,7 +235,6 @@ namespace PROYJHOME2026.Controllers
 
                 try
                 {
-                    // Preservar estado actual
                     var estadoActual = await _context.Equipos
                         .Where(e => e.idEquipo == id).Select(e => e.estado_equipo).FirstAsync();
                     equipo.estado_equipo = estadoActual;
@@ -186,12 +242,12 @@ namespace PROYJHOME2026.Controllers
                     _context.Update(equipo);
                     await _context.SaveChangesAsync();
 
-                    await _auditoriaService.RegistrarAsync("Editar", "Equipo", id,
-                        $"Editó equipo #{id} {equipo.marca} {equipo.modelo}");
+                    var desc = esPcCompleto
+                        ? $"Editó PC Completo #{id}"
+                        : $"Editó equipo #{id} {equipo.marca} {equipo.modelo}";
 
-                    await _notifService.NotificarAccionAsync("Edicion", "Equipo",
-                        $"Se actualizó el equipo {equipo.marca} {equipo.modelo}",
-                        $"/Equipos/Details/{id}");
+                    await _auditoriaService.RegistrarAsync("Editar", "Equipo", id, desc);
+                    await _notifService.NotificarAccionAsync("Edicion", "Equipo", desc, $"/Equipos/Details/{id}");
 
                     TempData["Success"] = "Equipo actualizado correctamente.";
                     return RedirectToAction(nameof(Details), new { id });

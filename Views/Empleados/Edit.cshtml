@@ -49,10 +49,20 @@
                         <input asp-for="Empleado.materno" class="form-control" placeholder="Ej: López" />
                         <span asp-validation-for="Empleado.materno" class="form-error"></span>
                     </div>
+
+                    <!-- Tipo de documento -->
                     <div class="form-group">
-                        <label class="form-label">DNI / CARNET DE EXTRANJERIA <span class="req">*</span></label>
-                        <input asp-for="Empleado.dni" class="form-control"
+                        <label class="form-label">Tipo de documento <span class="req">*</span></label>
+                        <select asp-for="Empleado.TipoDocumento" class="form-control" id="tipoDocSelect">
+                            <option value="DNI">DNI (8 dígitos)</option>
+                            <option value="Carnet">Carnet de Extranjería (9 dígitos)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Número de documento <span class="req">*</span></label>
+                        <input asp-for="Empleado.dni" class="form-control" id="dniInput"
                                maxlength="9" inputmode="numeric" />
+                        <span id="dniHint" style="font-size:0.75rem; color:var(--gris-400); margin-top:3px; display:block;"></span>
                         <span asp-validation-for="Empleado.dni" class="form-error"></span>
                     </div>
                 </div>
@@ -75,8 +85,6 @@
                     </div>
                 </div>
             </div>
-
-
 
         </div>
 
@@ -113,7 +121,7 @@
                 {
                     <div class="alert alert--warning" style="margin:0;">
                         <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        <span>No hay grupos creados. <a asp-controller="Grupos" asp-action="Create" style="color:inherit; text-decoration:underline;">Crear grupo</a>.</span>
+                        <span>No hay grupos creados.</span>
                     </div>
                 }
             </div>
@@ -167,19 +175,48 @@
     fill: none; stroke-width: 3; stroke-linecap: round;
     opacity: 0; transition: opacity var(--t);
 }
-.grupo-check input[type="checkbox"]:checked ~ .grupo-check__box {
-    background: var(--celeste); border-color: var(--celeste);
-}
+.grupo-check input[type="checkbox"]:checked ~ .grupo-check__box { background: var(--celeste); border-color: var(--celeste); }
 .grupo-check input[type="checkbox"]:checked ~ .grupo-check__box svg { opacity: 1; }
 .grupo-check input[type="checkbox"]:checked ~ span { color: var(--azul-dark); font-weight: 600; }
 .grupo-check span { font-size: 0.87rem; color: var(--gris-700); }
-
-@@media (max-width: 760px) {
-    form > div { grid-template-columns: 1fr !important; }
-}
+@@media (max-width: 760px) { form > div { grid-template-columns: 1fr !important; } }
 </style>
 }
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script>
+(function() {
+    const sel   = document.getElementById('tipoDocSelect');
+    const input = document.getElementById('dniInput');
+    const hint  = document.getElementById('dniHint');
+
+    function actualizarDoc() {
+        const largo = sel.value === 'Carnet' ? 9 : 8;
+        input.maxLength   = largo;
+        input.placeholder = largo === 9 ? '123456789' : '12345678';
+        hint.textContent  = `${largo} dígitos numéricos`;
+        hint.style.color  = 'var(--gris-400)';
+    }
+
+    sel.addEventListener('change', actualizarDoc);
+
+    input.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+    });
+
+    input.closest('form').addEventListener('submit', function(e) {
+        const largo = sel.value === 'Carnet' ? 9 : 8;
+        if (input.value.length !== largo) {
+            e.preventDefault();
+            input.focus();
+            hint.style.color = 'var(--rojo, #dc2626)';
+            hint.textContent = `⚠ Debe tener exactamente ${largo} dígitos`;
+            setTimeout(() => { actualizarDoc(); }, 3000);
+        }
+    });
+
+    actualizarDoc();
+})();
+</script>
 }

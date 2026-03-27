@@ -48,7 +48,9 @@
                     <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--azul-dark);">
                         @Model.nombre @Model.paterno @Model.materno
                     </div>
-                    <div style="font-size:0.78rem; color:var(--gris-500); margin-top:3px;">DNI: @(Model.dni ?? "No registrado")</div>
+                    <div style="font-size:0.78rem; color:var(--gris-500); margin-top:3px;">
+                        @(Model.TipoDocumento == "Carnet" ? "Carnet" : "DNI"): @(Model.dni ?? "No registrado")
+                    </div>
                     <div style="margin-top:7px;">
                         @{ var bc = Model.estado == "Activo" ? "badge--verde" : Model.estado == "Inactivo" ? "badge--rojo" : "badge--gris"; }
                         <span class="badge @bc">@(Model.estado ?? "Sin estado")</span>
@@ -61,7 +63,16 @@
                 <div class="det-field"><div class="det-label">Ap. Paterno</div><div class="det-value">@(Model.paterno ?? "—")</div></div>
                 <div class="det-field"><div class="det-label">Ap. Materno</div><div class="det-value">@(Model.materno ?? "—")</div></div>
                 <div class="det-field">
-                    <div class="det-label">DNI / CARNET DE EXTRANJERIA</div>
+                    <div class="det-label">Tipo de documento</div>
+                    <div class="det-value">
+                        @if (Model.TipoDocumento == "Carnet")
+                        { <span>Carnet de Extranjería</span> }
+                        else
+                        { <span>DNI</span> }
+                    </div>
+                </div>
+                <div class="det-field">
+                    <div class="det-label">@(Model.TipoDocumento == "Carnet" ? "N° Carnet" : "DNI")</div>
                     <div class="det-value" style="font-family:monospace; letter-spacing:0.05em;">@(Model.dni ?? "—")</div>
                 </div>
                 <div class="det-field" style="grid-column:1/-1;">

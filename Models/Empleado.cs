@@ -4,14 +4,18 @@ namespace PROYJHOME2026.Models
     public class Empleado
     {
         [Key]
-        public int idEmpleado {get;set;}
-        public String? dni {get;set;}
-        public String? nombre {get;set;}
-        public String? paterno {get;set;}
-        public String? materno {get;set;}
-        public String? correo {get;set;}
-        public String? direccion {get;set;}
-        public String? estado {get;set;}
+        public int idEmpleado { get; set; }
 
+        /// <summary>"DNI" o "Carnet"</summary>
+        [StringLength(10)]
+        public string? TipoDocumento { get; set; } = "DNI";
+
+        public string? dni { get; set; }
+        public string? nombre { get; set; }
+        public string? paterno { get; set; }
+        public string? materno { get; set; }
+        public string? correo { get; set; }
+        public string? direccion { get; set; }
+        public string? estado { get; set; }
     }
 }
