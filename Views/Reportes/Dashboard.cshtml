@@ -1,0 +1,257 @@
+@{
+    ViewData["Title"]      = "Dashboard de Equipos";
+    ViewData["Breadcrumb"] = "Reportes / Dashboard";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Reportes</div>
+        <h1 class="page-header__title">Dashboard</h1>
+        <p class="page-header__subtitle">Resumen visual del estado actual de equipos y asignaciones</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Reportes
+        </a>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="dash-kpis" id="kpis">
+    <div class="kpi-card kpi-card--azul">
+        <div class="kpi-val" id="kpi-total">—</div>
+        <div class="kpi-lbl">Total equipos</div>
+    </div>
+    <div class="kpi-card kpi-card--verde">
+        <div class="kpi-val" id="kpi-activos">—</div>
+        <div class="kpi-lbl">Activos / Asignados</div>
+    </div>
+    <div class="kpi-card kpi-card--amarillo">
+        <div class="kpi-val" id="kpi-mante">—</div>
+        <div class="kpi-lbl">En mantenimiento</div>
+    </div>
+    <div class="kpi-card kpi-card--celeste">
+        <div class="kpi-val" id="kpi-asig">—</div>
+        <div class="kpi-lbl">Asignaciones activas</div>
+    </div>
+</div>
+
+<!-- FILA 1: dona + barras tipo -->
+<div class="dash-row">
+    <div class="card dash-card">
+        <div class="dash-card-title">Equipos por estado</div>
+        <div style="position:relative; height:260px;">
+            <canvas id="chartEstado"></canvas>
+        </div>
+    </div>
+    <div class="card dash-card dash-card--wide">
+        <div class="dash-card-title">Equipos por tipo</div>
+        <div style="position:relative; height:260px;">
+            <canvas id="chartTipo"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- FILA 2: línea mantenimientos + barras grupos -->
+<div class="dash-row">
+    <div class="card dash-card dash-card--wide">
+        <div class="dash-card-title">Mantenimientos por mes (últimos 12 meses)</div>
+        <div style="position:relative; height:240px;">
+            <canvas id="chartMantes"></canvas>
+        </div>
+    </div>
+    <div class="card dash-card">
+        <div class="dash-card-title">Asignaciones por grupo / área</div>
+        <div style="position:relative; height:240px; overflow-y:auto;">
+            <canvas id="chartGrupos"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- FILA 3: top equipos mantenimientos -->
+<div class="card" style="margin-top:16px; padding:0; overflow:hidden;">
+    <div style="padding:14px 20px; border-bottom:1px solid var(--gris-200);">
+        <span style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">Top equipos con más mantenimientos</span>
+    </div>
+    <div class="table-wrapper" style="border:none; border-radius:0;">
+        <table>
+            <thead><tr><th>#</th><th>Tipo</th><th>Equipo</th><th style="text-align:right;">Mantenimientos</th><th>Barra</th></tr></thead>
+            <tbody id="topMantesTabla"></tbody>
+        </table>
+    </div>
+</div>
+
+@section Styles {
+<style>
+.dash-kpis { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:16px; }
+.kpi-card { border-radius:var(--r-md); padding:20px 22px; color:#fff; }
+.kpi-card--azul    { background:linear-gradient(135deg, var(--azul-dark), var(--azul-mid)); }
+.kpi-card--verde   { background:linear-gradient(135deg, #16a34a, #22c55e); }
+.kpi-card--amarillo{ background:linear-gradient(135deg, #d97706, #f59e0b); }
+.kpi-card--celeste { background:linear-gradient(135deg, var(--celeste), #38bdf8); }
+.kpi-val { font-size:2rem; font-weight:800; line-height:1; }
+.kpi-lbl { font-size:0.78rem; opacity:0.85; margin-top:6px; font-weight:500; }
+.dash-row { display:grid; grid-template-columns:1fr 1.8fr; gap:14px; margin-bottom:14px; }
+.dash-card { flex:1; }
+.dash-card--wide { flex:1.8; }
+.dash-card-title { font-weight:700; font-size:0.88rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-100); }
+@@media(max-width:900px) {
+    .dash-kpis { grid-template-columns:1fr 1fr; }
+    .dash-row  { grid-template-columns:1fr; }
+}
+</style>
+}
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const COLORES_ESTADO = {
+    'Activo':        '#16a34a',
+    'Asignado':      '#2563eb',
+    'Mantenimiento': '#d97706',
+    'Devuelto':      '#6b7280',
+    'Perdida':       '#dc2626',
+    'Rotura':        '#7c3aed',
+    'Baja':          '#374151',
+};
+const PALETA = ['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#065f46','#78350f','#1e3a5f'];
+
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+Chart.defaults.font.size   = 12;
+
+async function cargarDashboard() {
+    const res  = await fetch('/Reportes/DashboardData');
+    const data = await res.json();
+
+    // KPIs
+    document.getElementById('kpi-total').textContent  = data.resumen.totalEquipos;
+    document.getElementById('kpi-activos').textContent = data.resumen.totalAsignados;
+    document.getElementById('kpi-mante').textContent  = data.resumen.totalMante;
+    document.getElementById('kpi-asig').textContent   = data.resumen.totalAsignaciones;
+
+    // 1. Dona — por estado
+    new Chart(document.getElementById('chartEstado'), {
+        type: 'doughnut',
+        data: {
+            labels:   data.porEstado.map(d => d.estado),
+            datasets: [{
+                data:            data.porEstado.map(d => d.total),
+                backgroundColor: data.porEstado.map(d => COLORES_ESTADO[d.estado] ?? '#94a3b8'),
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { padding:16, boxWidth:12, font:{size:12} } },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} equipos` } }
+            },
+            cutout: '60%'
+        }
+    });
+
+    // 2. Barras — por tipo
+    new Chart(document.getElementById('chartTipo'), {
+        type: 'bar',
+        data: {
+            labels:   data.porTipo.map(d => d.tipo),
+            datasets: [{
+                label: 'Equipos',
+                data:  data.porTipo.map(d => d.total),
+                backgroundColor: data.porTipo.map((_, i) => PALETA[i % PALETA.length] + 'cc'),
+                borderColor:     data.porTipo.map((_, i) => PALETA[i % PALETA.length]),
+                borderWidth: 1.5,
+                borderRadius: 5,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display:false } },
+            scales: {
+                y: { beginAtZero:true, ticks:{ stepSize:1 }, grid:{ color:'rgba(0,0,0,0.05)' } },
+                x: { grid:{ display:false } }
+            }
+        }
+    });
+
+    // 3. Línea — mantenimientos por mes
+    new Chart(document.getElementById('chartMantes'), {
+        type: 'line',
+        data: {
+            labels:   data.mantesPorMes.map(d => d.mes),
+            datasets: [{
+                label: 'Mantenimientos',
+                data:  data.mantesPorMes.map(d => d.total),
+                borderColor:     '#d97706',
+                backgroundColor: 'rgba(217,119,6,0.12)',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#d97706',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.35
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend:{ display:false } },
+            scales: {
+                y: { beginAtZero:true, ticks:{ stepSize:1 }, grid:{ color:'rgba(0,0,0,0.05)' } },
+                x: { grid:{ display:false } }
+            }
+        }
+    });
+
+    // 4. Barras horizontales — por grupo
+    const hAltura = Math.max(240, data.porGrupo.length * 36);
+    document.getElementById('chartGrupos').parentElement.style.height = hAltura + 'px';
+    new Chart(document.getElementById('chartGrupos'), {
+        type: 'bar',
+        data: {
+            labels:   data.porGrupo.map(d => d.grupo ?? 'Sin área'),
+            datasets: [{
+                label: 'Asignaciones',
+                data:  data.porGrupo.map(d => d.total),
+                backgroundColor: '#2563ebcc',
+                borderColor:     '#2563eb',
+                borderWidth: 1.5,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend:{ display:false } },
+            scales: {
+                x: { beginAtZero:true, ticks:{ stepSize:1 }, grid:{ color:'rgba(0,0,0,0.05)' } },
+                y: { grid:{ display:false } }
+            }
+        }
+    });
+
+    // 5. Top mantenimientos — tabla con barra visual
+    const maxMante = data.topMantes[0]?.total ?? 1;
+    document.getElementById('topMantesTabla').innerHTML = data.topMantes.map((e, i) => `
+        <tr>
+            <td style="font-weight:700; color:var(--gris-400); width:30px;">${i+1}</td>
+            <td><span class="badge badge--azul" style="font-size:0.7rem;">${e.tipo}</span></td>
+            <td style="font-weight:600;">${e.marca ?? '—'} ${e.modelo ?? ''}</td>
+            <td style="text-align:right; font-size:1rem; font-weight:800; color:var(--azul);">${e.total}</td>
+            <td style="width:180px; padding-right:16px;">
+                <div style="background:var(--gris-100); border-radius:10px; height:8px; overflow:hidden;">
+                    <div style="background:var(--azul); height:100%; border-radius:10px; width:${Math.round(e.total/maxMante*100)}%; transition:width 0.5s;"></div>
+                </div>
+            </td>
+        </tr>`).join('');
+}
+
+cargarDashboard();
+</script>
+}

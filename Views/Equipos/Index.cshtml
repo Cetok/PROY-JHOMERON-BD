@@ -19,6 +19,14 @@
         <p class="page-header__subtitle">@total equipo(s) encontrado(s)</p>
     </div>
     <div class="page-header__actions">
+        <a asp-controller="Reportes" asp-action="Index" asp-route-tab="equipos" class="btn btn--secondary btn--sm">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+            </svg>
+            Reportes
+        </a>
         <a asp-controller="TipoEquipos" asp-action="Index" class="btn btn--secondary">
             <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Tipos de equipo

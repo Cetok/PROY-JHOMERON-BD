@@ -4,6 +4,7 @@ using PROYJHOME2026.Data;
 using PROYJHOME2026.Filters;
 using PROYJHOME2026.Seeds;
 using PROYJHOME2026.Services;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,7 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 var app = builder.Build();
+QuestPDF.Settings.License = LicenseType.Community;
 
 // ── Middleware pipeline ──────────────────────────────────────
 if (!app.Environment.IsDevelopment())
