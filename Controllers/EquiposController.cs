@@ -71,7 +71,31 @@ namespace PROYJHOME2026.Controllers
             }
  
             if (tipoId.HasValue)
-                query = query.Where(e => e.idTipoEquipo == tipoId);
+            {
+                // Verificar si el tipo seleccionado es un componente de PC Completo
+                var tipoSeleccionado = await _context.TiposEquipo.FindAsync(tipoId.Value);
+                var tipoNombreUpper  = tipoSeleccionado?.tipo?.ToUpper().Trim() ?? "";
+                var componentesPc    = new[] { "CPU", "MONITOR", "MOUSE", "TECLADO", "MOUSEPAD" };
+                bool esComponentePc  = componentesPc.Any(c => tipoNombreUpper.Contains(c))
+                                       && !tipoNombreUpper.Contains("PC COMPLETO");
+ 
+                if (esComponentePc)
+                {
+                    // Mostrar equipos de ese tipo + PC Completo que tienen ese componente
+                    var idPcCompleto = await _context.TiposEquipo
+                        .Where(t => t.tipo != null && t.tipo.ToUpper().Contains("PC COMPLETO"))
+                        .Select(t => t.idTipoEquipo)
+                        .FirstOrDefaultAsync();
+ 
+                    query = query.Where(e =>
+                        e.idTipoEquipo == tipoId ||
+                        e.idTipoEquipo == idPcCompleto);
+                }
+                else
+                {
+                    query = query.Where(e => e.idTipoEquipo == tipoId);
+                }
+            }
  
             int total   = await query.CountAsync();
             var equipos = await query.OrderByDescending(e => e.idEquipo)
