@@ -41,7 +41,7 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 var app = builder.Build();
-QuestPDF.Settings.License = LicenseType.Community;
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 // ── Middleware pipeline ──────────────────────────────────────
 if (!app.Environment.IsDevelopment())
@@ -76,6 +76,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 //"Server=miapp-db.cdieqi08ih0k.sa-east-1.rds.amazonaws.com,1433;Database=NombreDeTuBD;User Id=admin;Password=TuPassword;TrustServerCertificate=True;"
+//"Server=.;Database=PROYJHOME2026;Integrated Security=true;TrustServerCertificate=true;"
 // ── Seed ─────────────────────────────────────────────────────
 await DbSeeder.SeedAdminAsync(app.Services);
 

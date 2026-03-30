@@ -41,12 +41,12 @@
 <!-- FILTROS -->
 <div class="card" style="margin-bottom:20px; padding:16px 20px;">
     <form method="get" asp-action="Index" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div style="flex:1; min-width:180px;">
+        <div style="flex:1; min-width:200px;">
             <label class="form-label">Buscar</label>
             <div style="position:relative;">
                 <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" name="buscar" value="@buscar" class="form-control"
-                       style="padding-left:34px;" placeholder="Marca, modelo, serie..." />
+                       style="padding-left:34px;" placeholder="Marca, modelo, serie, nombre PC, componentes..." />
             </div>
         </div>
         <div style="min-width:150px;">
@@ -100,7 +100,7 @@
                         <th>#</th>
                         <th>Equipo</th>
                         <th>Tipo</th>
-                        <th>N° Serie</th>
+                        <th>N° Serie / Nombre</th>
                         <th>S.O.</th>
                         <th>Fecha compra</th>
                         <th>Estado</th>
@@ -111,13 +111,30 @@
                     @{ int itemNum = (pagina - 1) * porPagina + 1; }
                     @foreach (var e in Model)
                     {
+                        var esPcCompleto = e.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true;
                         <tr>
-                            <!-- ✅ Número correlativo con paginación -->
                             <td style="color:var(--gris-400); font-size:0.78rem; font-weight:400;">@itemNum</td>
                             <td>
-                                <div style="font-weight:600; color:var(--gris-900);">
-                                    @(e.marca ?? "—") @(e.modelo ?? "")
-                                </div>
+                                @if (esPcCompleto && !string.IsNullOrEmpty(e.NombrePc))
+                                {
+                                    <div style="font-weight:700; color:var(--azul-dark);">@e.NombrePc</div>
+                                    <div style="font-size:0.75rem; color:var(--gris-400); margin-top:2px;">
+                                        @(e.PcCpuMarca ?? "") @(e.PcCpuModelo ?? "")
+                                    </div>
+                                }
+                                else if (esPcCompleto)
+                                {
+                                    <div style="font-weight:600; color:var(--gris-500); font-style:italic;">Sin nombre</div>
+                                    <div style="font-size:0.75rem; color:var(--gris-400); margin-top:2px;">
+                                        @(e.PcCpuMarca ?? "") @(e.PcCpuModelo ?? "")
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div style="font-weight:600; color:var(--gris-900);">
+                                        @(e.marca ?? "—") @(e.modelo ?? "")
+                                    </div>
+                                }
                             </td>
                             <td>
                                 @if (e.TipoEquipo != null)
@@ -125,12 +142,28 @@
                                 else { <span style="color:var(--gris-400);">—</span> }
                             </td>
                             <td style="font-family:monospace; font-size:0.82rem; letter-spacing:0.03em;">
-                                @(e.numero_serie ?? "—")
+                                @if (esPcCompleto)
+                                {
+                                    @(e.NombrePc ?? "—")
+                                }
+                                else
+                                {
+                                    @(e.numero_serie ?? "—")
+                                }
                             </td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">
-                                @(e.sistema_operativo ?? "—")
-                                @if (!string.IsNullOrEmpty(e.version))
-                                { <span style="color:var(--gris-400);"> @e.version</span> }
+                                @if (esPcCompleto)
+                                {
+                                    @(e.PcCpuSistemaOperativo ?? "—")
+                                    @if (!string.IsNullOrEmpty(e.PcCpuVersionSO))
+                                    { <span style="color:var(--gris-400);"> @e.PcCpuVersionSO</span> }
+                                }
+                                else
+                                {
+                                    @(e.sistema_operativo ?? "—")
+                                    @if (!string.IsNullOrEmpty(e.version))
+                                    { <span style="color:var(--gris-400);"> @e.version</span> }
+                                }
                             </td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">
                                 @e.fecha_compra.ToString("dd/MM/yyyy")

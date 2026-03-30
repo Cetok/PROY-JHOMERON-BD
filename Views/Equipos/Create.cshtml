@@ -162,6 +162,20 @@
 
             <!-- ── PC COMPLETO (solo visible si tipo = PC Completo) ── -->
             <div id="seccionPcCompleto" style="display:none;">
+                <!-- Nombre del PC Completo -->
+                <div style="margin-bottom:24px;">
+                    <p class="form-section-title" style="border-color:var(--azul-dark); color:var(--azul-dark);">🖥 Nombre del equipo</p>
+                    <div class="form-grid">
+                        <div class="form-group form-group--full">
+                            <label class="form-label">Nombre identificador <span class="req">*</span></label>
+                            <input asp-for="NombrePc" class="form-control"
+                                   placeholder="Ej: PC-CONTABILIDAD-01, PC-RECEPCION-02" />
+                            <span style="font-size:0.75rem; color:var(--gris-400); margin-top:3px; display:block;">
+                                Este nombre aparecerá en la tabla de equipos y en los reportes.
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Monitor -->
                 <div style="margin-bottom:24px;">

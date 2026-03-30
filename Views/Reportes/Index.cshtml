@@ -345,7 +345,7 @@ async function consultarEquipos() {
     const data = await res.json();
     const tbody = document.getElementById('eq-tbody');
     document.getElementById('eq-total').textContent = data.total;
-
+ 
     if (data.total === 0) {
         document.getElementById('eq-resultado').style.display = 'none';
         document.getElementById('eq-vacio').style.display = 'block';
@@ -353,23 +353,78 @@ async function consultarEquipos() {
         document.getElementById('btn-eq-pdf').disabled = true;
         return;
     }
+ 
     document.getElementById('eq-resultado').style.display = 'block';
     document.getElementById('eq-vacio').style.display = 'none';
     document.getElementById('btn-eq-csv').disabled = false;
     document.getElementById('btn-eq-pdf').disabled = false;
-
-    tbody.innerHTML = data.registros.map(e => `
-        <tr>
-            <td><span class="badge badge--azul" style="font-size:0.7rem;">${e.tipo}</span></td>
-            <td style="font-weight:600;">${e.marca ?? '—'} ${e.modelo ?? ''}</td>
-            <td style="font-family:monospace; font-size:0.8rem;">${e.numero_serie ?? '—'}</td>
-            <td>${estadoBadge(e.estado_equipo)}</td>
-            <td style="font-size:0.8rem; color:var(--gris-500);">${e.fechaCompra}</td>
-            <td style="font-size:0.82rem;">${e.asignado}</td>
-            <td style="font-size:0.78rem; color:var(--gris-600);">${e.procesador ?? '—'}</td>
-            <td style="font-size:0.78rem; color:var(--gris-600);">${e.ram ?? '—'}</td>
-            <td style="font-size:0.78rem; color:var(--gris-600);">${e.disco ?? '—'}</td>
-        </tr>`).join('');
+ 
+    if (data.esPcCompleto) {
+        // ── Tabla PC Completo: todos los componentes ──────────────
+        document.getElementById('eq-tabla').querySelector('thead tr').innerHTML = `
+            <th>Nombre PC</th>
+            <th>Estado</th>
+            <th>F. Compra</th>
+            <th>Asignado a</th>
+            <th>CPU</th>
+            <th>Procesador</th>
+            <th>RAM / Disco</th>
+            <th>Monitor</th>
+            <th>Mouse</th>
+            <th>Teclado</th>
+            <th>Mousepad</th>
+        `;
+        tbody.innerHTML = data.registros.map(e => `
+            <tr>
+                <td>
+                    <div style="font-weight:700; color:var(--azul-dark);">${e.nombre}</div>
+                    <div style="font-size:0.72rem; color:var(--gris-400);">PC Completo</div>
+                </td>
+                <td>${estadoBadge(e.estado_equipo)}</td>
+                <td style="font-size:0.8rem; color:var(--gris-500);">${e.fechaCompra}</td>
+                <td style="font-size:0.82rem; color:var(--azul);">${e.asignado}</td>
+                <td style="font-size:0.78rem;">
+                    <div style="font-weight:600;">${e.cpuMarca} ${e.cpuModelo}</div>
+                    <div style="color:var(--gris-400); font-family:monospace;">${e.cpuSerie}</div>
+                </td>
+                <td style="font-size:0.75rem; color:var(--gris-600);">${e.procesador}</td>
+                <td style="font-size:0.75rem;">
+                    <div>RAM: ${e.ram}</div>
+                    <div style="color:var(--gris-400);">Disco: ${e.disco}</div>
+                </td>
+                <td style="font-size:0.78rem;">
+                    <div>${e.monitorMarca} ${e.monitorModelo}</div>
+                    <div style="color:var(--gris-400); font-family:monospace;">${e.monitorSerie}</div>
+                </td>
+                <td style="font-size:0.78rem;">
+                    <div>${e.mouseMarca} ${e.mouseModelo}</div>
+                    <div style="color:var(--gris-400);">${e.mouseInal}</div>
+                </td>
+                <td style="font-size:0.78rem;">
+                    <div>${e.tecladoMarca} ${e.tecladoModelo}</div>
+                </td>
+                <td style="font-size:0.78rem;">${e.mousepadMarca}</td>
+            </tr>`).join('');
+    } else {
+        // ── Tabla estándar ────────────────────────────────────────
+        document.getElementById('eq-tabla').querySelector('thead tr').innerHTML = `
+            <th>Tipo</th><th>Marca / Modelo</th><th>N° Serie</th>
+            <th>Estado</th><th>Fecha Compra</th><th>Asignado a</th>
+            <th>Procesador</th><th>RAM</th><th>Disco</th>
+        `;
+        tbody.innerHTML = data.registros.map(e => `
+            <tr>
+                <td><span class="badge badge--azul" style="font-size:0.7rem;">${e.tipo}</span></td>
+                <td style="font-weight:600;">${e.marca ?? '—'} ${e.modelo ?? ''}</td>
+                <td style="font-family:monospace; font-size:0.8rem;">${e.numero_serie ?? '—'}</td>
+                <td>${estadoBadge(e.estado_equipo)}</td>
+                <td style="font-size:0.8rem; color:var(--gris-500);">${e.fechaCompra}</td>
+                <td style="font-size:0.82rem;">${e.asignado}</td>
+                <td style="font-size:0.78rem; color:var(--gris-600);">${e.procesador ?? '—'}</td>
+                <td style="font-size:0.78rem; color:var(--gris-600);">${e.ram ?? '—'}</td>
+                <td style="font-size:0.78rem; color:var(--gris-600);">${e.disco ?? '—'}</td>
+            </tr>`).join('');
+    }
 }
 function exportarEquiposCsv() {
     window.location.href = '/Reportes/EquiposCsv' + buildParams(lastEqParams);

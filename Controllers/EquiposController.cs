@@ -31,35 +31,62 @@ namespace PROYJHOME2026.Controllers
         {
             int porPagina = 10;
             var query = _context.Equipos.Include(e => e.TipoEquipo).AsQueryable();
-
+ 
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(e =>
-                    (e.marca        != null && e.marca.Contains(buscar))        ||
-                    (e.modelo       != null && e.modelo.Contains(buscar))       ||
-                    (e.numero_serie != null && e.numero_serie.Contains(buscar)) ||
-                    (e.sistema_operativo != null && e.sistema_operativo.Contains(buscar)));
-
+                    // Campos estándar
+                    (e.marca             != null && e.marca.Contains(buscar))             ||
+                    (e.modelo            != null && e.modelo.Contains(buscar))            ||
+                    (e.numero_serie      != null && e.numero_serie.Contains(buscar))      ||
+                    (e.sistema_operativo != null && e.sistema_operativo.Contains(buscar)) ||
+                    // Nombre PC Completo
+                    (e.NombrePc          != null && e.NombrePc.Contains(buscar))          ||
+                    // Componentes de PC Completo — CPU
+                    (e.PcCpuMarca        != null && e.PcCpuMarca.Contains(buscar))        ||
+                    (e.PcCpuModelo       != null && e.PcCpuModelo.Contains(buscar))       ||
+                    (e.PcCpuSerie        != null && e.PcCpuSerie.Contains(buscar))        ||
+                    (e.PcCpuProcesador   != null && e.PcCpuProcesador.Contains(buscar))   ||
+                    // Componentes de PC Completo — Monitor
+                    (e.PcMonitorMarca    != null && e.PcMonitorMarca.Contains(buscar))    ||
+                    (e.PcMonitorModelo   != null && e.PcMonitorModelo.Contains(buscar))   ||
+                    (e.PcMonitorSerie    != null && e.PcMonitorSerie.Contains(buscar))    ||
+                    // Componentes de PC Completo — Mouse
+                    (e.PcMouseMarca      != null && e.PcMouseMarca.Contains(buscar))      ||
+                    (e.PcMouseModelo     != null && e.PcMouseModelo.Contains(buscar))     ||
+                    (e.PcMouseSerie      != null && e.PcMouseSerie.Contains(buscar))      ||
+                    // Componentes de PC Completo — Teclado
+                    (e.PcTecladoMarca    != null && e.PcTecladoMarca.Contains(buscar))    ||
+                    (e.PcTecladoModelo   != null && e.PcTecladoModelo.Contains(buscar))   ||
+                    (e.PcTecladoSerie    != null && e.PcTecladoSerie.Contains(buscar)));
+ 
             if (!string.IsNullOrWhiteSpace(estado))
             {
                 if (estado == "otros")
-                    query = query.Where(e => e.estado_equipo != "Activo" && e.estado_equipo != "Asignado" && e.estado_equipo != "Mantenimiento");
+                    query = query.Where(e =>
+                        e.estado_equipo != "Activo" &&
+                        e.estado_equipo != "Asignado" &&
+                        e.estado_equipo != "Mantenimiento");
                 else
                     query = query.Where(e => e.estado_equipo == estado);
             }
-
+ 
             if (tipoId.HasValue)
                 query = query.Where(e => e.idTipoEquipo == tipoId);
-
+ 
             int total   = await query.CountAsync();
             var equipos = await query.OrderByDescending(e => e.idEquipo)
                 .Skip((pagina - 1) * porPagina).Take(porPagina).ToListAsync();
-
+ 
             var tipos   = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
             var estados = new List<string> { "Activo", "Devuelto", "Perdida", "Rotura", "Baja", "Mantenimiento", "Asignado" };
-
-            ViewBag.Buscar = buscar; ViewBag.Estado = estado; ViewBag.TipoId = tipoId;
-            ViewBag.Tipos = tipos; ViewBag.Estados = estados;
-            ViewBag.Pagina = pagina; ViewBag.Total = total;
+ 
+            ViewBag.Buscar       = buscar;
+            ViewBag.Estado       = estado;
+            ViewBag.TipoId       = tipoId;
+            ViewBag.Tipos        = tipos;
+            ViewBag.Estados      = estados;
+            ViewBag.Pagina       = pagina;
+            ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
             return View(equipos);
         }

@@ -64,7 +64,8 @@ namespace PROYJHOME2026.Models
         public bool? EsInalambrico { get; set; }
 
         // ── Campos PC Completo ────────────────────────────────────
-
+        [StringLength(100)]
+        public string? NombrePc { get; set; }
         // CPU
         [StringLength(100)]
         public string? PcCpuMarca { get; set; }
