@@ -16,25 +16,30 @@ namespace PROYJHOME2026.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var hoy = DateTime.Today;
+            // Redirigir según rol — solo Admin ve el dashboard principal
+            var rol = HttpContext.Session.GetString("UsuarioRol") ?? "";
 
+            if (rol == "SoporteTI")
+                return RedirectToAction("Dashboard", "Reportes");
+
+            if (rol == "Transporte")
+                return RedirectToAction("DashboardFlota", "Reportes");
+
+            // Admin — mostrar dashboard completo
             var vm = new DashboardViewModel
             {
-                // ── Totales ──────────────────────────────────────
-                TotalEmpleados  = await _context.Empleados.CountAsync(),
+                TotalEmpleados   = await _context.Empleados.CountAsync(),
                 EmpleadosActivos = await _context.Empleados.CountAsync(e => e.estado == "Activo"),
-                TotalEquipos    = await _context.Equipos.CountAsync(),
+                TotalEquipos     = await _context.Equipos.CountAsync(),
                 EquiposAsignados = await _context.Asignaciones
                     .Where(a => a.EstadoAsignacion == "Activo")
                     .Select(a => a.IdEquipo).Distinct().CountAsync(),
-                TotalCarros     = await _context.Carros.CountAsync(),
-                CarrosActivos   = await _context.Carros.CountAsync(c => c.Estado == "Activo"),
+                TotalCarros      = await _context.Carros.CountAsync(),
+                CarrosActivos    = await _context.Carros.CountAsync(c => c.Estado == "Activo"),
 
-                // Solo mantenimientos PENDIENTES futuros (no hoy, no pasados)
                 MantenimientosPendientes = await _context.MantenimientosCarros
                     .CountAsync(m => m.Estado == "Pendiente"),
 
-                // ── Últimas asignaciones ─────────────────────────
                 UltimasAsignaciones = await _context.Asignaciones
                     .Include(a => a.Empleado)
                     .Include(a => a.Equipo)
@@ -42,7 +47,6 @@ namespace PROYJHOME2026.Controllers
                     .Take(6)
                     .ToListAsync(),
 
-                // ── Mantenimientos pendientes (solo Pendiente, ordenados por fecha programada)
                 MantenimientosRecientes = await _context.MantenimientosCarros
                     .Include(m => m.Carro)
                     .Include(m => m.TipoMantenimiento)
@@ -52,7 +56,6 @@ namespace PROYJHOME2026.Controllers
                     .Take(6)
                     .ToListAsync(),
 
-                // ── Últimos movimientos de auditoría ─────────────
                 UltimosMovimientos = await _context.AuditoriaLogs
                     .OrderByDescending(l => l.FechaHora)
                     .Take(8)
@@ -73,8 +76,8 @@ namespace PROYJHOME2026.Controllers
         public int CarrosActivos             { get; set; }
         public int MantenimientosPendientes  { get; set; }
 
-        public List<Asignacion>         UltimasAsignaciones  { get; set; } = new();
+        public List<Asignacion>         UltimasAsignaciones     { get; set; } = new();
         public List<MantenimientoCarro> MantenimientosRecientes { get; set; } = new();
-        public List<AuditoriaLog>       UltimosMovimientos   { get; set; } = new();
+        public List<AuditoriaLog>       UltimosMovimientos      { get; set; } = new();
     }
 }

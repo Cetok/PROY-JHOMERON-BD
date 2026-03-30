@@ -45,7 +45,6 @@ namespace PROYJHOME2026.Controllers
             DateTime? fechaDesde, DateTime? fechaHasta,
             int? tipoId, string? estado, string? buscar)
         {
-            // Averiguar si el tipo seleccionado es un componente de PC Completo
             string? tipoNombre = null;
             bool incluirPcCompleto = false;
             if (tipoId.HasValue)
@@ -54,13 +53,11 @@ namespace PROYJHOME2026.Controllers
                 tipoNombre = tipoObj?.tipo;
                 incluirPcCompleto = EsComponentePcCompleto(tipoNombre);
             }
- 
-            // Query base — si es componente de PC Completo, traer los PC Completo
+
             IQueryable<PROYJHOME2026.Models.Equipo> query;
- 
+
             if (incluirPcCompleto)
             {
-                // Traer PC Completo en vez de filtrar por el tipoId exacto
                 query = _context.Equipos
                     .Include(e => e.TipoEquipo)
                     .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
@@ -75,11 +72,11 @@ namespace PROYJHOME2026.Controllers
                     .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
                         .ThenInclude(a => a.Empleado)
                     .AsQueryable();
- 
+
                 if (tipoId.HasValue)
                     query = query.Where(e => e.idTipoEquipo == tipoId);
             }
- 
+
             if (fechaDesde.HasValue) query = query.Where(e => e.fecha_compra >= fechaDesde.Value);
             if (fechaHasta.HasValue) query = query.Where(e => e.fecha_compra <= fechaHasta.Value.AddDays(1));
             if (!string.IsNullOrWhiteSpace(estado))
@@ -89,124 +86,96 @@ namespace PROYJHOME2026.Controllers
             }
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(e =>
-                    (e.NombrePc          != null && e.NombrePc.Contains(buscar))          ||
-                    (e.marca             != null && e.marca.Contains(buscar))              ||
-                    (e.modelo            != null && e.modelo.Contains(buscar))             ||
-                    (e.numero_serie      != null && e.numero_serie.Contains(buscar))       ||
-                    (e.PcCpuMarca        != null && e.PcCpuMarca.Contains(buscar))         ||
-                    (e.PcCpuModelo       != null && e.PcCpuModelo.Contains(buscar))        ||
-                    (e.PcMonitorMarca    != null && e.PcMonitorMarca.Contains(buscar))     ||
-                    (e.PcMonitorModelo   != null && e.PcMonitorModelo.Contains(buscar))    ||
-                    (e.PcMouseMarca      != null && e.PcMouseMarca.Contains(buscar))       ||
-                    (e.PcTecladoMarca    != null && e.PcTecladoMarca.Contains(buscar))     ||
-                    (e.PcMousepadMarca   != null && e.PcMousepadMarca.Contains(buscar)));
- 
+                    (e.NombrePc        != null && e.NombrePc.Contains(buscar))        ||
+                    (e.marca           != null && e.marca.Contains(buscar))            ||
+                    (e.modelo          != null && e.modelo.Contains(buscar))           ||
+                    (e.numero_serie    != null && e.numero_serie.Contains(buscar))     ||
+                    (e.PcCpuMarca      != null && e.PcCpuMarca.Contains(buscar))       ||
+                    (e.PcCpuModelo     != null && e.PcCpuModelo.Contains(buscar))      ||
+                    (e.PcMonitorMarca  != null && e.PcMonitorMarca.Contains(buscar))   ||
+                    (e.PcMonitorModelo != null && e.PcMonitorModelo.Contains(buscar))  ||
+                    (e.PcMouseMarca    != null && e.PcMouseMarca.Contains(buscar))     ||
+                    (e.PcTecladoMarca  != null && e.PcTecladoMarca.Contains(buscar))   ||
+                    (e.PcMousepadMarca != null && e.PcMousepadMarca.Contains(buscar)));
+
             var equipos = await query.OrderByDescending(e => e.fecha_compra).ToListAsync();
- 
+
             if (incluirPcCompleto)
             {
-                // Vista completa con todos los componentes del PC
                 var dataPc = equipos.Select(e => new {
                     e.idEquipo,
-                    tipo         = e.TipoEquipo?.tipo ?? "PC Completo",
-                    nombre       = e.NombrePc ?? "Sin nombre",
+                    tipo          = e.TipoEquipo?.tipo ?? "PC Completo",
+                    nombre        = e.NombrePc ?? "Sin nombre",
                     e.estado_equipo,
-                    fechaCompra  = e.fecha_compra.ToString("dd/MM/yyyy"),
-                    asignado     = e.Asignaciones.FirstOrDefault() is var asig && asig != null
+                    fechaCompra   = e.fecha_compra.ToString("dd/MM/yyyy"),
+                    asignado      = e.Asignaciones.FirstOrDefault() is var asig && asig != null
                         ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim() : "—",
-                    // CPU
-                    cpuMarca     = e.PcCpuMarca    ?? "—",
-                    cpuModelo    = e.PcCpuModelo   ?? "—",
-                    cpuSerie     = e.PcCpuSerie    ?? "—",
-                    procesador   = e.PcCpuProcesador ?? "—",
-                    ram          = e.PcCpuRam      ?? "—",
-                    disco        = e.PcCpuDisco    ?? "—",
-                    so           = e.PcCpuSistemaOperativo ?? "—",
-                    // Monitor
-                    monitorMarca = e.PcMonitorMarca  ?? "—",
-                    monitorModelo= e.PcMonitorModelo ?? "—",
-                    monitorSerie = e.PcMonitorSerie  ?? "—",
-                    // Mouse
-                    mouseMarca   = e.PcMouseMarca    ?? "—",
-                    mouseModelo  = e.PcMouseModelo   ?? "—",
-                    mouseSerie   = e.PcMouseSerie    ?? "—",
-                    mouseInal    = e.PcMouseEsInalambrico == true ? "Inalámbrico" : e.PcMouseEsInalambrico == false ? "Con cable" : "—",
-                    // Teclado
-                    tecladoMarca = e.PcTecladoMarca  ?? "—",
-                    tecladoModelo= e.PcTecladoModelo ?? "—",
-                    tecladoSerie = e.PcTecladoSerie  ?? "—",
-                    // Mousepad
-                    mousepadMarca= e.PcMousepadMarca ?? "—",
-                    esPcCompleto = true,
+                    cpuMarca      = e.PcCpuMarca      ?? "—",
+                    cpuModelo     = e.PcCpuModelo     ?? "—",
+                    cpuSerie      = e.PcCpuSerie      ?? "—",
+                    procesador    = e.PcCpuProcesador ?? "—",
+                    ram           = e.PcCpuRam        ?? "—",
+                    disco         = e.PcCpuDisco      ?? "—",
+                    so            = e.PcCpuSistemaOperativo ?? "—",
+                    monitorMarca  = e.PcMonitorMarca  ?? "—",
+                    monitorModelo = e.PcMonitorModelo ?? "—",
+                    monitorSerie  = e.PcMonitorSerie  ?? "—",
+                    mouseMarca    = e.PcMouseMarca    ?? "—",
+                    mouseModelo   = e.PcMouseModelo   ?? "—",
+                    mouseSerie    = e.PcMouseSerie    ?? "—",
+                    mouseInal     = e.PcMouseEsInalambrico == true ? "Inalámbrico"
+                                  : e.PcMouseEsInalambrico == false ? "Con cable" : "—",
+                    tecladoMarca  = e.PcTecladoMarca  ?? "—",
+                    tecladoModelo = e.PcTecladoModelo ?? "—",
+                    tecladoSerie  = e.PcTecladoSerie  ?? "—",
+                    mousepadMarca = e.PcMousepadMarca ?? "—",
+                    observaciones = e.Observaciones   ?? "—",
+                    esPcCompleto  = true,
                     componenteFiltrado = tipoNombre ?? "Todos"
                 }).ToList();
- 
+
                 return Json(new { total = dataPc.Count, registros = dataPc, esPcCompleto = true });
             }
             else
             {
-                // Vista estándar
                 var data = equipos.Select(e => new {
                     e.idEquipo,
-                    tipo        = e.TipoEquipo?.tipo ?? "—",
-                    nombre      = (e.marca ?? "") + " " + (e.modelo ?? ""),
+                    tipo          = e.TipoEquipo?.tipo ?? "—",
+                    nombre        = (e.marca ?? "") + " " + (e.modelo ?? ""),
                     e.NombrePc,
                     e.marca,
                     e.modelo,
                     e.numero_serie,
                     e.estado_equipo,
-                    fechaCompra = e.fecha_compra.ToString("dd/MM/yyyy"),
-                    asignado    = e.Asignaciones.FirstOrDefault() is var asig && asig != null
+                    fechaCompra   = e.fecha_compra.ToString("dd/MM/yyyy"),
+                    asignado      = e.Asignaciones.FirstOrDefault() is var asig && asig != null
                         ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim() : "—",
-                    procesador  = e.Procesador  ?? e.PcCpuProcesador,
-                    ram         = e.Ram         ?? e.PcCpuRam,
-                    disco       = e.Disco       ?? e.PcCpuDisco,
-                    esPcCompleto = false
+                    procesador    = e.Procesador ?? e.PcCpuProcesador,
+                    ram           = e.Ram        ?? e.PcCpuRam,
+                    disco         = e.Disco      ?? e.PcCpuDisco,
+                    observaciones = e.Observaciones ?? "—",   // ← agregado
+                    esPcCompleto  = false
                 }).ToList();
- 
+
                 return Json(new { total = data.Count, registros = data, esPcCompleto = false });
             }
         }
 
-        [HttpGet]
+          [HttpGet]
         public async Task<IActionResult> EquiposCsv(
             DateTime? fechaDesde, DateTime? fechaHasta,
             int? tipoId, string? estado, string? buscar)
         {
-            string? tipoNombre = null;
-            bool incluirPcCompleto = false;
-            if (tipoId.HasValue)
-            {
-                var tipoObj = await _context.TiposEquipo.FindAsync(tipoId.Value);
-                tipoNombre = tipoObj?.tipo;
-                incluirPcCompleto = EsComponentePcCompleto(tipoNombre);
-            }
- 
-            IQueryable<PROYJHOME2026.Models.Equipo> query;
- 
-            if (incluirPcCompleto)
-            {
-                query = _context.Equipos
-                    .Include(e => e.TipoEquipo)
-                    .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
-                        .ThenInclude(a => a.Empleado)
-                    .Include(e => e.ComponenteLogs.Where(l => l.TipoEvento == "Mantenimiento"))
-                    .Where(e => e.TipoEquipo != null && e.TipoEquipo.tipo != null &&
-                                e.TipoEquipo.tipo.ToUpper().Contains("PC COMPLETO"));
-            }
-            else
-            {
-                query = _context.Equipos
-                    .Include(e => e.TipoEquipo)
-                    .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
-                        .ThenInclude(a => a.Empleado)
-                    .Include(e => e.ComponenteLogs.Where(l => l.TipoEvento == "Mantenimiento"))
-                    .AsQueryable();
-                if (tipoId.HasValue) query = query.Where(e => e.idTipoEquipo == tipoId);
-            }
+            var query = _context.Equipos
+                .Include(e => e.TipoEquipo)
+                .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
+                    .ThenInclude(a => a.Empleado)
+                .Include(e => e.ComponenteLogs.Where(l => l.TipoEvento == "Mantenimiento"))
+                .AsQueryable();
  
             if (fechaDesde.HasValue) query = query.Where(e => e.fecha_compra >= fechaDesde.Value);
             if (fechaHasta.HasValue) query = query.Where(e => e.fecha_compra <= fechaHasta.Value.AddDays(1));
+            if (tipoId.HasValue)     query = query.Where(e => e.idTipoEquipo == tipoId);
             if (!string.IsNullOrWhiteSpace(estado))
             {
                 var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -214,99 +183,46 @@ namespace PROYJHOME2026.Controllers
             }
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(e =>
-                    (e.NombrePc       != null && e.NombrePc.Contains(buscar))       ||
-                    (e.marca          != null && e.marca.Contains(buscar))           ||
-                    (e.PcCpuMarca     != null && e.PcCpuMarca.Contains(buscar))      ||
-                    (e.PcMonitorMarca != null && e.PcMonitorMarca.Contains(buscar))  ||
-                    (e.PcMouseMarca   != null && e.PcMouseMarca.Contains(buscar)));
+                    (e.marca  != null && e.marca.Contains(buscar)) ||
+                    (e.modelo != null && e.modelo.Contains(buscar)) ||
+                    (e.NombrePc != null && e.NombrePc.Contains(buscar)));
  
             var equipos = await query.OrderByDescending(e => e.fecha_compra).ToListAsync();
  
             var sb = new StringBuilder();
             sb.AppendLine("sep=;");
  
-            if (incluirPcCompleto)
+            // Cabecera sin columnas de componentes técnicos
+            sb.AppendLine("ID;Tipo;Nombre/Marca;Modelo;N° Serie;Estado;Fecha Compra;Asignado A;Observaciones;N° Mantenimientos");
+ 
+            foreach (var e in equipos)
             {
-                // CSV con TODOS los componentes del PC Completo
-                sb.AppendLine("ID;Nombre PC;Estado;F.Compra;Asignado A;" +
-                    "CPU Marca;CPU Modelo;CPU Serie;Procesador;RAM;Disco;SO;" +
-                    "Monitor Marca;Monitor Modelo;Monitor Serie;" +
-                    "Mouse Marca;Mouse Modelo;Mouse Serie;Mouse Tipo;" +
-                    "Teclado Marca;Teclado Modelo;Teclado Serie;" +
-                    "Mousepad Marca;N° Mantenimientos");
+                var esPc   = e.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true;
+                var asig   = e.Asignaciones.FirstOrDefault();
+                var nombre = asig != null
+                    ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim()
+                    : "Sin asignar";
+                var mantes = e.ComponenteLogs.Count(l => l.TipoEvento == "Mantenimiento");
  
-                foreach (var e in equipos)
-                {
-                    var asig   = e.Asignaciones.FirstOrDefault();
-                    var nombre = asig != null
-                        ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim()
-                        : "Sin asignar";
-                    var mantes = e.ComponenteLogs.Count(l => l.TipoEvento == "Mantenimiento");
-                    var mouse  = e.PcMouseEsInalambrico == true ? "Inalámbrico"
-                               : e.PcMouseEsInalambrico == false ? "Con cable" : "—";
+                // Para PC Completo: NombrePc en vez de marca/modelo/serie
+                var displayNombre = esPc ? (e.NombrePc ?? "Sin nombre") : (e.marca ?? "—");
+                var displayModelo = esPc ? "—" : (e.modelo ?? "—");
+                var displaySerie  = esPc ? "—" : (e.numero_serie ?? "—");
  
-                    sb.AppendLine($"{e.idEquipo};" +
-                        $"\"{e.NombrePc ?? "Sin nombre"}\";" +
-                        $"\"{e.estado_equipo}\";" +
-                        $"{e.fecha_compra:dd/MM/yyyy};" +
-                        $"\"{nombre}\";" +
-                        $"\"{e.PcCpuMarca ?? "—"}\";" +
-                        $"\"{e.PcCpuModelo ?? "—"}\";" +
-                        $"\"{e.PcCpuSerie ?? "—"}\";" +
-                        $"\"{e.PcCpuProcesador ?? "—"}\";" +
-                        $"\"{e.PcCpuRam ?? "—"}\";" +
-                        $"\"{e.PcCpuDisco ?? "—"}\";" +
-                        $"\"{e.PcCpuSistemaOperativo ?? "—"}\";" +
-                        $"\"{e.PcMonitorMarca ?? "—"}\";" +
-                        $"\"{e.PcMonitorModelo ?? "—"}\";" +
-                        $"\"{e.PcMonitorSerie ?? "—"}\";" +
-                        $"\"{e.PcMouseMarca ?? "—"}\";" +
-                        $"\"{e.PcMouseModelo ?? "—"}\";" +
-                        $"\"{e.PcMouseSerie ?? "—"}\";" +
-                        $"\"{mouse}\";" +
-                        $"\"{e.PcTecladoMarca ?? "—"}\";" +
-                        $"\"{e.PcTecladoModelo ?? "—"}\";" +
-                        $"\"{e.PcTecladoSerie ?? "—"}\";" +
-                        $"\"{e.PcMousepadMarca ?? "—"}\";" +
-                        $"{mantes}");
-                }
-            }
-            else
-            {
-                // CSV estándar
-                sb.AppendLine("ID;Tipo;Marca;Modelo;N° Serie;Estado;Fecha Compra;Asignado A;Procesador;RAM;Disco;N° Mantenimientos");
- 
-                foreach (var e in equipos)
-                {
-                    var asig   = e.Asignaciones.FirstOrDefault();
-                    var nombre = asig != null
-                        ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim()
-                        : "Sin asignar";
-                    var proc   = e.Procesador ?? e.PcCpuProcesador ?? "—";
-                    var ram    = e.Ram        ?? e.PcCpuRam         ?? "—";
-                    var disco  = e.Disco      ?? e.PcCpuDisco       ?? "—";
-                    var mantes = e.ComponenteLogs.Count(l => l.TipoEvento == "Mantenimiento");
- 
-                    sb.AppendLine($"{e.idEquipo};" +
-                        $"\"{e.TipoEquipo?.tipo ?? "—"}\";" +
-                        $"\"{e.marca ?? "—"}\";" +
-                        $"\"{e.modelo ?? "—"}\";" +
-                        $"\"{e.numero_serie ?? "—"}\";" +
-                        $"\"{e.estado_equipo}\";" +
-                        $"{e.fecha_compra:dd/MM/yyyy};" +
-                        $"\"{nombre}\";" +
-                        $"\"{proc}\";" +
-                        $"\"{ram}\";" +
-                        $"\"{disco}\";" +
-                        $"{mantes}");
-                }
+                sb.AppendLine($"{e.idEquipo};" +
+                    $"\"{e.TipoEquipo?.tipo ?? "—"}\";" +
+                    $"\"{displayNombre}\";" +
+                    $"\"{displayModelo}\";" +
+                    $"\"{displaySerie}\";" +
+                    $"\"{e.estado_equipo}\";" +
+                    $"{e.fecha_compra:dd/MM/yyyy};" +
+                    $"\"{nombre}\";" +
+                    $"\"{e.Observaciones ?? "—"}\";" +
+                    $"{mantes}");
             }
  
             var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-            var nombreArchivo = incluirPcCompleto
-                ? $"PcCompleto_{tipoNombre}_{DateTime.Now:yyyyMMdd_HHmm}.csv"
-                : $"Equipos_{DateTime.Now:yyyyMMdd_HHmm}.csv";
-            return File(bytes, "text/csv", nombreArchivo);
+            return File(bytes, "text/csv", $"Equipos_{DateTime.Now:yyyyMMdd_HHmm}.csv");
         }
 
         [HttpGet]
@@ -314,59 +230,36 @@ namespace PROYJHOME2026.Controllers
             DateTime? fechaDesde, DateTime? fechaHasta,
             int? tipoId, string? estado, string? buscar)
         {
-            string? tipoNombre = null;
-            bool incluirPcCompleto = false;
-            if (tipoId.HasValue)
-            {
-                var tipoObj = await _context.TiposEquipo.FindAsync(tipoId.Value);
-                tipoNombre = tipoObj?.tipo;
-                incluirPcCompleto = EsComponentePcCompleto(tipoNombre);
-            }
- 
-            IQueryable<PROYJHOME2026.Models.Equipo> query;
- 
-            if (incluirPcCompleto)
-            {
-                query = _context.Equipos
-                    .Include(e => e.TipoEquipo)
-                    .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
-                        .ThenInclude(a => a.Empleado)
-                    .Where(e => e.TipoEquipo != null && e.TipoEquipo.tipo != null &&
-                                e.TipoEquipo.tipo.ToUpper().Contains("PC COMPLETO"));
-            }
-            else
-            {
-                query = _context.Equipos
-                    .Include(e => e.TipoEquipo)
-                    .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
-                        .ThenInclude(a => a.Empleado)
-                    .Include(e => e.ComponenteLogs.Where(l => l.TipoEvento == "Mantenimiento"))
-                    .AsQueryable();
-                if (tipoId.HasValue) query = query.Where(e => e.idTipoEquipo == tipoId);
-            }
+            var query = _context.Equipos
+                .Include(e => e.TipoEquipo)
+                .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
+                    .ThenInclude(a => a.Empleado)
+                .Include(e => e.ComponenteLogs.Where(l => l.TipoEvento == "Mantenimiento"))
+                .AsQueryable();
  
             if (fechaDesde.HasValue) query = query.Where(e => e.fecha_compra >= fechaDesde.Value);
             if (fechaHasta.HasValue) query = query.Where(e => e.fecha_compra <= fechaHasta.Value.AddDays(1));
+            if (tipoId.HasValue)     query = query.Where(e => e.idTipoEquipo == tipoId);
             if (!string.IsNullOrWhiteSpace(estado))
             {
                 var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 query = query.Where(e => estados.Contains(e.estado_equipo));
             }
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(e =>
+                    (e.marca  != null && e.marca.Contains(buscar)) ||
+                    (e.modelo != null && e.modelo.Contains(buscar)) ||
+                    (e.NombrePc != null && e.NombrePc.Contains(buscar)));
  
             var equipos = await query.OrderByDescending(e => e.fecha_compra).ToListAsync();
- 
-            // ── Título según contexto ───────────────────────────────
-            var titulo = incluirPcCompleto
-                ? $"REPORTE DE PC COMPLETO — Componente: {tipoNombre?.ToUpper() ?? "TODOS"}"
-                : "REPORTE DE EQUIPOS TI";
  
             var pdf = Document.Create(doc =>
             {
                 doc.Page(page =>
                 {
-                    page.Size(incluirPcCompleto ? PageSizes.A3.Landscape() : PageSizes.A4.Landscape());
-                    page.Margin(25);
-                    page.DefaultTextStyle(t => t.FontSize(8.5f));
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(30);
+                    page.DefaultTextStyle(t => t.FontSize(9));
  
                     page.Header().Column(col =>
                     {
@@ -374,167 +267,99 @@ namespace PROYJHOME2026.Controllers
                         {
                             row.RelativeItem().Column(c =>
                             {
-                                c.Item().Text(titulo)
-                                    .Bold().FontSize(13).FontColor(Color.FromHex("#1a3a6b"));
+                                c.Item().Text("REPORTE DE EQUIPOS TI")
+                                    .Bold().FontSize(14).FontColor(Color.FromHex("#1a3a6b"));
                                 c.Item().Text($"SG-JHOMERON — Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
-                                    .FontSize(7.5f).FontColor(Color.FromHex("#6b7280"));
+                                    .FontSize(8).FontColor(Color.FromHex("#6b7280"));
                             });
-                            row.ConstantItem(150).AlignRight().Column(c =>
+                            row.ConstantItem(140).AlignRight().Column(c =>
                             {
-                                c.Item().Text($"Total: {equipos.Count} registro(s)")
+                                c.Item().Text($"Total: {equipos.Count} equipos")
                                     .Bold().FontSize(10).FontColor(Color.FromHex("#2563eb"));
                                 if (fechaDesde.HasValue || fechaHasta.HasValue)
                                     c.Item().Text($"{fechaDesde:dd/MM/yy} — {fechaHasta:dd/MM/yy}")
-                                        .FontSize(7.5f).FontColor(Color.FromHex("#9ca3af"));
+                                        .FontSize(8).FontColor(Color.FromHex("#9ca3af"));
                             });
                         });
-                        col.Item().PaddingTop(5).LineHorizontal(1.5f).LineColor(Color.FromHex("#1a3a6b"));
+                        col.Item().PaddingTop(6).LineHorizontal(1.5f).LineColor(Color.FromHex("#1a3a6b"));
                     });
  
-                    page.Content().PaddingTop(10).Table(table =>
+                    page.Content().PaddingTop(12).Table(table =>
                     {
-                        if (incluirPcCompleto)
+                        // Columnas: # | Tipo | Nombre/Marca Modelo | N°Serie | Estado | F.Compra | Asignado | Observaciones | Mant.
+                        table.ColumnsDefinition(c =>
                         {
-                            // ── Tabla PC Completo con todos los componentes ─────
-                            table.ColumnsDefinition(c =>
-                            {
-                                c.ConstantColumn(20);   // #
-                                c.RelativeColumn(2f);   // Nombre PC
-                                c.RelativeColumn(1.2f); // Estado
-                                c.RelativeColumn(1f);   // F. Compra
-                                c.RelativeColumn(2f);   // Asignado a
-                                c.RelativeColumn(1.5f); // CPU marca/modelo
-                                c.RelativeColumn(2f);   // Procesador
-                                c.RelativeColumn(1f);   // RAM
-                                c.RelativeColumn(1f);   // Disco
-                                c.RelativeColumn(1.5f); // Monitor
-                                c.RelativeColumn(1.5f); // Mouse
-                                c.RelativeColumn(1.5f); // Teclado
-                                c.RelativeColumn(1f);   // Mousepad
-                            });
+                            c.ConstantColumn(25);   // #
+                            c.RelativeColumn(1.2f); // Tipo
+                            c.RelativeColumn(2.2f); // Nombre/Marca Modelo
+                            c.RelativeColumn(1.8f); // N° Serie
+                            c.RelativeColumn(1.2f); // Estado
+                            c.RelativeColumn(1.2f); // F.Compra
+                            c.RelativeColumn(2f);   // Asignado a
+                            c.RelativeColumn(2.5f); // Observaciones
+                            c.ConstantColumn(35);   // Mant.
+                        });
  
-                            static IContainer Cab(IContainer c) =>
-                                c.Background(Color.FromHex("#1a3a6b")).Padding(4);
+                        static IContainer CeldaCab(IContainer c) =>
+                            c.Background(Color.FromHex("#1a3a6b")).Padding(5);
  
-                            table.Header(h =>
-                            {
-                                foreach (var t in new[] { "#", "Nombre PC", "Estado", "F.Compra",
-                                    "Asignado a", "CPU", "Procesador", "RAM", "Disco",
-                                    "Monitor", "Mouse", "Teclado", "Mousepad" })
-                                    h.Cell().Element(Cab).Text(t).Bold().FontSize(7).FontColor(Colors.White);
-                            });
- 
-                            for (int i = 0; i < equipos.Count; i++)
-                            {
-                                var e  = equipos[i];
-                                var bg = i % 2 == 0 ? Color.FromHex("#f8fafc") : Colors.White;
-                                IContainer C(IContainer c) => c.Background(bg).Padding(3);
- 
-                                var asig   = e.Asignaciones.FirstOrDefault();
-                                var nombre = asig != null
-                                    ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim()
-                                    : "Sin asignar";
-                                var mouse  = e.PcMouseEsInalambrico == true ? "Inalámbrico"
-                                           : e.PcMouseEsInalambrico == false ? "Con cable" : "—";
-                                var estadoColor = e.estado_equipo switch {
-                                    "Activo"        => Color.FromHex("#16a34a"),
-                                    "Asignado"      => Color.FromHex("#2563eb"),
-                                    "Mantenimiento" => Color.FromHex("#d97706"),
-                                    _               => Color.FromHex("#6b7280")
-                                };
- 
-                                table.Cell().Element(C).Text($"{i+1}").FontColor(Color.FromHex("#9ca3af"));
-                                table.Cell().Element(C).Text(e.NombrePc ?? "Sin nombre").Bold();
-                                table.Cell().Element(C).Text(e.estado_equipo).FontColor(estadoColor);
-                                table.Cell().Element(C).Text(e.fecha_compra.ToString("dd/MM/yy")).FontSize(7.5f);
-                                table.Cell().Element(C).Text(nombre).FontColor(Color.FromHex("#2563eb")).FontSize(7.5f);
-                                table.Cell().Element(C).Text($"{e.PcCpuMarca ?? "—"} {e.PcCpuModelo ?? ""}").FontSize(7.5f);
-                                table.Cell().Element(C).Text(e.PcCpuProcesador ?? "—").FontSize(7f).FontColor(Color.FromHex("#4b5563"));
-                                table.Cell().Element(C).Text(e.PcCpuRam ?? "—").FontSize(7.5f);
-                                table.Cell().Element(C).Text(e.PcCpuDisco ?? "—").FontSize(7f);
-                                table.Cell().Element(C).Text($"{e.PcMonitorMarca ?? "—"} {e.PcMonitorModelo ?? ""}").FontSize(7.5f);
-                                table.Cell().Element(C).Text($"{e.PcMouseMarca ?? "—"}\n{mouse}").FontSize(7.5f);
-                                table.Cell().Element(C).Text($"{e.PcTecladoMarca ?? "—"} {e.PcTecladoModelo ?? ""}").FontSize(7.5f);
-                                table.Cell().Element(C).Text(e.PcMousepadMarca ?? "—").FontSize(7.5f);
-                            }
-                        }
-                        else
+                        table.Header(h =>
                         {
-                            // ── Tabla estándar ─────────────────────────────────
-                            table.ColumnsDefinition(c =>
-                            {
-                                c.ConstantColumn(25);
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(2f);
-                                c.RelativeColumn(1.8f);
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(1.2f);
-                                c.RelativeColumn(2.2f);
-                                c.RelativeColumn(1.5f);
-                                c.RelativeColumn(1f);
-                                c.ConstantColumn(35);
-                            });
+                            foreach (var t in new[] { "#", "Tipo", "Nombre / Marca Modelo", "N° Serie", "Estado", "F. Compra", "Asignado a", "Observaciones", "Mant." })
+                                h.Cell().Element(CeldaCab).Text(t).Bold().FontSize(8).FontColor(Colors.White);
+                        });
  
-                            static IContainer CeldaCab(IContainer c) =>
-                                c.Background(Color.FromHex("#1a3a6b")).Padding(5);
+                        for (int i = 0; i < equipos.Count; i++)
+                        {
+                            var e      = equipos[i];
+                            var bg     = i % 2 == 0 ? Color.FromHex("#f8fafc") : Colors.White;
+                            var esPc   = e.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true;
+                            var asig   = e.Asignaciones.FirstOrDefault();
+                            var nombre = asig != null
+                                ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim()
+                                : "Sin asignar";
+                            var mantes = e.ComponenteLogs?.Count(l => l.TipoEvento == "Mantenimiento") ?? 0;
  
-                            table.Header(h =>
-                            {
-                                foreach (var t in new[] { "#", "Tipo", "Marca / Modelo", "N° Serie",
-                                    "Estado", "F. Compra", "Asignado a", "Procesador", "RAM", "Mant." })
-                                    h.Cell().Element(CeldaCab).Text(t).Bold().FontSize(8).FontColor(Colors.White);
-                            });
+                            // Para PC Completo: solo NombrePc, sin marca/modelo ni serie
+                            var displayNombreModelo = esPc
+                                ? (e.NombrePc ?? "Sin nombre")
+                                : $"{e.marca ?? "—"} {e.modelo ?? ""}".Trim();
+                            var displaySerie = esPc ? "—" : (e.numero_serie ?? "—");
  
-                            for (int i = 0; i < equipos.Count; i++)
-                            {
-                                var e      = equipos[i];
-                                var bg     = i % 2 == 0 ? Color.FromHex("#f8fafc") : Colors.White;
-                                var asig   = e.Asignaciones.FirstOrDefault();
-                                var nombre = asig != null
-                                    ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim()
-                                    : "Sin asignar";
-                                var mantes = e.ComponenteLogs?.Count(l => l.TipoEvento == "Mantenimiento") ?? 0;
+                            IContainer Celda(IContainer c) => c.Background(bg).Padding(4);
  
-                                IContainer Celda(IContainer c) => c.Background(bg).Padding(4);
+                            var estadoColor = e.estado_equipo switch {
+                                "Activo"        => Color.FromHex("#16a34a"),
+                                "Asignado"      => Color.FromHex("#2563eb"),
+                                "Mantenimiento" => Color.FromHex("#d97706"),
+                                _               => Color.FromHex("#6b7280")
+                            };
  
-                                var estadoColor = e.estado_equipo switch {
-                                    "Activo"        => Color.FromHex("#16a34a"),
-                                    "Asignado"      => Color.FromHex("#2563eb"),
-                                    "Mantenimiento" => Color.FromHex("#d97706"),
-                                    _               => Color.FromHex("#6b7280")
-                                };
- 
-                                table.Cell().Element(Celda).Text($"{i+1}").FontColor(Color.FromHex("#9ca3af"));
-                                table.Cell().Element(Celda).Text(e.TipoEquipo?.tipo ?? "—");
-                                table.Cell().Element(Celda).Text($"{e.marca} {e.modelo}").Bold();
-                                table.Cell().Element(Celda).Text(e.numero_serie ?? "—").FontColor(Color.FromHex("#4b5563"));
-                                table.Cell().Element(Celda).Text(e.estado_equipo).FontColor(estadoColor);
-                                table.Cell().Element(Celda).Text(e.fecha_compra.ToString("dd/MM/yyyy"));
-                                table.Cell().Element(Celda).Text(nombre).FontColor(Color.FromHex("#2563eb"));
-                                table.Cell().Element(Celda).Text(e.Procesador ?? e.PcCpuProcesador ?? "—").FontSize(8);
-                                table.Cell().Element(Celda).Text(e.Ram ?? e.PcCpuRam ?? "—").FontSize(8);
-                                table.Cell().Element(Celda).AlignCenter()
-                                    .Text(mantes == 0 ? "—" : mantes.ToString())
-                                    .Bold().FontColor(mantes > 0 ? Color.FromHex("#d97706") : Color.FromHex("#9ca3af"));
-                            }
+                            table.Cell().Element(Celda).Text($"{i + 1}").FontColor(Color.FromHex("#9ca3af"));
+                            table.Cell().Element(Celda).Text(e.TipoEquipo?.tipo ?? "—");
+                            table.Cell().Element(Celda).Text(displayNombreModelo).Bold();
+                            table.Cell().Element(Celda).Text(displaySerie).FontColor(Color.FromHex("#4b5563")).FontSize(8);
+                            table.Cell().Element(Celda).Text(e.estado_equipo).FontColor(estadoColor);
+                            table.Cell().Element(Celda).Text(e.fecha_compra.ToString("dd/MM/yyyy")).FontSize(8);
+                            table.Cell().Element(Celda).Text(nombre).FontColor(Color.FromHex("#2563eb")).FontSize(8);
+                            table.Cell().Element(Celda).Text(e.Observaciones ?? "—").FontSize(7.5f).FontColor(Color.FromHex("#4b5563"));
+                            table.Cell().Element(Celda).AlignCenter()
+                                .Text(mantes == 0 ? "—" : mantes.ToString())
+                                .Bold().FontColor(mantes > 0 ? Color.FromHex("#d97706") : Color.FromHex("#9ca3af"));
                         }
                     });
  
                     page.Footer().AlignRight().Text(t =>
                     {
-                        t.Span("Página ").FontSize(7.5f).FontColor(Color.FromHex("#9ca3af"));
-                        t.CurrentPageNumber().FontSize(7.5f).FontColor(Color.FromHex("#9ca3af"));
-                        t.Span(" de ").FontSize(7.5f).FontColor(Color.FromHex("#9ca3af"));
-                        t.TotalPages().FontSize(7.5f).FontColor(Color.FromHex("#9ca3af"));
+                        t.Span("Página ").FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.CurrentPageNumber().FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.Span(" de ").FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.TotalPages().FontSize(8).FontColor(Color.FromHex("#9ca3af"));
                     });
                 });
             });
  
-            var nombreArchivo = incluirPcCompleto
-                ? $"PcCompleto_{tipoNombre}_{DateTime.Now:yyyyMMdd_HHmm}.pdf"
-                : $"Equipos_{DateTime.Now:yyyyMMdd_HHmm}.pdf";
- 
-            return File(pdf.GeneratePdf(), "application/pdf", nombreArchivo);
+            return File(pdf.GeneratePdf(), "application/pdf", $"Equipos_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -1135,6 +960,484 @@ namespace PROYJHOME2026.Controllers
             ViewData["Title"]      = "Dashboard de Equipos";
             ViewData["Breadcrumb"] = "Reportes / Dashboard";
             return View();
+        }
+         // ── INDEX FLOTA ───────────────────────────────────────────
+        public async Task<IActionResult> IndexFlota()
+        {
+            ViewData["Title"]      = "Reportes Flota Vehicular";
+            ViewData["Breadcrumb"] = "Reportes / Flota Vehicular";
+            ViewBag.Grupos = await _context.Grupos.OrderBy(g => g.area).ToListAsync();
+            ViewBag.TiposMantenimiento = await _context.TiposMantenimiento
+                .OrderBy(t => t.Nombre).ToListAsync();
+            return View();
+        }
+ 
+        // ── VEHÍCULOS DATA (AJAX) ─────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> VehiculosData(
+            DateTime? fechaDesde, DateTime? fechaHasta,
+            string? estado, string? buscar)
+        {
+            var query = _context.Carros
+                .Include(c => c.EmpleadosCarros).ThenInclude(ec => ec.Empleado)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(c => c.FechaCompra >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(c => c.FechaCompra <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(c => estados.Contains(c.Estado));
+            }
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(c =>
+                    c.Placa.Contains(buscar) || c.Marca.Contains(buscar) || c.Modelo.Contains(buscar) ||
+                    (c.NumeroMotor != null && c.NumeroMotor.Contains(buscar)));
+ 
+            var data = await query.OrderByDescending(c => c.IdCarro)
+                .Select(c => new {
+                    c.IdCarro,
+                    c.Placa,
+                    c.Marca,
+                    c.Modelo,
+                    c.Estado,
+                    c.Categoria,
+                    fechaCompra  = c.FechaCompra != null ? c.FechaCompra.Value.ToString("dd/MM/yyyy") : "—",
+                    conductor    = c.EmpleadosCarros.Any()
+                        ? c.EmpleadosCarros.First().Empleado.nombre + " " + c.EmpleadosCarros.First().Empleado.paterno
+                        : "Sin conductor",
+                    c.NumeroMotor,
+                }).ToListAsync();
+ 
+            return Json(new { total = data.Count, registros = data });
+        }
+ 
+        // ── VEHÍCULOS CSV ─────────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> VehiculosCsv(
+            DateTime? fechaDesde, DateTime? fechaHasta,
+            string? estado, string? buscar)
+        {
+            var query = _context.Carros
+                .Include(c => c.EmpleadosCarros).ThenInclude(ec => ec.Empleado)
+                .Include(c => c.MantenimientosCarros)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(c => c.FechaCompra >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(c => c.FechaCompra <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(c => estados.Contains(c.Estado));
+            }
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(c => c.Placa.Contains(buscar) || c.Marca.Contains(buscar));
+ 
+            var carros = await query.OrderByDescending(c => c.IdCarro).ToListAsync();
+ 
+            var sb = new StringBuilder();
+            sb.AppendLine("sep=;");
+            sb.AppendLine("ID;Placa;Marca;Modelo;Estado;Categoría;F.Compra;Conductor;N° Motor;N° Mantenimientos");
+ 
+            foreach (var c in carros)
+            {
+                var conductor = c.EmpleadosCarros.FirstOrDefault();
+                var nombreConductor = conductor != null
+                    ? $"{conductor.Empleado?.nombre} {conductor.Empleado?.paterno}".Trim()
+                    : "Sin conductor";
+                var mantes = c.MantenimientosCarros.Count;
+ 
+                sb.AppendLine($"{c.IdCarro};" +
+                    $"\"{c.Placa}\";" +
+                    $"\"{c.Marca}\";" +
+                    $"\"{c.Modelo}\";" +
+                    $"\"{c.Estado}\";" +
+                    $"\"{c.Categoria ?? "—"}\";" +
+                    $"{(c.FechaCompra.HasValue ? c.FechaCompra.Value.ToString("dd/MM/yyyy") : "—")};" +
+                    $"\"{nombreConductor}\";" +
+                    $"\"{c.NumeroMotor ?? "—"}\";" +
+                    $"{mantes}");
+            }
+ 
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"Vehiculos_{DateTime.Now:yyyyMMdd_HHmm}.csv");
+        }
+ 
+        // ── VEHÍCULOS PDF ─────────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> VehiculosPdf(
+            DateTime? fechaDesde, DateTime? fechaHasta,
+            string? estado, string? buscar)
+        {
+            var query = _context.Carros
+                .Include(c => c.EmpleadosCarros).ThenInclude(ec => ec.Empleado)
+                .Include(c => c.MantenimientosCarros)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(c => c.FechaCompra >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(c => c.FechaCompra <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(c => estados.Contains(c.Estado));
+            }
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(c => c.Placa.Contains(buscar) || c.Marca.Contains(buscar));
+ 
+            var carros = await query.OrderByDescending(c => c.IdCarro).ToListAsync();
+ 
+            var pdf = Document.Create(doc =>
+            {
+                doc.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(30);
+                    page.DefaultTextStyle(t => t.FontSize(9));
+ 
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("REPORTE DE FLOTA VEHICULAR")
+                                    .Bold().FontSize(14).FontColor(Color.FromHex("#1a3a6b"));
+                                c.Item().Text($"SG-JHOMERON — Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                                    .FontSize(8).FontColor(Color.FromHex("#6b7280"));
+                            });
+                            row.ConstantItem(140).AlignRight().Column(c =>
+                                c.Item().Text($"Total: {carros.Count} vehículo(s)")
+                                    .Bold().FontSize(10).FontColor(Color.FromHex("#2563eb")));
+                        });
+                        col.Item().PaddingTop(6).LineHorizontal(1.5f).LineColor(Color.FromHex("#1a3a6b"));
+                    });
+ 
+                    page.Content().PaddingTop(12).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.ConstantColumn(25);
+                            c.RelativeColumn(1.5f); // Placa
+                            c.RelativeColumn(1.5f); // Marca
+                            c.RelativeColumn(1.5f); // Modelo
+                            c.RelativeColumn(1.2f); // Estado
+                            c.RelativeColumn(1.2f); // Categoría
+                            c.RelativeColumn(1.2f); // F.Compra
+                            c.RelativeColumn(2.5f); // Conductor
+                            c.ConstantColumn(35);   // Mantes
+                        });
+ 
+                        static IContainer Cab(IContainer c) =>
+                            c.Background(Color.FromHex("#1a3a6b")).Padding(5);
+ 
+                        table.Header(h =>
+                        {
+                            foreach (var t in new[] { "#", "Placa", "Marca", "Modelo", "Estado", "Categoría", "F.Compra", "Conductor", "Mant." })
+                                h.Cell().Element(Cab).Text(t).Bold().FontSize(8).FontColor(Colors.White);
+                        });
+ 
+                        for (int i = 0; i < carros.Count; i++)
+                        {
+                            var c  = carros[i];
+                            var bg = i % 2 == 0 ? Color.FromHex("#f8fafc") : Colors.White;
+                            IContainer C(IContainer cel) => cel.Background(bg).Padding(4);
+ 
+                            var conductor = c.EmpleadosCarros.FirstOrDefault();
+                            var nombre    = conductor != null
+                                ? $"{conductor.Empleado?.nombre} {conductor.Empleado?.paterno}".Trim()
+                                : "Sin conductor";
+                            var mantes  = c.MantenimientosCarros.Count;
+                            var estadoColor = c.Estado switch {
+                                "Activo"           => Color.FromHex("#16a34a"),
+                                "En mantenimiento" => Color.FromHex("#d97706"),
+                                "Inactivo"         => Color.FromHex("#6b7280"),
+                                _                  => Color.FromHex("#dc2626")
+                            };
+ 
+                            table.Cell().Element(C).Text($"{i+1}").FontColor(Color.FromHex("#9ca3af"));
+                            table.Cell().Element(C).Text(c.Placa).Bold().FontColor(Color.FromHex("#1a3a6b"));
+                            table.Cell().Element(C).Text(c.Marca);
+                            table.Cell().Element(C).Text(c.Modelo);
+                            table.Cell().Element(C).Text(c.Estado).FontColor(estadoColor);
+                            table.Cell().Element(C).Text(c.Categoria ?? "—").FontSize(8);
+                            table.Cell().Element(C).Text(c.FechaCompra.HasValue ? c.FechaCompra.Value.ToString("dd/MM/yyyy") : "—").FontSize(8);
+                            table.Cell().Element(C).Text(nombre).FontColor(Color.FromHex("#2563eb")).FontSize(8);
+                            table.Cell().Element(C).AlignCenter()
+                                .Text(mantes == 0 ? "—" : mantes.ToString())
+                                .Bold().FontColor(mantes > 0 ? Color.FromHex("#d97706") : Color.FromHex("#9ca3af"));
+                        }
+                    });
+ 
+                    page.Footer().AlignRight().Text(t =>
+                    {
+                        t.Span("Página ").FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.CurrentPageNumber().FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.Span(" de ").FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.TotalPages().FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                    });
+                });
+            });
+ 
+            return File(pdf.GeneratePdf(), "application/pdf", $"Vehiculos_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
+        }
+ 
+        // ── MANTENIMIENTO DATA (AJAX) ─────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> MantenimientoData(
+            DateTime? fechaDesde, DateTime? fechaHasta,
+            string? estadoMante, int? tipoManteId, string? buscar)
+        {
+            var query = _context.MantenimientosCarros
+                .Include(m => m.Carro)
+                .Include(m => m.TipoMantenimiento)
+                .Include(m => m.UsuarioCreador)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(m => m.FechaProgramada >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(m => m.FechaProgramada <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estadoMante))
+            {
+                var estados = estadoMante.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(m => estados.Contains(m.Estado));
+            }
+            if (tipoManteId.HasValue) query = query.Where(m => m.IdTipoMante == tipoManteId);
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(m =>
+                    m.Carro.Placa.Contains(buscar) ||
+                    m.Carro.Marca.Contains(buscar)  ||
+                    (m.Observaciones != null && m.Observaciones.Contains(buscar)));
+ 
+            var data = await query.OrderByDescending(m => m.FechaProgramada)
+                .Select(m => new {
+                    m.IdMante,
+                    placa        = m.Carro.Placa,
+                    vehiculo     = m.Carro.Marca + " " + m.Carro.Modelo,
+                    tipo         = m.TipoMantenimiento.Nombre,
+                    m.Estado,
+                    fechaProg    = m.FechaProgramada.ToString("dd/MM/yyyy"),
+                    fechaInicio  = m.FechaInicio != null ? m.FechaInicio.Value.ToString("dd/MM/yyyy") : "—",
+                    fechaFin     = m.FechaCulminada != null ? m.FechaCulminada.Value.ToString("dd/MM/yyyy") : "—",
+                    obs          = m.Observaciones ?? "—",
+                    creador      = m.UsuarioCreador != null ? m.UsuarioCreador.nombreCompleto : "—",
+                }).ToListAsync();
+ 
+            return Json(new { total = data.Count, registros = data });
+        }
+ 
+        // ── MANTENIMIENTO CSV ─────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> MantenimientoCsv(
+            DateTime? fechaDesde, DateTime? fechaHasta,
+            string? estadoMante, int? tipoManteId, string? buscar)
+        {
+            var query = _context.MantenimientosCarros
+                .Include(m => m.Carro)
+                .Include(m => m.TipoMantenimiento)
+                .Include(m => m.UsuarioCreador)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(m => m.FechaProgramada >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(m => m.FechaProgramada <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estadoMante))
+            {
+                var estados = estadoMante.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(m => estados.Contains(m.Estado));
+            }
+            if (tipoManteId.HasValue) query = query.Where(m => m.IdTipoMante == tipoManteId);
+ 
+            var mantes = await query.OrderByDescending(m => m.FechaProgramada).ToListAsync();
+ 
+            var sb = new StringBuilder();
+            sb.AppendLine("sep=;");
+            sb.AppendLine("ID;Placa;Vehículo;Tipo Mantenimiento;Estado;F.Programada;F.Inicio;F.Culminada;Observaciones;Registrado por");
+ 
+            foreach (var m in mantes)
+            {
+                sb.AppendLine($"{m.IdMante};" +
+                    $"\"{m.Carro?.Placa ?? "—"}\";" +
+                    $"\"{m.Carro?.Marca} {m.Carro?.Modelo}\";" +
+                    $"\"{m.TipoMantenimiento?.Nombre ?? "—"}\";" +
+                    $"\"{m.Estado}\";" +
+                    $"{m.FechaProgramada:dd/MM/yyyy};" +
+                    $"{(m.FechaInicio.HasValue ? m.FechaInicio.Value.ToString("dd/MM/yyyy") : "—")};" +
+                    $"{(m.FechaCulminada.HasValue ? m.FechaCulminada.Value.ToString("dd/MM/yyyy") : "—")};" +
+                    $"\"{m.Observaciones ?? "—"}\";" +
+                    $"\"{m.UsuarioCreador?.nombreCompleto ?? "—"}\"");
+            }
+ 
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"Mantenimiento_{DateTime.Now:yyyyMMdd_HHmm}.csv");
+        }
+ 
+        // ── MANTENIMIENTO PDF ─────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> MantenimientoPdf(
+            DateTime? fechaDesde, DateTime? fechaHasta,
+            string? estadoMante, int? tipoManteId, string? buscar)
+        {
+            var query = _context.MantenimientosCarros
+                .Include(m => m.Carro)
+                .Include(m => m.TipoMantenimiento)
+                .Include(m => m.UsuarioCreador)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(m => m.FechaProgramada >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(m => m.FechaProgramada <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estadoMante))
+            {
+                var estados = estadoMante.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(m => estados.Contains(m.Estado));
+            }
+            if (tipoManteId.HasValue) query = query.Where(m => m.IdTipoMante == tipoManteId);
+ 
+            var mantes = await query.OrderByDescending(m => m.FechaProgramada).ToListAsync();
+ 
+            var pdf = Document.Create(doc =>
+            {
+                doc.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(30);
+                    page.DefaultTextStyle(t => t.FontSize(9));
+ 
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("REPORTE DE MANTENIMIENTOS VEHICULARES")
+                                    .Bold().FontSize(13).FontColor(Color.FromHex("#1a3a6b"));
+                                c.Item().Text($"SG-JHOMERON — Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                                    .FontSize(8).FontColor(Color.FromHex("#6b7280"));
+                            });
+                            row.ConstantItem(140).AlignRight().Column(c =>
+                                c.Item().Text($"Total: {mantes.Count} registro(s)")
+                                    .Bold().FontSize(10).FontColor(Color.FromHex("#2563eb")));
+                        });
+                        col.Item().PaddingTop(6).LineHorizontal(1.5f).LineColor(Color.FromHex("#1a3a6b"));
+                    });
+ 
+                    page.Content().PaddingTop(12).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.ConstantColumn(25);
+                            c.RelativeColumn(1.2f); // Placa
+                            c.RelativeColumn(2f);   // Vehículo
+                            c.RelativeColumn(2f);   // Tipo
+                            c.RelativeColumn(1.3f); // Estado
+                            c.RelativeColumn(1.2f); // F.Prog
+                            c.RelativeColumn(1.2f); // F.Inicio
+                            c.RelativeColumn(1.2f); // F.Fin
+                            c.RelativeColumn(2.5f); // Observaciones
+                        });
+ 
+                        static IContainer Cab(IContainer c) =>
+                            c.Background(Color.FromHex("#1a3a6b")).Padding(5);
+ 
+                        table.Header(h =>
+                        {
+                            foreach (var t in new[] { "#", "Placa", "Vehículo", "Tipo Mant.", "Estado", "F.Programada", "F.Inicio", "F.Fin", "Observaciones" })
+                                h.Cell().Element(Cab).Text(t).Bold().FontSize(8).FontColor(Colors.White);
+                        });
+ 
+                        for (int i = 0; i < mantes.Count; i++)
+                        {
+                            var m  = mantes[i];
+                            var bg = i % 2 == 0 ? Color.FromHex("#f8fafc") : Colors.White;
+                            IContainer C(IContainer cel) => cel.Background(bg).Padding(4);
+ 
+                            var estadoColor = m.Estado switch {
+                                "Culminado"  => Color.FromHex("#16a34a"),
+                                "En proceso" => Color.FromHex("#2563eb"),
+                                "Pendiente"  => Color.FromHex("#d97706"),
+                                "Cancelado"  => Color.FromHex("#dc2626"),
+                                _            => Color.FromHex("#6b7280")
+                            };
+ 
+                            table.Cell().Element(C).Text($"{i+1}").FontColor(Color.FromHex("#9ca3af"));
+                            table.Cell().Element(C).Text(m.Carro?.Placa ?? "—").Bold().FontColor(Color.FromHex("#1a3a6b"));
+                            table.Cell().Element(C).Text($"{m.Carro?.Marca} {m.Carro?.Modelo}").FontSize(8);
+                            table.Cell().Element(C).Text(m.TipoMantenimiento?.Nombre ?? "—");
+                            table.Cell().Element(C).Text(m.Estado).FontColor(estadoColor);
+                            table.Cell().Element(C).Text(m.FechaProgramada.ToString("dd/MM/yyyy")).FontSize(8);
+                            table.Cell().Element(C).Text(m.FechaInicio.HasValue ? m.FechaInicio.Value.ToString("dd/MM/yyyy") : "—").FontSize(8);
+                            table.Cell().Element(C).Text(m.FechaCulminada.HasValue ? m.FechaCulminada.Value.ToString("dd/MM/yyyy") : "—").FontSize(8);
+                            table.Cell().Element(C).Text(m.Observaciones ?? "—").FontSize(7.5f).FontColor(Color.FromHex("#4b5563"));
+                        }
+                    });
+ 
+                    page.Footer().AlignRight().Text(t =>
+                    {
+                        t.Span("Página ").FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.CurrentPageNumber().FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.Span(" de ").FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.TotalPages().FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                    });
+                });
+            });
+ 
+            return File(pdf.GeneratePdf(), "application/pdf", $"Mantenimiento_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
+        }
+ 
+        // ── DASHBOARD FLOTA ───────────────────────────────────────
+        public IActionResult DashboardFlota()
+        {
+            ViewData["Title"]      = "Dashboard Flota Vehicular";
+            ViewData["Breadcrumb"] = "Reportes / Dashboard Flota";
+            return View();
+        }
+ 
+        [HttpGet]
+        public async Task<IActionResult> DashboardFlotaData()
+        {
+            var porEstado = await _context.Carros
+                .GroupBy(c => c.Estado)
+                .Select(g => new { estado = g.Key, total = g.Count() })
+                .ToListAsync();
+ 
+            var porCategoria = await _context.Carros
+                .Where(c => c.Categoria != null)
+                .GroupBy(c => c.Categoria!)
+                .Select(g => new { categoria = g.Key, total = g.Count() })
+                .OrderByDescending(g => g.total)
+                .ToListAsync();
+ 
+            var hace12Inicio = new DateTime(DateTime.Now.AddMonths(-11).Year, DateTime.Now.AddMonths(-11).Month, 1);
+            var mantesPorMes = await _context.MantenimientosCarros
+                .Where(m => m.FechaProgramada >= hace12Inicio)
+                .GroupBy(m => new { m.FechaProgramada.Year, m.FechaProgramada.Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, total = g.Count() })
+                .OrderBy(g => g.Year).ThenBy(g => g.Month)
+                .ToListAsync();
+ 
+            var mesesCompletos = Enumerable.Range(0, 12).Select(i => {
+                var d     = hace12Inicio.AddMonths(i);
+                var found = mantesPorMes.FirstOrDefault(m => m.Year == d.Year && m.Month == d.Month);
+                return new { mes = $"{d:MM}/{d.Year}", total = found?.total ?? 0 };
+            }).ToList();
+ 
+            var topMantes = await _context.MantenimientosCarros
+                .Include(m => m.Carro)
+                .GroupBy(m => new { m.IdCarro, m.Carro.Placa, m.Carro.Marca, m.Carro.Modelo })
+                .Select(g => new { g.Key.IdCarro, g.Key.Placa, g.Key.Marca, g.Key.Modelo, total = g.Count() })
+                .OrderByDescending(g => g.total)
+                .Take(10)
+                .ToListAsync();
+ 
+            var totalVehiculos  = await _context.Carros.CountAsync();
+            var totalActivos    = await _context.Carros.CountAsync(c => c.Estado == "Activo");
+            var totalMante      = await _context.Carros.CountAsync(c => c.Estado == "En mantenimiento");
+            var totalPendientes = await _context.MantenimientosCarros.CountAsync(m => m.Estado == "Pendiente");
+ 
+            return Json(new {
+                resumen = new { totalVehiculos, totalActivos, totalMante, totalPendientes },
+                porEstado,
+                porCategoria,
+                mantesPorMes = mesesCompletos,
+                topMantes
+            });
         }
     }
 }

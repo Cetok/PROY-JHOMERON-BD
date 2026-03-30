@@ -126,8 +126,14 @@ namespace PROYJHOME2026.Controllers
             // Redirigir a returnUrl si es válida, si no al dashboard
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
-
-            return RedirectToAction("Index", "Home");
+ 
+            // Redirigir según rol
+            return usuario.rol switch
+            {
+                "SoporteTI"  => RedirectToAction("Dashboard", "Reportes"),
+                "Transporte" => RedirectToAction("DashboardFlota", "Reportes"),
+                _            => RedirectToAction("Index", "Home")   // Admin y cualquier otro
+            };
         }
 
         // ── LOGOUT ───────────────────────────────────────────────

@@ -1,0 +1,287 @@
+@{
+    ViewData["Title"]      = "Reportes Flota Vehicular";
+    ViewData["Breadcrumb"] = "Reportes / Flota Vehicular";
+    var grupos   = ViewBag.Grupos as List<PROYJHOME2026.Models.Grupo> ?? new();
+    var tiposMante = ViewBag.TiposMantenimiento as List<PROYJHOME2026.Models.TipoMantenimiento> ?? new();
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Reportes</div>
+        <h1 class="page-header__title">Reportes Flota Vehicular</h1>
+        <p class="page-header__subtitle">Filtra, previsualiza y exporta vehículos y mantenimientos</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="DashboardFlota" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard Flota
+        </a>
+    </div>
+</div>
+
+<!-- PESTAÑAS -->
+<div class="rep-tabs">
+    <button class="rep-tab rep-tab--active" id="tab-btn-vehiculos" onclick="cambiarTabFlota('vehiculos')">
+        <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Vehículos
+    </button>
+    <button class="rep-tab" id="tab-btn-mantenimiento" onclick="cambiarTabFlota('mantenimiento')">
+        <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        Mantenimientos
+    </button>
+</div>
+
+<!-- ══ TAB VEHÍCULOS ══ -->
+<div id="tab-vehiculos" class="rep-panel">
+    <div class="card" style="margin-bottom:16px;">
+        <p class="rep-section-title">Filtros</p>
+        <div class="form-grid" style="gap:12px; align-items:end;">
+            <div class="form-group">
+                <label class="form-label">Desde</label>
+                <input type="date" id="v-desde" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Hasta</label>
+                <input type="date" id="v-hasta" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Buscar</label>
+                <input type="text" id="v-buscar" class="form-control" placeholder="Placa, marca, modelo..." />
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <label class="form-label">Estado</label>
+            <div class="rep-checks">
+                @foreach (var est in new[] { "Activo","Inactivo","En mantenimiento","De baja" })
+                {
+                    <label class="rep-check-item">
+                        <input type="checkbox" class="v-estado" value="@est" checked />
+                        <span class="rep-check-label">@est</span>
+                    </label>
+                }
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+            <button onclick="consultarVehiculos()" class="btn btn--celeste">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Consultar
+            </button>
+            <button onclick="window.location.href='/Reportes/VehiculosCsv'+buildParams(lastVParams)" class="btn btn--verde" id="btn-v-csv" disabled>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Exportar CSV
+            </button>
+            <button onclick="window.open('/Reportes/VehiculosPdf'+buildParams(lastVParams),'_blank')" class="btn btn--rojo" id="btn-v-pdf" disabled>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Exportar PDF
+            </button>
+        </div>
+    </div>
+    <div id="v-resultado" style="display:none;">
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div style="padding:14px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; font-size:0.9rem;">Resultados</span>
+                <span class="badge badge--azul" id="v-total">0</span>
+            </div>
+            <div class="table-wrapper" style="border:none; border-radius:0; max-height:420px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr><th>Placa</th><th>Marca / Modelo</th><th>Estado</th><th>Categoría</th><th>F.Compra</th><th>Conductor</th></tr>
+                    </thead>
+                    <tbody id="v-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="v-vacio" style="display:none; text-align:center; padding:40px; color:var(--gris-400);">Sin resultados.</div>
+</div>
+
+<!-- ══ TAB MANTENIMIENTOS ══ -->
+<div id="tab-mantenimiento" class="rep-panel" style="display:none;">
+    <div class="card" style="margin-bottom:16px;">
+        <p class="rep-section-title">Filtros</p>
+        <div class="form-grid" style="gap:12px; align-items:end;">
+            <div class="form-group">
+                <label class="form-label">Desde (F.Programada)</label>
+                <input type="date" id="m-desde" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Hasta</label>
+                <input type="date" id="m-hasta" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tipo de mantenimiento</label>
+                <select id="m-tipo" class="form-control">
+                    <option value="">— Todos —</option>
+                    @foreach (var t in tiposMante)
+                    {
+                        <option value="@t.IdTipoMante">@t.Nombre</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Buscar</label>
+                <input type="text" id="m-buscar" class="form-control" placeholder="Placa, vehículo..." />
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <label class="form-label">Estado</label>
+            <div class="rep-checks">
+                @foreach (var est in new[] { "Pendiente","En proceso","Culminado","Cancelado" })
+                {
+                    <label class="rep-check-item">
+                        <input type="checkbox" class="m-estado" value="@est" checked />
+                        <span class="rep-check-label">@est</span>
+                    </label>
+                }
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+            <button onclick="consultarMantenimiento()" class="btn btn--celeste">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Consultar
+            </button>
+            <button onclick="window.location.href='/Reportes/MantenimientoCsv'+buildParams(lastMParams)" class="btn btn--verde" id="btn-m-csv" disabled>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Exportar CSV
+            </button>
+            <button onclick="window.open('/Reportes/MantenimientoPdf'+buildParams(lastMParams),'_blank')" class="btn btn--rojo" id="btn-m-pdf" disabled>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Exportar PDF
+            </button>
+        </div>
+    </div>
+    <div id="m-resultado" style="display:none;">
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div style="padding:14px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; font-size:0.9rem;">Resultados</span>
+                <span class="badge badge--azul" id="m-total">0</span>
+            </div>
+            <div class="table-wrapper" style="border:none; border-radius:0; max-height:420px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr><th>Placa</th><th>Vehículo</th><th>Tipo Mant.</th><th>Estado</th><th>F.Programada</th><th>F.Inicio</th><th>F.Fin</th><th>Observaciones</th></tr>
+                    </thead>
+                    <tbody id="m-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="m-vacio" style="display:none; text-align:center; padding:40px; color:var(--gris-400);">Sin resultados.</div>
+</div>
+
+@section Styles {
+<style>
+.rep-tabs { display:flex; gap:4px; margin-bottom:16px; background:var(--gris-100); padding:4px; border-radius:var(--r-md); width:fit-content; }
+.rep-tab { display:flex; align-items:center; gap:7px; padding:9px 18px; border:none; border-radius:calc(var(--r-md) - 2px); background:transparent; cursor:pointer; font-size:0.86rem; font-weight:600; color:var(--gris-500); transition:all 0.18s; }
+.rep-tab svg { width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
+.rep-tab:hover { background:var(--blanco); color:var(--azul); }
+.rep-tab--active { background:var(--blanco); color:var(--azul-dark); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+.rep-section-title { font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); padding-bottom:8px; border-bottom:1px solid var(--gris-200); margin-bottom:14px; }
+.rep-checks { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.rep-check-item { display:flex; align-items:center; gap:6px; padding:6px 12px; border:1.5px solid var(--gris-300); border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none; font-size:0.82rem; }
+.rep-check-item:has(input:checked) { border-color:var(--celeste); background:rgba(59,130,246,0.07); color:var(--azul-dark); font-weight:600; }
+.rep-check-item input { display:none; }
+.btn--verde { background:#16a34a; color:#fff; border:none; }
+.btn--verde:hover { background:#15803d; }
+.btn--rojo  { background:#dc2626; color:#fff; border:none; }
+.btn--rojo:hover  { background:#b91c1c; }
+</style>
+}
+
+@section Scripts {
+<script>
+let lastVParams = {}, lastMParams = {};
+
+function buildParams(obj) {
+    const q = Object.entries(obj).filter(([,v]) => v).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+    return q ? '?' + q : '';
+}
+function getChecked(cls) {
+    return [...document.querySelectorAll('.' + cls + ':checked')].map(c => c.value).join(',');
+}
+function estadoBadge(est) {
+    const m = { 'Activo':'badge--verde','Culminado':'badge--verde','En proceso':'badge--azul','Pendiente':'badge--amarillo','Cancelado':'badge--rojo','En mantenimiento':'badge--amarillo','Inactivo':'badge--gris' };
+    return `<span class="badge ${m[est] ?? 'badge--gris'}" style="font-size:0.7rem;">${est}</span>`;
+}
+
+function cambiarTabFlota(tab) {
+    ['vehiculos','mantenimiento'].forEach(t => {
+        document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+        document.getElementById('tab-btn-' + t).classList.toggle('rep-tab--active', t === tab);
+    });
+}
+
+async function consultarVehiculos() {
+    const p = {
+        fechaDesde: document.getElementById('v-desde').value,
+        fechaHasta: document.getElementById('v-hasta').value,
+        buscar:     document.getElementById('v-buscar').value,
+        estado:     getChecked('v-estado')
+    };
+    lastVParams = p;
+    const res  = await fetch('/Reportes/VehiculosData' + buildParams(p));
+    const data = await res.json();
+    document.getElementById('v-total').textContent = data.total;
+
+    if (data.total === 0) {
+        document.getElementById('v-resultado').style.display = 'none';
+        document.getElementById('v-vacio').style.display = 'block';
+        document.getElementById('btn-v-csv').disabled = true;
+        document.getElementById('btn-v-pdf').disabled = true;
+        return;
+    }
+    document.getElementById('v-resultado').style.display = 'block';
+    document.getElementById('v-vacio').style.display = 'none';
+    document.getElementById('btn-v-csv').disabled = false;
+    document.getElementById('btn-v-pdf').disabled = false;
+
+    document.getElementById('v-tbody').innerHTML = data.registros.map(c => `
+        <tr>
+            <td style="font-weight:700; color:var(--azul-dark); font-family:monospace;">${c.placa}</td>
+            <td style="font-weight:600;">${c.marca} ${c.modelo}</td>
+            <td>${estadoBadge(c.estado)}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${c.categoria ?? '—'}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${c.fechaCompra}</td>
+            <td style="font-size:0.82rem; color:var(--azul);">${c.conductor}</td>
+        </tr>`).join('');
+}
+
+async function consultarMantenimiento() {
+    const p = {
+        fechaDesde:  document.getElementById('m-desde').value,
+        fechaHasta:  document.getElementById('m-hasta').value,
+        tipoManteId: document.getElementById('m-tipo').value,
+        buscar:      document.getElementById('m-buscar').value,
+        estadoMante: getChecked('m-estado')
+    };
+    lastMParams = p;
+    const res  = await fetch('/Reportes/MantenimientoData' + buildParams(p));
+    const data = await res.json();
+    document.getElementById('m-total').textContent = data.total;
+
+    if (data.total === 0) {
+        document.getElementById('m-resultado').style.display = 'none';
+        document.getElementById('m-vacio').style.display = 'block';
+        document.getElementById('btn-m-csv').disabled = true;
+        document.getElementById('btn-m-pdf').disabled = true;
+        return;
+    }
+    document.getElementById('m-resultado').style.display = 'block';
+    document.getElementById('m-vacio').style.display = 'none';
+    document.getElementById('btn-m-csv').disabled = false;
+    document.getElementById('btn-m-pdf').disabled = false;
+
+    document.getElementById('m-tbody').innerHTML = data.registros.map(m => `
+        <tr>
+            <td style="font-weight:700; color:var(--azul-dark); font-family:monospace;">${m.placa}</td>
+            <td style="font-size:0.82rem;">${m.vehiculo}</td>
+            <td style="font-size:0.82rem;">${m.tipo}</td>
+            <td>${estadoBadge(m.estado)}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${m.fechaProg}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${m.fechaInicio}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${m.fechaFin}</td>
+            <td style="font-size:0.78rem; color:var(--gris-600);">${m.obs}</td>
+        </tr>`).join('');
+}
+</script>
+}

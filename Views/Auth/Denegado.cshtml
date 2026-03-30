@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"]      = "Acceso Denegado";
+    ViewData["Breadcrumb"] = "Acceso Denegado";
+}
+
+<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; text-align:center; padding:40px;">
+    <div style="width:72px; height:72px; border-radius:50%; background:rgba(220,38,38,0.1); display:grid; place-items:center; margin-bottom:24px;">
+        <svg viewBox="0 0 24 24" style="width:36px;height:36px;stroke:#dc2626;fill:none;stroke-width:1.8;stroke-linecap:round;">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+    </div>
+
+    <h1 style="font-size:1.6rem; font-weight:800; color:var(--azul-dark); margin-bottom:8px;">
+        Acceso denegado
+    </h1>
+    <p style="color:var(--gris-500); font-size:0.95rem; max-width:400px; margin-bottom:32px;">
+        No tienes permisos para acceder a esta sección.
+        Si crees que es un error, contacta al administrador del sistema.
+    </p>
+
+    <div style="display:flex; gap:12px;">
+        <a href="javascript:history.back()" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
