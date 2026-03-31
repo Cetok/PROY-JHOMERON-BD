@@ -1,0 +1,227 @@
+@model PROYJHOME2026.Models.Maquina
+@{
+    ViewData["Title"]      = "Detalle Máquina";
+    ViewData["Breadcrumb"] = "Producción / Máquinas / Detalle";
+    var bc = Model.Estado switch {
+        "Activo"        => "badge--verde",
+        "Mantenimiento" => "badge--amarillo",
+        "Inoperativo"   => "badge--rojo",
+        _               => "badge--gris"
+    };
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Producción</div>
+        <div style="margin-bottom:4px;">
+            <span class="badge @bc">@Model.Estado</span>
+        </div>
+        <h1 class="page-header__title" style="color:var(--azul);">@Model.NombreMaquina</h1>
+        <p class="page-header__subtitle" style="font-family:monospace;">@Model.NumeroMaquina</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Edit" asp-route-id="@Model.IdMaquina" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+        </a>
+        <a asp-action="Index" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div style="max-width:1000px; display:flex; flex-direction:column; gap:16px;">
+
+    <!-- DATOS GENERALES -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="card">
+            <p class="det-section-title">Datos de la máquina</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="det-field"><div class="det-label">N° Máquina</div><div class="det-value" style="font-family:monospace; font-weight:700; color:var(--azul-dark);">@Model.NumeroMaquina</div></div>
+                <div class="det-field"><div class="det-label">Nombre</div><div class="det-value">@Model.NombreMaquina</div></div>
+                <div class="det-field"><div class="det-label">Marca</div><div class="det-value">@(Model.Marca ?? "—")</div></div>
+                <div class="det-field"><div class="det-label">Estado</div><div class="det-value"><span class="badge @bc">@Model.Estado</span></div></div>
+                <div class="det-field"><div class="det-label">F. Adquisición</div><div class="det-value">@(Model.FechaAdquisicion.HasValue ? Model.FechaAdquisicion.Value.ToString("dd/MM/yyyy") : "—")</div></div>
+                <div class="det-field"><div class="det-label">F. Compra</div><div class="det-value">@(Model.FechaCompra.HasValue ? Model.FechaCompra.Value.ToString("dd/MM/yyyy") : "—")</div></div>
+                @if (!string.IsNullOrEmpty(Model.Observaciones))
+                {
+                    <div class="det-field" style="grid-column:1/-1;">
+                        <div class="det-label">Observaciones</div>
+                        <div class="det-value" style="background:var(--gris-50); padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--gris-200);">@Model.Observaciones</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ASIGNACIÓN ACTUAL -->
+        <div class="card">
+            <p class="det-section-title">Asignación actual</p>
+            @if (Model.AsignacionActual != null)
+            {
+                var bcOp = Model.AsignacionActual.EstadoOperativo == "Operativo" ? "badge--verde" : "badge--rojo";
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="det-field"><div class="det-label">Grupo / Área</div><div class="det-value" style="font-weight:700; color:var(--azul-dark);">@(Model.AsignacionActual.Grupo?.area ?? "—")</div></div>
+                    <div class="det-field"><div class="det-label">Estado operativo</div><div class="det-value"><span class="badge @bcOp">@Model.AsignacionActual.EstadoOperativo</span></div></div>
+                    <div class="det-field" style="grid-column:1/-1;"><div class="det-label">Encargado</div><div class="det-value" style="color:var(--azul);">@(Model.AsignacionActual.Encargado?.nombre + " " + Model.AsignacionActual.Encargado?.paterno)</div></div>
+                    <div class="det-field"><div class="det-label">Fecha asignación</div><div class="det-value">@Model.AsignacionActual.FechaAsignacion.ToString("dd/MM/yyyy")</div></div>
+                    @if (!string.IsNullOrEmpty(Model.AsignacionActual.Observaciones))
+                    {
+                        <div class="det-field" style="grid-column:1/-1;"><div class="det-label">Observaciones</div><div class="det-value">@Model.AsignacionActual.Observaciones</div></div>
+                    }
+                </div>
+                <div style="display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--gris-200);">
+                    <a asp-controller="MaquinaAsignaciones" asp-action="Edit" asp-route-id="@Model.AsignacionActual.IdAsignacion"
+                       class="btn btn--secondary btn--sm">
+                        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Editar asignación
+                    </a>
+                    <a asp-controller="MaquinaAsignaciones" asp-action="Create" asp-route-idMaquina="@Model.IdMaquina"
+                       class="btn btn--celeste btn--sm">
+                        Reasignar
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div style="text-align:center; padding:20px; color:var(--gris-400); font-size:0.82rem;">
+                    Sin asignación activa
+                </div>
+                <a asp-controller="MaquinaAsignaciones" asp-action="Create" asp-route-idMaquina="@Model.IdMaquina"
+                   class="btn btn--celeste btn--sm" style="margin-top:8px;">
+                    + Asignar a grupo
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- ACCESORIOS/PARTES -->
+    @if (!string.IsNullOrEmpty(Model.AccesoriosParte))
+    {
+        <div class="card">
+            <p class="det-section-title">Accesorios / Partes</p>
+            <div style="background:var(--gris-50); padding:14px 16px; border-radius:var(--r-sm); border:1px solid var(--gris-200); white-space:pre-wrap; font-size:0.87rem; color:var(--gris-800); line-height:1.6;">@Model.AccesoriosParte</div>
+        </div>
+    }
+
+    <!-- CAMBIAR ESTADO -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <!-- Mantenimiento -->
+        <div class="card">
+            <p class="det-section-title" style="color:#d97706;">⚙ Dar Mantenimiento</p>
+            <form asp-action="CambiarEstado" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
+                <input type="hidden" name="nuevoEstado" value="Mantenimiento" />
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label class="form-label">Tipo / descripción del mantenimiento</label>
+                    <input type="text" name="observaciones" class="form-control" maxlength="500"
+                           placeholder="Ej: Mantenimiento preventivo, cambio de aceite..." />
+                </div>
+                <button type="submit" class="btn btn--sm"
+                        style="background:#d97706; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
+                        onclick="return confirm('¿Enviar a mantenimiento?')"
+                        @(Model.Estado == "Mantenimiento" ? "disabled" : "")>
+                    ⚙ Enviar a mantenimiento
+                </button>
+            </form>
+        </div>
+
+        <!-- Inoperativo / Reactivar -->
+        <div class="card">
+            @if (Model.Estado == "Inoperativo")
+            {
+                <p class="det-section-title" style="color:#16a34a;">✓ Reactivar máquina</p>
+                <form asp-action="CambiarEstado" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
+                    <input type="hidden" name="nuevoEstado" value="Activo" />
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label">Observaciones de reactivación</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Ej: Reparación completada, lista para operar..." />
+                    </div>
+                    <button type="submit" class="btn btn--sm"
+                            style="background:#16a34a; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
+                            onclick="return confirm('¿Reactivar la máquina?')">
+                        ✓ Reactivar
+                    </button>
+                </form>
+            }
+            else
+            {
+                <p class="det-section-title" style="color:#dc2626;">✕ Marcar Inoperativa</p>
+                <form asp-action="CambiarEstado" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
+                    <input type="hidden" name="nuevoEstado" value="Inoperativo" />
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label">Estado específico / motivo</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Ej: Buen estado y almacenado, Falla eléctrica..." />
+                    </div>
+                    <button type="submit" class="btn btn--sm"
+                            style="background:#dc2626; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
+                            onclick="return confirm('¿Marcar como inoperativa?')"
+                            @(Model.Estado == "Inoperativo" ? "disabled" : "")>
+                        ✕ Marcar inoperativa
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!-- HISTORIAL DE CAMBIOS -->
+    @if (Model.Logs.Any())
+    {
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div style="padding:16px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">Historial de cambios</div>
+                <span class="badge badge--azul">@Model.Logs.Count()</span>
+            </div>
+            <div class="table-wrapper" style="border:none; border-radius:0;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha / Hora</th>
+                            <th>Tipo evento</th>
+                            <th>Anterior</th>
+                            <th>Nuevo</th>
+                            <th>Observación</th>
+                            <th>Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model.Logs)
+                        {
+                            var logColor = log.TipoEvento switch {
+                                "CambioEstado"    => "badge--amarillo",
+                                "CambioAsignacion"=> "badge--azul",
+                                "CambioEncargado" => "badge--celeste",
+                                "Edicion"         => "badge--gris",
+                                _                 => "badge--gris"
+                            };
+                            <tr>
+                                <td style="font-size:0.78rem; color:var(--gris-500); white-space:nowrap;">@log.FechaHora.ToString("dd/MM/yy HH:mm")</td>
+                                <td><span class="badge @logColor" style="font-size:0.7rem;">@log.TipoEvento</span></td>
+                                <td style="font-size:0.78rem; color:var(--gris-500);">@(log.ValorAnterior ?? "—")</td>
+                                <td style="font-size:0.82rem; font-weight:500; color:var(--azul);">@(log.ValorNuevo ?? "—")</td>
+                                <td style="font-size:0.78rem; color:var(--gris-600);">@(log.Observaciones ?? "—")</td>
+                                <td style="font-size:0.75rem; color:var(--gris-400);">@(log.NombreUsuario ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>
+
+@section Styles {
+<style>
+.det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
+.det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
+.det-section-title { font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); padding-bottom:8px; border-bottom:1px solid var(--gris-200); margin-bottom:14px; }
+</style>
+}

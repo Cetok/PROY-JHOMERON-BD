@@ -130,9 +130,10 @@ namespace PROYJHOME2026.Controllers
             // Redirigir según rol
             return usuario.rol switch
             {
-                "SoporteTI"  => RedirectToAction("Dashboard", "Reportes"),
-                "Transporte" => RedirectToAction("DashboardFlota", "Reportes"),
-                _            => RedirectToAction("Index", "Home")   // Admin y cualquier otro
+                "SoporteTI"  => RedirectToAction("Dashboard",           "Reportes"),
+                "Transporte" => RedirectToAction("DashboardFlota",      "Reportes"),
+                "Produccion" => RedirectToAction("DashboardProduccion", "Reportes"),
+                _            => RedirectToAction("Index", "Home")
             };
         }
 

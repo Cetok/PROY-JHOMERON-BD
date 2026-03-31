@@ -1439,5 +1439,331 @@ namespace PROYJHOME2026.Controllers
                 topMantes
             });
         }
+        // ── INDEX PRODUCCIÓN ──────────────────────────────────────
+        public async Task<IActionResult> IndexProduccion()
+        {
+            ViewData["Title"]      = "Reportes Producción";
+            ViewData["Breadcrumb"] = "Reportes / Producción";
+            ViewBag.Grupos = await _context.Grupos.OrderBy(g => g.area).ToListAsync();
+            return View();
+        }
+ 
+        // ── MÁQUINAS DATA ─────────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> MaquinasData(
+            DateTime? fechaDesde, DateTime? fechaHasta,
+            string? estado, string? buscar)
+        {
+            var query = _context.Maquinas
+                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Grupo : null)
+                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Encargado : null)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(m => m.FechaAdquisicion >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(m => m.FechaAdquisicion <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(m => estados.Contains(m.Estado));
+            }
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(m =>
+                    m.NumeroMaquina.Contains(buscar) ||
+                    m.NombreMaquina.Contains(buscar) ||
+                    (m.Marca != null && m.Marca.Contains(buscar)));
+ 
+            var data = await query.OrderByDescending(m => m.IdMaquina)
+                .Select(m => new {
+                    m.IdMaquina,
+                    m.NumeroMaquina,
+                    m.NombreMaquina,
+                    m.Marca,
+                    m.Estado,
+                    fechaAdq   = m.FechaAdquisicion.HasValue ? m.FechaAdquisicion.Value.ToString("dd/MM/yyyy") : "—",
+                    fechaCompra= m.FechaCompra.HasValue ? m.FechaCompra.Value.ToString("dd/MM/yyyy") : "—",
+                    grupo      = m.AsignacionActual != null && m.AsignacionActual.Grupo != null ? m.AsignacionActual.Grupo.area : "Sin asignar",
+                    encargado  = m.AsignacionActual != null && m.AsignacionActual.Encargado != null
+                        ? m.AsignacionActual.Encargado.nombre + " " + m.AsignacionActual.Encargado.paterno : "—",
+                    estadoOp   = m.AsignacionActual != null ? m.AsignacionActual.EstadoOperativo : "—",
+                    m.Observaciones,
+                }).ToListAsync();
+ 
+            return Json(new { total = data.Count, registros = data });
+        }
+ 
+        // ── MÁQUINAS CSV ──────────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> MaquinasCsv(
+            DateTime? fechaDesde, DateTime? fechaHasta, string? estado, string? buscar)
+        {
+            var query = _context.Maquinas
+                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Grupo : null)
+                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Encargado : null)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(m => m.FechaAdquisicion >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(m => m.FechaAdquisicion <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(m => estados.Contains(m.Estado));
+            }
+ 
+            var maquinas = await query.OrderByDescending(m => m.IdMaquina).ToListAsync();
+            var sb = new StringBuilder();
+            sb.AppendLine("sep=;");
+            sb.AppendLine("N° Máquina;Nombre;Marca;Estado;F.Adquisición;F.Compra;Grupo Asignado;Encargado;Estado Operativo;Observaciones");
+ 
+            foreach (var m in maquinas)
+            {
+                var asig = m.AsignacionActual;
+                sb.AppendLine($"\"{m.NumeroMaquina}\";" +
+                    $"\"{m.NombreMaquina}\";" +
+                    $"\"{m.Marca ?? "—"}\";" +
+                    $"\"{m.Estado}\";" +
+                    $"{(m.FechaAdquisicion.HasValue ? m.FechaAdquisicion.Value.ToString("dd/MM/yyyy") : "—")};" +
+                    $"{(m.FechaCompra.HasValue ? m.FechaCompra.Value.ToString("dd/MM/yyyy") : "—")};" +
+                    $"\"{asig?.Grupo?.area ?? "Sin asignar"}\";" +
+                    $"\"{(asig?.Encargado != null ? asig.Encargado.nombre + " " + asig.Encargado.paterno : "—")}\";" +
+                    $"\"{asig?.EstadoOperativo ?? "—"}\";" +
+                    $"\"{m.Observaciones ?? "—"}\"");
+            }
+ 
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"Maquinas_{DateTime.Now:yyyyMMdd_HHmm}.csv");
+        }
+ 
+        // ── MÁQUINAS PDF ──────────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> MaquinasPdf(
+            DateTime? fechaDesde, DateTime? fechaHasta, string? estado, string? buscar)
+        {
+            var query = _context.Maquinas
+                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Grupo : null)
+                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Encargado : null)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(m => m.FechaAdquisicion >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(m => m.FechaAdquisicion <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(m => estados.Contains(m.Estado));
+            }
+ 
+            var maquinas = await query.OrderByDescending(m => m.IdMaquina).ToListAsync();
+ 
+            var pdf = Document.Create(doc =>
+            {
+                doc.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(30);
+                    page.DefaultTextStyle(t => t.FontSize(9));
+ 
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("REPORTE DE MÁQUINAS — PRODUCCIÓN")
+                                    .Bold().FontSize(13).FontColor(Color.FromHex("#1a3a6b"));
+                                c.Item().Text($"SG-JHOMERON — Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                                    .FontSize(8).FontColor(Color.FromHex("#6b7280"));
+                            });
+                            row.ConstantItem(140).AlignRight().Column(c =>
+                                c.Item().Text($"Total: {maquinas.Count} máquina(s)")
+                                    .Bold().FontSize(10).FontColor(Color.FromHex("#2563eb")));
+                        });
+                        col.Item().PaddingTop(6).LineHorizontal(1.5f).LineColor(Color.FromHex("#1a3a6b"));
+                    });
+ 
+                    page.Content().PaddingTop(12).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.ConstantColumn(25);
+                            c.RelativeColumn(1.3f); // N° Maq
+                            c.RelativeColumn(2.5f); // Nombre
+                            c.RelativeColumn(1.2f); // Marca
+                            c.RelativeColumn(1.2f); // Estado
+                            c.RelativeColumn(1.2f); // F.Adq
+                            c.RelativeColumn(2f);   // Grupo
+                            c.RelativeColumn(2f);   // Encargado
+                            c.RelativeColumn(1.2f); // Est.Op
+                        });
+ 
+                        static IContainer Cab(IContainer c) =>
+                            c.Background(Color.FromHex("#1a3a6b")).Padding(5);
+ 
+                        table.Header(h =>
+                        {
+                            foreach (var t in new[] { "#","N° Máq.","Nombre","Marca","Estado","F.Adq.","Grupo","Encargado","Est.Op." })
+                                h.Cell().Element(Cab).Text(t).Bold().FontSize(8).FontColor(Colors.White);
+                        });
+ 
+                        for (int i = 0; i < maquinas.Count; i++)
+                        {
+                            var m  = maquinas[i];
+                            var bg = i % 2 == 0 ? Color.FromHex("#f8fafc") : Colors.White;
+                            IContainer C(IContainer c) => c.Background(bg).Padding(4);
+                            var asig = m.AsignacionActual;
+ 
+                            var estadoColor = m.Estado switch {
+                                "Activo"        => Color.FromHex("#16a34a"),
+                                "Mantenimiento" => Color.FromHex("#d97706"),
+                                "Inoperativo"   => Color.FromHex("#dc2626"),
+                                _               => Color.FromHex("#6b7280")
+                            };
+ 
+                            table.Cell().Element(C).Text($"{i+1}").FontColor(Color.FromHex("#9ca3af"));
+                            table.Cell().Element(C).Text(m.NumeroMaquina).Bold().FontColor(Color.FromHex("#1a3a6b")).FontSize(8);
+                            table.Cell().Element(C).Text(m.NombreMaquina).Bold();
+                            table.Cell().Element(C).Text(m.Marca ?? "—").FontSize(8);
+                            table.Cell().Element(C).Text(m.Estado).FontColor(estadoColor);
+                            table.Cell().Element(C).Text(m.FechaAdquisicion.HasValue ? m.FechaAdquisicion.Value.ToString("dd/MM/yy") : "—").FontSize(8);
+                            table.Cell().Element(C).Text(asig?.Grupo?.area ?? "Sin asignar").FontSize(8);
+                            table.Cell().Element(C).Text(asig?.Encargado != null ? $"{asig.Encargado.nombre} {asig.Encargado.paterno}" : "—").FontSize(8).FontColor(Color.FromHex("#2563eb"));
+                            table.Cell().Element(C).Text(asig?.EstadoOperativo ?? "—").FontSize(8)
+                                .FontColor(asig?.EstadoOperativo == "Operativo" ? Color.FromHex("#16a34a") : Color.FromHex("#dc2626"));
+                        }
+                    });
+ 
+                    page.Footer().AlignRight().Text(t =>
+                    {
+                        t.Span("Página ").FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.CurrentPageNumber().FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.Span(" de ").FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                        t.TotalPages().FontSize(8).FontColor(Color.FromHex("#9ca3af"));
+                    });
+                });
+            });
+ 
+            return File(pdf.GeneratePdf(), "application/pdf", $"Maquinas_{DateTime.Now:yyyyMMdd_HHmm}.pdf");
+        }
+ 
+        // ── HISTORIAL MÁQUINAS DATA ───────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> HistorialMaquinasData(
+            DateTime? fechaDesde, DateTime? fechaHasta, string? tipoEvento, string? buscar)
+        {
+            var query = _context.MaquinaLogs
+                .Include(l => l.Maquina)
+                .AsQueryable();
+ 
+            if (fechaDesde.HasValue) query = query.Where(l => l.FechaHora >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(l => l.FechaHora <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(tipoEvento))
+            {
+                var tipos = tipoEvento.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(l => tipos.Contains(l.TipoEvento));
+            }
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(l =>
+                    l.Maquina.NumeroMaquina.Contains(buscar) ||
+                    l.Maquina.NombreMaquina.Contains(buscar));
+ 
+            var data = await query.OrderByDescending(l => l.FechaHora)
+                .Select(l => new {
+                    l.IdLog,
+                    numMaquina  = l.Maquina.NumeroMaquina,
+                    nomMaquina  = l.Maquina.NombreMaquina,
+                    l.TipoEvento,
+                    l.ValorAnterior,
+                    l.ValorNuevo,
+                    l.Observaciones,
+                    l.NombreUsuario,
+                    fecha = l.FechaHora.ToString("dd/MM/yyyy HH:mm")
+                }).ToListAsync();
+ 
+            return Json(new { total = data.Count, registros = data });
+        }
+ 
+        // ── HISTORIAL MÁQUINAS CSV ────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> HistorialMaquinasCsv(
+            DateTime? fechaDesde, DateTime? fechaHasta, string? tipoEvento, string? buscar)
+        {
+            var query = _context.MaquinaLogs.Include(l => l.Maquina).AsQueryable();
+            if (fechaDesde.HasValue) query = query.Where(l => l.FechaHora >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(l => l.FechaHora <= fechaHasta.Value.AddDays(1));
+            if (!string.IsNullOrWhiteSpace(tipoEvento))
+            {
+                var tipos = tipoEvento.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                query = query.Where(l => tipos.Contains(l.TipoEvento));
+            }
+ 
+            var logs = await query.OrderByDescending(l => l.FechaHora).ToListAsync();
+            var sb   = new StringBuilder();
+            sb.AppendLine("sep=;");
+            sb.AppendLine("Fecha;N° Máquina;Nombre;Tipo Evento;Anterior;Nuevo;Observaciones;Usuario");
+ 
+            foreach (var l in logs)
+            {
+                sb.AppendLine($"{l.FechaHora:dd/MM/yyyy HH:mm};" +
+                    $"\"{l.Maquina?.NumeroMaquina ?? "—"}\";" +
+                    $"\"{l.Maquina?.NombreMaquina ?? "—"}\";" +
+                    $"\"{l.TipoEvento}\";" +
+                    $"\"{l.ValorAnterior ?? "—"}\";" +
+                    $"\"{l.ValorNuevo ?? "—"}\";" +
+                    $"\"{l.Observaciones ?? "—"}\";" +
+                    $"\"{l.NombreUsuario ?? "—"}\"");
+            }
+ 
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            return File(bytes, "text/csv", $"HistorialMaquinas_{DateTime.Now:yyyyMMdd_HHmm}.csv");
+        }
+ 
+        // ── DASHBOARD PRODUCCIÓN ──────────────────────────────────
+        public IActionResult DashboardProduccion()
+        {
+            ViewData["Title"]      = "Dashboard Producción";
+            ViewData["Breadcrumb"] = "Reportes / Dashboard Producción";
+            return View();
+        }
+ 
+        [HttpGet]
+        public async Task<IActionResult> DashboardProduccionData()
+        {
+            var porEstado = await _context.Maquinas
+                .GroupBy(m => m.Estado)
+                .Select(g => new { estado = g.Key, total = g.Count() })
+                .ToListAsync();
+ 
+            var porGrupo = await _context.MaquinaAsignaciones
+                .Include(a => a.Grupo)
+                .Where(a => a.EsActiva)
+                .GroupBy(a => a.Grupo != null ? a.Grupo.area : "Sin área")
+                .Select(g => new { grupo = g.Key, total = g.Count() })
+                .OrderByDescending(g => g.total)
+                .ToListAsync();
+ 
+            var hace12Inicio = new DateTime(DateTime.Now.AddMonths(-11).Year, DateTime.Now.AddMonths(-11).Month, 1);
+            var logsPorMes = await _context.MaquinaLogs
+                .Where(l => l.TipoEvento == "CambioEstado" && l.FechaHora >= hace12Inicio)
+                .GroupBy(l => new { l.FechaHora.Year, l.FechaHora.Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, total = g.Count() })
+                .OrderBy(g => g.Year).ThenBy(g => g.Month)
+                .ToListAsync();
+ 
+            var mesesCompletos = Enumerable.Range(0, 12).Select(i => {
+                var d     = hace12Inicio.AddMonths(i);
+                var found = logsPorMes.FirstOrDefault(m => m.Year == d.Year && m.Month == d.Month);
+                return new { mes = $"{d:MM}/{d.Year}", total = found?.total ?? 0 };
+            }).ToList();
+ 
+            var totalMaquinas  = await _context.Maquinas.CountAsync();
+            var totalActivas   = await _context.Maquinas.CountAsync(m => m.Estado == "Activo");
+            var totalMante     = await _context.Maquinas.CountAsync(m => m.Estado == "Mantenimiento");
+            var totalAsignadas = await _context.MaquinaAsignaciones.CountAsync(a => a.EsActiva);
+ 
+            return Json(new {
+                resumen = new { totalMaquinas, totalActivas, totalMante, totalAsignadas },
+                porEstado,
+                porGrupo,
+                logsPorMes = mesesCompletos
+            });
+        }
     }
 }

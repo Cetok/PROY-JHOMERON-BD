@@ -1,0 +1,80 @@
+@model PROYJHOME2026.Models.MaquinaAsignacion
+@{
+    ViewData["Title"]      = "Editar Asignación";
+    ViewData["Breadcrumb"] = "Producción / Asignaciones / Editar";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Producción</div>
+        <h1 class="page-header__title">Editar Asignación</h1>
+        <p class="page-header__subtitle">@Model.Maquina?.NumeroMaquina — @Model.Maquina?.NombreMaquina</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-controller="Maquinas" asp-action="Details" asp-route-id="@Model.IdMaquina" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver a máquina
+        </a>
+    </div>
+</div>
+
+<div style="max-width:640px;">
+    <div class="card">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="IdAsignacion" type="hidden" />
+            <input asp-for="IdMaquina"    type="hidden" />
+            <input asp-for="EsActiva"     type="hidden" />
+
+            <div style="margin-bottom:24px;">
+                <p class="form-section-title">Datos de asignación</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Grupo / Área <span class="req">*</span></label>
+                        <select asp-for="IdGrupo" asp-items="ViewBag.GruposList" class="form-control">
+                            <option value="">— Seleccionar grupo —</option>
+                        </select>
+                        <span asp-validation-for="IdGrupo" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Encargado <span class="req">*</span></label>
+                        <select asp-for="IdEmpleadoEncargado" asp-items="ViewBag.EmpleadosList" class="form-control">
+                            <option value="">— Seleccionar empleado —</option>
+                        </select>
+                        <span asp-validation-for="IdEmpleadoEncargado" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fecha de asignación <span class="req">*</span></label>
+                        <input asp-for="FechaAsignacion" type="date" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estado operativo</label>
+                        <select asp-for="EstadoOperativo" class="form-control">
+                            <option value="Operativo">Operativo</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                    <div class="form-group form-group--full">
+                        <label class="form-label">Observaciones</label>
+                        <textarea asp-for="Observaciones" class="form-control" rows="3" maxlength="1000"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
+                <button type="submit" class="btn btn--primary btn--lg">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+                    Guardar cambios
+                </button>
+                <a asp-controller="Maquinas" asp-action="Details" asp-route-id="@Model.IdMaquina" class="btn btn--secondary btn--lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+<style>
+.form-section-title { font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200); }
+</style>
+}
+@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }

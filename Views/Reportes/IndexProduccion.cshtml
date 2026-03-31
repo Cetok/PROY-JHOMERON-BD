@@ -1,0 +1,269 @@
+@{
+    ViewData["Title"]      = "Reportes Producción";
+    ViewData["Breadcrumb"] = "Reportes / Producción";
+    var grupos = ViewBag.Grupos as List<PROYJHOME2026.Models.Grupo> ?? new();
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Reportes</div>
+        <h1 class="page-header__title">Reportes Producción</h1>
+        <p class="page-header__subtitle">Filtra, previsualiza y exporta máquinas e historial</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="DashboardProduccion" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- PESTAÑAS -->
+<div class="rep-tabs">
+    <button class="rep-tab rep-tab--active" id="tab-btn-maquinas" onclick="cambiarTabProd('maquinas')">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+        Máquinas
+    </button>
+    <button class="rep-tab" id="tab-btn-historial" onclick="cambiarTabProd('historial')">
+        <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Historial
+    </button>
+</div>
+
+<!-- ══ TAB MÁQUINAS ══ -->
+<div id="tab-maquinas" class="rep-panel">
+    <div class="card" style="margin-bottom:16px;">
+        <p class="rep-section-title">Filtros</p>
+        <div class="form-grid" style="gap:12px; align-items:end;">
+            <div class="form-group">
+                <label class="form-label">Desde (F.Adquisición)</label>
+                <input type="date" id="mq-desde" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Hasta</label>
+                <input type="date" id="mq-hasta" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Buscar</label>
+                <input type="text" id="mq-buscar" class="form-control" placeholder="N° máquina, nombre, marca..." />
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <label class="form-label">Estado</label>
+            <div class="rep-checks">
+                @foreach (var est in new[] { "Activo","Mantenimiento","Inoperativo" })
+                {
+                    <label class="rep-check-item">
+                        <input type="checkbox" class="mq-estado" value="@est" checked />
+                        <span class="rep-check-label">@est</span>
+                    </label>
+                }
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+            <button onclick="consultarMaquinas()" class="btn btn--celeste">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Consultar
+            </button>
+            <button onclick="window.location.href='/Reportes/MaquinasCsv'+buildParams(lastMqParams)" class="btn btn--verde" id="btn-mq-csv" disabled>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Exportar CSV
+            </button>
+            <button onclick="window.open('/Reportes/MaquinasPdf'+buildParams(lastMqParams),'_blank')" class="btn btn--rojo" id="btn-mq-pdf" disabled>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Exportar PDF
+            </button>
+        </div>
+    </div>
+    <div id="mq-resultado" style="display:none;">
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div style="padding:14px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; font-size:0.9rem;">Resultados</span>
+                <span class="badge badge--azul" id="mq-total">0</span>
+            </div>
+            <div class="table-wrapper" style="border:none; border-radius:0; max-height:420px; overflow-y:auto;">
+                <table>
+                    <thead><tr><th>N° Máquina</th><th>Nombre</th><th>Marca</th><th>Estado</th><th>F.Adquisición</th><th>Grupo</th><th>Encargado</th><th>Est.Op.</th></tr></thead>
+                    <tbody id="mq-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="mq-vacio" style="display:none; text-align:center; padding:40px; color:var(--gris-400);">Sin resultados.</div>
+</div>
+
+<!-- ══ TAB HISTORIAL ══ -->
+<div id="tab-historial" class="rep-panel" style="display:none;">
+    <div class="card" style="margin-bottom:16px;">
+        <p class="rep-section-title">Filtros</p>
+        <div class="form-grid" style="gap:12px; align-items:end;">
+            <div class="form-group">
+                <label class="form-label">Desde</label>
+                <input type="date" id="hi-desde" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Hasta</label>
+                <input type="date" id="hi-hasta" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Buscar</label>
+                <input type="text" id="hi-buscar" class="form-control" placeholder="N° máquina, nombre..." />
+            </div>
+        </div>
+        <div style="margin-top:12px;">
+            <label class="form-label">Tipo de evento</label>
+            <div class="rep-checks">
+                @foreach (var ev in new[] { "CambioEstado","CambioAsignacion","CambioEncargado","Edicion" })
+                {
+                    <label class="rep-check-item">
+                        <input type="checkbox" class="hi-evento" value="@ev" checked />
+                        <span class="rep-check-label">@ev</span>
+                    </label>
+                }
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+            <button onclick="consultarHistorial()" class="btn btn--celeste">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Consultar
+            </button>
+            <button onclick="window.location.href='/Reportes/HistorialMaquinasCsv'+buildParams(lastHiParams)" class="btn btn--verde" id="btn-hi-csv" disabled>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Exportar CSV
+            </button>
+        </div>
+    </div>
+    <div id="hi-resultado" style="display:none;">
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div style="padding:14px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; font-size:0.9rem;">Resultados</span>
+                <span class="badge badge--azul" id="hi-total">0</span>
+            </div>
+            <div class="table-wrapper" style="border:none; border-radius:0; max-height:420px; overflow-y:auto;">
+                <table>
+                    <thead><tr><th>Fecha</th><th>N° Máquina</th><th>Nombre</th><th>Evento</th><th>Anterior</th><th>Nuevo</th><th>Observación</th><th>Usuario</th></tr></thead>
+                    <tbody id="hi-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="hi-vacio" style="display:none; text-align:center; padding:40px; color:var(--gris-400);">Sin resultados.</div>
+</div>
+
+@section Styles {
+<style>
+.rep-tabs { display:flex; gap:4px; margin-bottom:16px; background:var(--gris-100); padding:4px; border-radius:var(--r-md); width:fit-content; }
+.rep-tab { display:flex; align-items:center; gap:7px; padding:9px 18px; border:none; border-radius:calc(var(--r-md) - 2px); background:transparent; cursor:pointer; font-size:0.86rem; font-weight:600; color:var(--gris-500); transition:all 0.18s; }
+.rep-tab svg { width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
+.rep-tab:hover { background:var(--blanco); color:var(--azul); }
+.rep-tab--active { background:var(--blanco); color:var(--azul-dark); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+.rep-section-title { font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); padding-bottom:8px; border-bottom:1px solid var(--gris-200); margin-bottom:14px; }
+.rep-checks { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.rep-check-item { display:flex; align-items:center; gap:6px; padding:6px 12px; border:1.5px solid var(--gris-300); border-radius:20px; cursor:pointer; transition:all 0.15s; user-select:none; font-size:0.82rem; }
+.rep-check-item:has(input:checked) { border-color:var(--celeste); background:rgba(59,130,246,0.07); color:var(--azul-dark); font-weight:600; }
+.rep-check-item input { display:none; }
+.btn--verde { background:#16a34a; color:#fff; border:none; }
+.btn--verde:hover { background:#15803d; }
+.btn--rojo  { background:#dc2626; color:#fff; border:none; }
+.btn--rojo:hover  { background:#b91c1c; }
+</style>
+}
+
+@section Scripts {
+<script>
+let lastMqParams = {}, lastHiParams = {};
+
+function buildParams(obj) {
+    const q = Object.entries(obj).filter(([,v]) => v).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+    return q ? '?' + q : '';
+}
+function getChecked(cls) {
+    return [...document.querySelectorAll('.' + cls + ':checked')].map(c => c.value).join(',');
+}
+function estadoBadge(est) {
+    const m = { 'Activo':'badge--verde','Mantenimiento':'badge--amarillo','Inoperativo':'badge--rojo','Operativo':'badge--verde','Inactivo':'badge--rojo' };
+    return `<span class="badge ${m[est] ?? 'badge--gris'}" style="font-size:0.7rem;">${est}</span>`;
+}
+
+function cambiarTabProd(tab) {
+    ['maquinas','historial'].forEach(t => {
+        document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+        document.getElementById('tab-btn-' + t).classList.toggle('rep-tab--active', t === tab);
+    });
+}
+
+async function consultarMaquinas() {
+    const p = {
+        fechaDesde: document.getElementById('mq-desde').value,
+        fechaHasta: document.getElementById('mq-hasta').value,
+        buscar:     document.getElementById('mq-buscar').value,
+        estado:     getChecked('mq-estado')
+    };
+    lastMqParams = p;
+    const res  = await fetch('/Reportes/MaquinasData' + buildParams(p));
+    const data = await res.json();
+    document.getElementById('mq-total').textContent = data.total;
+
+    if (data.total === 0) {
+        document.getElementById('mq-resultado').style.display = 'none';
+        document.getElementById('mq-vacio').style.display = 'block';
+        document.getElementById('btn-mq-csv').disabled = true;
+        document.getElementById('btn-mq-pdf').disabled = true;
+        return;
+    }
+    document.getElementById('mq-resultado').style.display = 'block';
+    document.getElementById('mq-vacio').style.display = 'none';
+    document.getElementById('btn-mq-csv').disabled = false;
+    document.getElementById('btn-mq-pdf').disabled = false;
+
+    document.getElementById('mq-tbody').innerHTML = data.registros.map(m => `
+        <tr>
+            <td style="font-weight:700; font-family:monospace; color:var(--azul-dark);">${m.numeroMaquina}</td>
+            <td style="font-weight:600;">${m.nombreMaquina}</td>
+            <td style="font-size:0.82rem; color:var(--gris-600);">${m.marca ?? '—'}</td>
+            <td>${estadoBadge(m.estado)}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${m.fechaAdq}</td>
+            <td style="font-size:0.82rem; font-weight:600;">${m.grupo}</td>
+            <td style="font-size:0.82rem; color:var(--azul);">${m.encargado}</td>
+            <td>${estadoBadge(m.estadoOp)}</td>
+        </tr>`).join('');
+}
+
+async function consultarHistorial() {
+    const p = {
+        fechaDesde: document.getElementById('hi-desde').value,
+        fechaHasta: document.getElementById('hi-hasta').value,
+        buscar:     document.getElementById('hi-buscar').value,
+        tipoEvento: getChecked('hi-evento')
+    };
+    lastHiParams = p;
+    const evColor = { 'CambioEstado':'badge--amarillo','CambioAsignacion':'badge--azul','CambioEncargado':'badge--celeste','Edicion':'badge--gris' };
+
+    const res  = await fetch('/Reportes/HistorialMaquinasData' + buildParams(p));
+    const data = await res.json();
+    document.getElementById('hi-total').textContent = data.total;
+
+    if (data.total === 0) {
+        document.getElementById('hi-resultado').style.display = 'none';
+        document.getElementById('hi-vacio').style.display = 'block';
+        document.getElementById('btn-hi-csv').disabled = true;
+        return;
+    }
+    document.getElementById('hi-resultado').style.display = 'block';
+    document.getElementById('hi-vacio').style.display = 'none';
+    document.getElementById('btn-hi-csv').disabled = false;
+
+    document.getElementById('hi-tbody').innerHTML = data.registros.map(h => `
+        <tr>
+            <td style="font-size:0.78rem; color:var(--gris-500); white-space:nowrap;">${h.fecha}</td>
+            <td style="font-family:monospace; font-weight:700; color:var(--azul-dark);">${h.numMaquina}</td>
+            <td style="font-size:0.82rem;">${h.nomMaquina}</td>
+            <td><span class="badge ${evColor[h.tipoEvento] ?? 'badge--gris'}" style="font-size:0.7rem;">${h.tipoEvento}</span></td>
+            <td style="font-size:0.78rem; color:var(--gris-500);">${h.valorAnterior ?? '—'}</td>
+            <td style="font-size:0.82rem; font-weight:500; color:var(--azul);">${h.valorNuevo ?? '—'}</td>
+            <td style="font-size:0.78rem; color:var(--gris-600);">${h.observaciones ?? '—'}</td>
+            <td style="font-size:0.75rem; color:var(--gris-400);">${h.nombreUsuario ?? '—'}</td>
+        </tr>`).join('');
+}
+</script>
+}

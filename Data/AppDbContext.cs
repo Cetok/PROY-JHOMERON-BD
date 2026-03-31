@@ -23,6 +23,9 @@ namespace PROYJHOME2026.Data
         public DbSet<Asesorio> Asesorios { get; set; }
         public DbSet<Modalidad> Modalidades { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
+        public DbSet<Maquina> Maquinas { get; set; }
+        public DbSet<MaquinaAsignacion> MaquinaAsignaciones { get; set; }
+        public DbSet<MaquinaLog> MaquinaLogs { get; set; }
 
         // ── Nuevas tablas ───────────────────────────────────────
         public DbSet<Notificacion> Notificaciones { get; set; }
@@ -166,7 +169,29 @@ namespace PROYJHOME2026.Data
             
             modelBuilder.Entity<InspeccionExtintorFila>()
                 .HasOne(f => f.Grupo).WithMany()
-                .HasForeignKey(f => f.IdGrupo).OnDelete(DeleteBehavior.Restrict);    
+                .HasForeignKey(f => f.IdGrupo).OnDelete(DeleteBehavior.Restrict); 
+            modelBuilder.Entity<MaquinaAsignacion>()
+                .HasOne(a => a.Maquina).WithMany()
+                .HasForeignKey(a => a.IdMaquina).OnDelete(DeleteBehavior.Cascade);
+ 
+            modelBuilder.Entity<MaquinaAsignacion>()
+                .HasOne(a => a.Grupo).WithMany()
+                .HasForeignKey(a => a.IdGrupo).OnDelete(DeleteBehavior.Restrict);
+ 
+            modelBuilder.Entity<MaquinaAsignacion>()
+                .HasOne(a => a.Encargado).WithMany()
+                .HasForeignKey(a => a.IdEmpleadoEncargado).OnDelete(DeleteBehavior.Restrict);
+ 
+            modelBuilder.Entity<MaquinaLog>()
+                .HasOne(l => l.Maquina).WithMany(m => m.Logs)
+                .HasForeignKey(l => l.IdMaquina).OnDelete(DeleteBehavior.Cascade);
+ 
+            modelBuilder.Entity<Maquina>()
+                .HasOne(m => m.AsignacionActual)
+                .WithOne(a => a.Maquina)
+                .HasForeignKey<MaquinaAsignacion>(a => a.IdMaquina)
+                .OnDelete(DeleteBehavior.Cascade);
+ 
         }
     }
 }

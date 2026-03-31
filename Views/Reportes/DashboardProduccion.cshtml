@@ -1,0 +1,140 @@
+@{
+    ViewData["Title"]      = "Dashboard Producción";
+    ViewData["Breadcrumb"] = "Reportes / Dashboard Producción";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Reportes</div>
+        <h1 class="page-header__title">Dashboard Producción</h1>
+        <p class="page-header__subtitle">Resumen visual del estado de las máquinas</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="IndexProduccion" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Reportes
+        </a>
+        <a asp-controller="Maquinas" asp-action="Index" class="btn btn--celeste">
+            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            Ir a Máquinas
+        </a>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="dash-kpis">
+    <div class="kpi-card kpi-card--azul">
+        <div class="kpi-val" id="kpi-total">—</div>
+        <div class="kpi-lbl">Total máquinas</div>
+    </div>
+    <div class="kpi-card kpi-card--verde">
+        <div class="kpi-val" id="kpi-activas">—</div>
+        <div class="kpi-lbl">Activas</div>
+    </div>
+    <div class="kpi-card kpi-card--amarillo">
+        <div class="kpi-val" id="kpi-mante">—</div>
+        <div class="kpi-lbl">En mantenimiento</div>
+    </div>
+    <div class="kpi-card kpi-card--celeste">
+        <div class="kpi-val" id="kpi-asig">—</div>
+        <div class="kpi-lbl">Asignadas activas</div>
+    </div>
+</div>
+
+<!-- FILA 1 -->
+<div class="dash-row">
+    <div class="card dash-card">
+        <div class="dash-card-title">Máquinas por estado</div>
+        <div style="position:relative; height:260px;"><canvas id="chartEstado"></canvas></div>
+    </div>
+    <div class="card dash-card dash-card--wide">
+        <div class="dash-card-title">Máquinas por grupo / área</div>
+        <div style="position:relative; height:260px;"><canvas id="chartGrupos"></canvas></div>
+    </div>
+</div>
+
+<!-- Línea eventos -->
+<div class="card" style="margin-bottom:14px;">
+    <div class="dash-card-title">Cambios de estado por mes (últimos 12 meses)</div>
+    <div style="position:relative; height:240px;"><canvas id="chartEventos"></canvas></div>
+</div>
+
+@section Styles {
+<style>
+.dash-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px; }
+.kpi-card { border-radius:var(--r-md); padding:20px 22px; color:#fff; }
+.kpi-card--azul     { background:linear-gradient(135deg,var(--azul-dark),var(--azul-mid)); }
+.kpi-card--verde    { background:linear-gradient(135deg,#16a34a,#22c55e); }
+.kpi-card--amarillo { background:linear-gradient(135deg,#d97706,#f59e0b); }
+.kpi-card--celeste  { background:linear-gradient(135deg,var(--celeste),#38bdf8); }
+.kpi-val { font-size:2rem; font-weight:800; line-height:1; }
+.kpi-lbl { font-size:0.78rem; opacity:.85; margin-top:6px; font-weight:500; }
+.dash-row { display:grid; grid-template-columns:1fr 1.8fr; gap:14px; margin-bottom:14px; }
+.dash-card { flex:1; }
+.dash-card--wide { flex:1.8; }
+.dash-card-title { font-weight:700; font-size:0.88rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-100); }
+@@media(max-width:900px) { .dash-kpis { grid-template-columns:1fr 1fr; } .dash-row { grid-template-columns:1fr; } }
+</style>
+}
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const COLORES_ESTADO = { 'Activo':'#16a34a','Mantenimiento':'#d97706','Inoperativo':'#dc2626' };
+const PALETA = ['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#db2777'];
+
+async function cargarDashboard() {
+    const res  = await fetch('/Reportes/DashboardProduccionData');
+    const data = await res.json();
+
+    document.getElementById('kpi-total').textContent   = data.resumen.totalMaquinas;
+    document.getElementById('kpi-activas').textContent = data.resumen.totalActivas;
+    document.getElementById('kpi-mante').textContent   = data.resumen.totalMante;
+    document.getElementById('kpi-asig').textContent    = data.resumen.totalAsignadas;
+
+    // Dona — por estado
+    new Chart(document.getElementById('chartEstado'), {
+        type: 'doughnut',
+        data: {
+            labels:   data.porEstado.map(d => d.estado),
+            datasets: [{ data: data.porEstado.map(d => d.total),
+                backgroundColor: data.porEstado.map(d => COLORES_ESTADO[d.estado] ?? '#94a3b8'),
+                borderWidth:2, borderColor:'#fff', hoverOffset:8 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ position:'right', labels:{ padding:16, boxWidth:12 } } }, cutout:'60%' }
+    });
+
+    // Barras horizontales — por grupo
+    new Chart(document.getElementById('chartGrupos'), {
+        type: 'bar',
+        data: {
+            labels:   data.porGrupo.map(d => d.grupo ?? 'Sin área'),
+            datasets: [{ label:'Máquinas', data: data.porGrupo.map(d => d.total),
+                backgroundColor: data.porGrupo.map((_,i) => PALETA[i % PALETA.length] + 'cc'),
+                borderColor:     data.porGrupo.map((_,i) => PALETA[i % PALETA.length]),
+                borderWidth:1.5, borderRadius:5 }]
+        },
+        options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false} },
+            scales:{ x:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'rgba(0,0,0,0.05)'}}, y:{grid:{display:false}} } }
+    });
+
+    // Línea — cambios de estado por mes
+    new Chart(document.getElementById('chartEventos'), {
+        type: 'line',
+        data: {
+            labels:   data.logsPorMes.map(d => d.mes),
+            datasets: [{ label:'Cambios de estado', data: data.logsPorMes.map(d => d.total),
+                borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.1)',
+                borderWidth:2.5, pointBackgroundColor:'#7c3aed', pointRadius:4, fill:true, tension:0.35 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false} },
+            scales:{ y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'rgba(0,0,0,0.05)'}}, x:{grid:{display:false}} } }
+    });
+}
+
+cargarDashboard();
+</script>
+}
