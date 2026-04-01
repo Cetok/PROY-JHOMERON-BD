@@ -74,7 +74,7 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("AsignacionActual");
             ModelState.Remove("Logs");
             ModelState.Remove("Estado");
-            maquina.Estado        = "Activo";
+            maquina.Estado        = "Registrado";
             maquina.FechaRegistro = DateTime.Now;
 
             var idStr = HttpContext.Session.GetString("UsuarioId");
@@ -134,15 +134,46 @@ namespace PROYJHOME2026.Controllers
 
                 try
                 {
-                    // Preservar estado actual
-                    var estadoActual = await _context.Maquinas
-                        .Where(m => m.IdMaquina == id).Select(m => m.Estado).FirstAsync();
-                    maquina.Estado = estadoActual;
+                    // Obtener datos ANTERIORES para comparar
+                    var anterior = await _context.Maquinas.AsNoTracking()
+                        .FirstOrDefaultAsync(m => m.IdMaquina == id);
+                    if (anterior == null) return NotFound();
+
+                    // Preservar estado (no se edita desde este form)
+                    maquina.Estado = anterior.Estado;
 
                     _context.Update(maquina);
                     await _context.SaveChangesAsync();
 
-                    await RegistrarLog(id, "Edicion", "Datos actualizados", maquina.NombreMaquina, "Se editaron los datos básicos.");
+                    // Registrar log por cada campo que cambió
+                    var cambios = new List<(string campo, string? antes, string? despues)>
+                    {
+                        ("N° Máquina",    anterior.NumeroMaquina,                   maquina.NumeroMaquina),
+                        ("Nombre",        anterior.NombreMaquina,                   maquina.NombreMaquina),
+                        ("Marca",         anterior.Marca,                           maquina.Marca),
+                        ("Fecha Compra",  anterior.FechaCompra?.ToString("dd/MM/yyyy"),  maquina.FechaCompra?.ToString("dd/MM/yyyy")),
+                        ("Observaciones", anterior.Observaciones,                   maquina.Observaciones),
+                        ("Accesorios",    anterior.AccesoriosParte?.Length > 50
+                            ? anterior.AccesoriosParte[..50] + "..."
+                            : anterior.AccesoriosParte,
+                            maquina.AccesoriosParte?.Length > 50
+                            ? maquina.AccesoriosParte[..50] + "..."
+                            : maquina.AccesoriosParte),
+                    };
+
+                    foreach (var (campo, antes, despues) in cambios)
+                    {
+                        var antesNorm   = string.IsNullOrWhiteSpace(antes)   ? "—" : antes.Trim();
+                        var despuesNorm = string.IsNullOrWhiteSpace(despues) ? "—" : despues.Trim();
+                        if (antesNorm != despuesNorm)
+                        {
+                            await RegistrarLog(id, "Edicion",
+                                $"{campo}: {antesNorm}",
+                                $"{campo}: {despuesNorm}",
+                                $"Campo '{campo}' modificado.");
+                        }
+                    }
+
                     await _auditoriaService.RegistrarAsync("Editar", "Maquina", id,
                         $"Editó máquina {maquina.NumeroMaquina}");
                     await _notifService.NotificarAccionAsync("Edicion", "Máquina",
@@ -158,6 +189,32 @@ namespace PROYJHOME2026.Controllers
                 }
             }
             return View(maquina);
+        }
+
+        // ── ACTIVAR MÁQUINA POST ─────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activar(int idMaquina, string? observaciones)
+        {
+            var maquina = await _context.Maquinas.FirstOrDefaultAsync(m => m.IdMaquina == idMaquina);
+            if (maquina == null) return NotFound();
+
+            var estadoAnterior = maquina.Estado;
+            maquina.Estado = "Activo";
+            await _context.SaveChangesAsync();
+
+            await RegistrarLog(idMaquina, "CambioEstado",
+                estadoAnterior, "Activo",
+                observaciones ?? "Máquina activada y puesta en servicio.");
+
+            await _auditoriaService.RegistrarAsync("Activar", "Maquina", idMaquina,
+                $"Máquina #{idMaquina} activada");
+            await _notifService.NotificarAccionAsync("CambioEstado", "Máquina",
+                $"Máquina {maquina.NumeroMaquina} fue activada",
+                $"/Maquinas/Details/{idMaquina}");
+
+            TempData["Success"] = "Máquina activada correctamente.";
+            return RedirectToAction(nameof(Details), new { id = idMaquina });
         }
 
         // ── CAMBIAR ESTADO POST (modal) ──────────────────────────
@@ -248,6 +305,13 @@ namespace PROYJHOME2026.Controllers
                 FechaHora     = DateTime.Now
             });
             await _context.SaveChangesAsync();
+        }
+        // ── HISTORIAL (vista sidebar Producción) ─────────────────
+        public IActionResult Historial()
+        {
+            ViewData["Title"]      = "Historial de Máquinas";
+            ViewData["Breadcrumb"] = "Producción / Historial";
+            return View();
         }
     }
 }

@@ -1,0 +1,152 @@
+@{
+    ViewData["Title"]      = "Historial de Máquinas";
+    ViewData["Breadcrumb"] = "Producción / Historial";
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Producción</div>
+        <h1 class="page-header__title">Historial de Máquinas</h1>
+        <p class="page-header__subtitle">Registro de todos los cambios realizados en las máquinas</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-controller="Maquinas" asp-action="Index" class="btn btn--secondary btn--sm">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            Ir a Máquinas
+        </a>
+    </div>
+</div>
+
+<!-- BUSCADOR -->
+<div class="card" style="margin-bottom:16px; padding:16px 20px;">
+    <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+        <div style="flex:1; min-width:220px;">
+            <label class="form-label">Buscar</label>
+            <div style="position:relative;">
+                <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="buscar" class="form-control" style="padding-left:34px;"
+                       placeholder="N° máquina, nombre, tipo de evento..."
+                       oninput="filtrarHistorial()" />
+            </div>
+        </div>
+        <div style="min-width:180px;">
+            <label class="form-label">Tipo de evento</label>
+            <select id="filtroEvento" class="form-control" onchange="filtrarHistorial()">
+                <option value="">Todos</option>
+                <option value="CambioEstado">Cambio de estado</option>
+                <option value="CambioAsignacion">Cambio de asignación</option>
+                <option value="CambioEncargado">Cambio de encargado</option>
+                <option value="Edicion">Edición</option>
+            </select>
+        </div>
+        <button onclick="limpiar()" class="btn btn--secondary">Limpiar</button>
+    </div>
+</div>
+
+<!-- TABLA -->
+<div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:14px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:700; font-size:0.9rem;">Todos los cambios</span>
+        <span class="badge badge--azul" id="total-label">...</span>
+    </div>
+    <div id="loading" style="text-align:center; padding:30px; color:var(--gris-400); font-size:0.85rem;">
+        Cargando historial...
+    </div>
+    <div id="tabla-wrap" style="display:none;">
+        <div class="table-wrapper" style="border:none; border-radius:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>N° Máquina</th>
+                        <th>Nombre</th>
+                        <th>Evento</th>
+                        <th>Antes</th>
+                        <th>Después</th>
+                        <th>Observación</th>
+                        <th>Usuario</th>
+                    </tr>
+                </thead>
+                <tbody id="hi-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+    <div id="hi-vacio" style="display:none; text-align:center; padding:40px; color:var(--gris-400);">
+        No se encontraron registros.
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const evColor = {
+    'CambioEstado':    'badge--amarillo',
+    'CambioAsignacion':'badge--azul',
+    'CambioEncargado': 'badge--celeste',
+    'Edicion':         'badge--gris'
+};
+
+let todosLosRegistros = [];
+
+async function cargarTodo() {
+    const res  = await fetch('/Reportes/HistorialMaquinasData');
+    const data = await res.json();
+    todosLosRegistros = data.registros ?? [];
+    document.getElementById('loading').style.display = 'none';
+    renderizar(todosLosRegistros);
+}
+
+function filtrarHistorial() {
+    const buscar = document.getElementById('buscar').value.toLowerCase();
+    const evento = document.getElementById('filtroEvento').value;
+
+    const filtrados = todosLosRegistros.filter(h => {
+        const matchBuscar = !buscar ||
+            (h.numMaquina ?? '').toLowerCase().includes(buscar) ||
+            (h.nomMaquina ?? '').toLowerCase().includes(buscar) ||
+            (h.tipoEvento ?? '').toLowerCase().includes(buscar) ||
+            (h.valorAnterior ?? '').toLowerCase().includes(buscar) ||
+            (h.valorNuevo ?? '').toLowerCase().includes(buscar) ||
+            (h.observaciones ?? '').toLowerCase().includes(buscar);
+        const matchEvento = !evento || h.tipoEvento === evento;
+        return matchBuscar && matchEvento;
+    });
+
+    renderizar(filtrados);
+}
+
+function renderizar(registros) {
+    document.getElementById('total-label').textContent = registros.length + ' registro(s)';
+
+    if (registros.length === 0) {
+        document.getElementById('tabla-wrap').style.display = 'none';
+        document.getElementById('hi-vacio').style.display   = 'block';
+        return;
+    }
+
+    document.getElementById('tabla-wrap').style.display = 'block';
+    document.getElementById('hi-vacio').style.display   = 'none';
+
+    document.getElementById('hi-tbody').innerHTML = registros.map(h => `
+        <tr>
+            <td style="font-size:0.78rem; color:var(--gris-500); white-space:nowrap;">${h.fecha}</td>
+            <td style="font-family:monospace; font-weight:700; color:var(--azul-dark);">
+                <a href="/Maquinas/Details/${h.idMaquina}" style="color:inherit;">${h.numMaquina}</a>
+            </td>
+            <td style="font-size:0.82rem;">${h.nomMaquina}</td>
+            <td><span class="badge ${evColor[h.tipoEvento] ?? 'badge--gris'}" style="font-size:0.7rem;">${h.tipoEvento}</span></td>
+            <td style="font-size:0.78rem; color:var(--gris-500);">${h.valorAnterior ?? '—'}</td>
+            <td style="font-size:0.82rem; font-weight:500; color:var(--azul);">${h.valorNuevo ?? '—'}</td>
+            <td style="font-size:0.78rem; color:var(--gris-600); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${h.observaciones ?? ''}">${h.observaciones ?? '—'}</td>
+            <td style="font-size:0.75rem; color:var(--gris-400);">${h.nombreUsuario ?? '—'}</td>
+        </tr>`).join('');
+}
+
+function limpiar() {
+    document.getElementById('buscar').value = '';
+    document.getElementById('filtroEvento').value = '';
+    renderizar(todosLosRegistros);
+}
+
+cargarTodo();
+</script>
+}

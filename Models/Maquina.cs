@@ -21,19 +21,16 @@ namespace PROYJHOME2026.Models
         [StringLength(100)]
         public string? Marca { get; set; }
 
-        /// <summary>Fecha de adquisición o puesta en servicio.</summary>
-        public DateTime? FechaAdquisicion { get; set; }
-
         /// <summary>Accesorios/partes — texto libre detallando piezas.</summary>
         [StringLength(2000)]
         public string? AccesoriosParte { get; set; }
 
         public DateTime? FechaCompra { get; set; }
 
-        /// <summary>Activo | Mantenimiento | Inoperativo</summary>
+        /// <summary>Registrado | Activo | Mantenimiento | Inoperativo</summary>
         [Required]
         [StringLength(100)]
-        public string Estado { get; set; } = "Activo";
+        public string Estado { get; set; } = "Registrado";
 
         [StringLength(1000)]
         public string? Observaciones { get; set; }

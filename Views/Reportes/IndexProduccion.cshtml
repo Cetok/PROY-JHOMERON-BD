@@ -131,6 +131,10 @@
                 <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Exportar CSV
             </button>
+            <button onclick="window.open('/Reportes/HistorialMaquinasPdf'+buildParams(lastHiParams),'_blank')" class="btn btn--rojo" id="btn-hi-pdf" disabled>
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Exportar PDF
+            </button>
         </div>
     </div>
     <div id="hi-resultado" style="display:none;">
@@ -247,11 +251,13 @@ async function consultarHistorial() {
         document.getElementById('hi-resultado').style.display = 'none';
         document.getElementById('hi-vacio').style.display = 'block';
         document.getElementById('btn-hi-csv').disabled = true;
+        document.getElementById('btn-hi-pdf').disabled = true;
         return;
     }
     document.getElementById('hi-resultado').style.display = 'block';
     document.getElementById('hi-vacio').style.display = 'none';
     document.getElementById('btn-hi-csv').disabled = false;
+    document.getElementById('btn-hi-pdf').disabled = false;
 
     document.getElementById('hi-tbody').innerHTML = data.registros.map(h => `
         <tr>

@@ -45,11 +45,13 @@ namespace PROYJHOME2026.Filters
                 "Grupos.Index", "Grupos.Details",
                 "Maquinas",
                 "MaquinaAsignaciones",
+                "Maquinas.Historial",
                 "Reportes.IndexProduccion",
                 "Reportes.MaquinasData", "Reportes.MaquinasCsv", "Reportes.MaquinasPdf",
                 "Reportes.AsignacionesProduccionData", "Reportes.AsignacionesProduccionCsv", "Reportes.AsignacionesProduccionPdf",
                 "Reportes.HistorialMaquinasData", "Reportes.HistorialMaquinasCsv", "Reportes.HistorialMaquinasPdf",
                 "Reportes.DashboardProduccion", "Reportes.DashboardProduccionData",
+                "Reportes.HistorialProduccion",
                 "Notificaciones",
             };
 

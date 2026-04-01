@@ -3,6 +3,7 @@
     ViewData["Title"]      = "Detalle Máquina";
     ViewData["Breadcrumb"] = "Producción / Máquinas / Detalle";
     var bc = Model.Estado switch {
+        "Registrado"    => "badge--gris",
         "Activo"        => "badge--verde",
         "Mantenimiento" => "badge--amarillo",
         "Inoperativo"   => "badge--rojo",
@@ -42,7 +43,6 @@
                 <div class="det-field"><div class="det-label">Nombre</div><div class="det-value">@Model.NombreMaquina</div></div>
                 <div class="det-field"><div class="det-label">Marca</div><div class="det-value">@(Model.Marca ?? "—")</div></div>
                 <div class="det-field"><div class="det-label">Estado</div><div class="det-value"><span class="badge @bc">@Model.Estado</span></div></div>
-                <div class="det-field"><div class="det-label">F. Adquisición</div><div class="det-value">@(Model.FechaAdquisicion.HasValue ? Model.FechaAdquisicion.Value.ToString("dd/MM/yyyy") : "—")</div></div>
                 <div class="det-field"><div class="det-label">F. Compra</div><div class="det-value">@(Model.FechaCompra.HasValue ? Model.FechaCompra.Value.ToString("dd/MM/yyyy") : "—")</div></div>
                 @if (!string.IsNullOrEmpty(Model.Observaciones))
                 {
@@ -105,33 +105,85 @@
     }
 
     <!-- CAMBIAR ESTADO -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-        <!-- Mantenimiento -->
-        <div class="card">
-            <p class="det-section-title" style="color:#d97706;">⚙ Dar Mantenimiento</p>
-            <form asp-action="CambiarEstado" method="post">
+
+    @if (Model.Estado == "Registrado")
+    {
+
+        <div class="card" style="border:2px solid #6b7280; max-width:500px;">
+            <p class="det-section-title" style="color:#6b7280;">🔲 Máquina Registrada</p>
+            <p style="font-size:0.82rem; color:var(--gris-500); margin-bottom:14px;">
+                Esta máquina está registrada pero aún no ha sido puesta en servicio.
+                Al activarla quedará disponible para asignaciones.
+            </p>
+            <form asp-action="Activar" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
-                <input type="hidden" name="nuevoEstado" value="Mantenimiento" />
                 <div class="form-group" style="margin-bottom:10px;">
-                    <label class="form-label">Tipo / descripción del mantenimiento</label>
+                    <label class="form-label">Observaciones de activación</label>
                     <input type="text" name="observaciones" class="form-control" maxlength="500"
-                           placeholder="Ej: Mantenimiento preventivo, cambio de aceite..." />
+                           placeholder="Ej: Puesta en servicio, instalación completada..." />
                 </div>
                 <button type="submit" class="btn btn--sm"
-                        style="background:#d97706; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
-                        onclick="return confirm('¿Enviar a mantenimiento?')"
-                        @(Model.Estado == "Mantenimiento" ? "disabled" : "")>
-                    ⚙ Enviar a mantenimiento
+                        style="background:#16a34a; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:10px 18px; font-size:0.88rem; font-weight:700;"
+                        onclick="return confirm('¿Activar esta máquina y ponerla en servicio?')">
+                    ✓ Activar máquina
                 </button>
             </form>
         </div>
+    }
+    else
+    {
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
 
-        <!-- Inoperativo / Reactivar -->
-        <div class="card">
-            @if (Model.Estado == "Inoperativo")
-            {
-                <p class="det-section-title" style="color:#16a34a;">✓ Reactivar máquina</p>
+        @if (Model.Estado == "Mantenimiento")
+        {
+            <div class="card" style="border:2px solid #d97706;">
+                <p class="det-section-title" style="color:#d97706;">⚙ En Mantenimiento</p>
+                <p style="font-size:0.82rem; color:var(--gris-500); margin-bottom:14px;">
+                    Esta máquina está actualmente en mantenimiento.
+                </p>
+                <form asp-action="CambiarEstado" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
+                    <input type="hidden" name="nuevoEstado" value="Activo" />
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label">Observaciones de culminación</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Ej: Mantenimiento completado, equipo en buen estado..." />
+                    </div>
+                    <button type="submit" class="btn btn--sm"
+                            style="background:#16a34a; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
+                            onclick="return confirm('¿Culminar el mantenimiento y reactivar la máquina?')">
+                        ✓ Culminar mantenimiento
+                    </button>
+                </form>
+            </div>
+            <div class="card">
+                <p class="det-section-title" style="color:#dc2626;">✕ Marcar Inoperativa</p>
+                <form asp-action="CambiarEstado" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
+                    <input type="hidden" name="nuevoEstado" value="Inoperativo" />
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label">Estado específico / motivo</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Ej: Falla grave, sin reparación posible..." />
+                    </div>
+                    <button type="submit" class="btn btn--sm"
+                            style="background:#dc2626; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
+                            onclick="return confirm('¿Marcar como inoperativa?')">
+                        ✕ Marcar inoperativa
+                    </button>
+                </form>
+            </div>
+        }
+        else if (Model.Estado == "Inoperativo")
+        {
+            <div class="card" style="border:2px solid #dc2626;">
+                <p class="det-section-title" style="color:#dc2626;">✕ Inoperativa</p>
+                <p style="font-size:0.82rem; color:var(--gris-500); margin-bottom:14px;">
+                    Esta máquina está marcada como inoperativa.
+                </p>
                 <form asp-action="CambiarEstado" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
@@ -144,12 +196,50 @@
                     <button type="submit" class="btn btn--sm"
                             style="background:#16a34a; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
                             onclick="return confirm('¿Reactivar la máquina?')">
-                        ✓ Reactivar
+                        ✓ Reactivar máquina
                     </button>
                 </form>
-            }
-            else
-            {
+            </div>
+            <div class="card">
+                <p class="det-section-title" style="color:#d97706;">⚙ Dar Mantenimiento</p>
+                <form asp-action="CambiarEstado" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
+                    <input type="hidden" name="nuevoEstado" value="Mantenimiento" />
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label">Tipo / descripción</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Ej: Mantenimiento correctivo..." />
+                    </div>
+                    <button type="submit" class="btn btn--sm"
+                            style="background:#d97706; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
+                            onclick="return confirm('¿Enviar a mantenimiento?')">
+                        ⚙ Enviar a mantenimiento
+                    </button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <p class="det-section-title" style="color:#d97706;">⚙ Dar Mantenimiento</p>
+                <form asp-action="CambiarEstado" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idMaquina" value="@Model.IdMaquina" />
+                    <input type="hidden" name="nuevoEstado" value="Mantenimiento" />
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label">Tipo / descripción del mantenimiento</label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="500"
+                               placeholder="Ej: Mantenimiento preventivo, cambio de aceite..." />
+                    </div>
+                    <button type="submit" class="btn btn--sm"
+                            style="background:#d97706; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
+                            onclick="return confirm('¿Enviar a mantenimiento?')">
+                        ⚙ Enviar a mantenimiento
+                    </button>
+                </form>
+            </div>
+            <div class="card">
                 <p class="det-section-title" style="color:#dc2626;">✕ Marcar Inoperativa</p>
                 <form asp-action="CambiarEstado" method="post">
                     @Html.AntiForgeryToken()
@@ -162,14 +252,15 @@
                     </div>
                     <button type="submit" class="btn btn--sm"
                             style="background:#dc2626; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 14px; font-size:0.85rem; font-weight:600;"
-                            onclick="return confirm('¿Marcar como inoperativa?')"
-                            @(Model.Estado == "Inoperativo" ? "disabled" : "")>
+                            onclick="return confirm('¿Marcar como inoperativa?')">
                         ✕ Marcar inoperativa
                     </button>
                 </form>
-            }
-        </div>
+            </div>
+        }
+        
     </div>
+    } 
 
     <!-- HISTORIAL DE CAMBIOS -->
     @if (Model.Logs.Any())

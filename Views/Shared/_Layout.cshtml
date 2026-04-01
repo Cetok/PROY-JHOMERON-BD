@@ -178,6 +178,7 @@
                     </div>
                 </div>
             }
+            <!-- PRODUCCIÓN — Admin y Produccion -->
             @if (esAdmin || rolActual == "Produccion")
             {
                 <div class="sidebar__section">
@@ -194,6 +195,13 @@
                            asp-controller="MaquinaAsignaciones" asp-action="Index">
                             <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>
                             Asignaciones
+                        </a>
+                    </div>
+                    <div class="sidebar__item">
+                        <a class="sidebar__link @(ctrl == "Maquinas" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") == "Historial" ? "active" : "")"
+                           asp-controller="Maquinas" asp-action="Historial">
+                            <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Historial
                         </a>
                     </div>
                 </div>
@@ -270,7 +278,7 @@
                     </div>
                 </div>
             }
-             @if (esAdmin || rolActual == "Produccion")
+            @if (esAdmin || rolActual == "Produccion")
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Reportes Producción</p>
