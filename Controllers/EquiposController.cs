@@ -174,6 +174,12 @@ namespace PROYJHOME2026.Controllers
                     equipo.Procesador = equipo.TarjetaMadre = equipo.Ram = equipo.Disco = null;
                     equipo.FuenteEnergia = equipo.TarjetaGrafica = null;
                     equipo.GraficosIntegrados = null;
+                    // Celular sí usa sistema_operativo y version — no borrarlos
+                    if (!tipoUpper.Contains("CELULAR"))
+                    {
+                        equipo.sistema_operativo = null;
+                        equipo.version = null;
+                    }
                 }
                 else if (equipo.GraficosIntegrados == true)
                     equipo.TarjetaGrafica = null;
@@ -282,6 +288,12 @@ namespace PROYJHOME2026.Controllers
                     equipo.Procesador = equipo.TarjetaMadre = equipo.Ram = equipo.Disco = null;
                     equipo.FuenteEnergia = equipo.TarjetaGrafica = null;
                     equipo.GraficosIntegrados = null;
+                    // Celular sí usa sistema_operativo y version — no borrarlos
+                    if (!tipoUpper.Contains("CELULAR"))
+                    {
+                        equipo.sistema_operativo = null;
+                        equipo.version = null;
+                    }
                 }
                 else if (equipo.GraficosIntegrados == true)
                     equipo.TarjetaGrafica = null;
@@ -314,12 +326,19 @@ namespace PROYJHOME2026.Controllers
                     var cambios = new List<string>();
                     if (equipoAnterior != null)
                     {
-                        if (equipoAnterior.marca        != equipo.marca)        cambios.Add($"Marca: '{equipoAnterior.marca}' → '{equipo.marca}'");
-                        if (equipoAnterior.modelo       != equipo.modelo)       cambios.Add($"Modelo: '{equipoAnterior.modelo}' → '{equipo.modelo}'");
-                        if (equipoAnterior.numero_serie != equipo.numero_serie) cambios.Add($"Serie: '{equipoAnterior.numero_serie}' → '{equipo.numero_serie}'");
-                        if (equipoAnterior.NombrePc     != equipo.NombrePc)     cambios.Add($"Nombre PC: '{equipoAnterior.NombrePc}' → '{equipo.NombrePc}'");
-                        if (equipoAnterior.Observaciones!= equipo.Observaciones)cambios.Add($"Observaciones actualizadas");
-                        if (equipoAnterior.idTipoEquipo != equipo.idTipoEquipo) cambios.Add($"Tipo cambiado");
+                        if (equipoAnterior.marca             != equipo.marca)             cambios.Add($"Marca: '{equipoAnterior.marca}' → '{equipo.marca}'");
+                        if (equipoAnterior.modelo            != equipo.modelo)            cambios.Add($"Modelo: '{equipoAnterior.modelo}' → '{equipo.modelo}'");
+                        if (equipoAnterior.numero_serie      != equipo.numero_serie)      cambios.Add($"Serie: '{equipoAnterior.numero_serie}' → '{equipo.numero_serie}'");
+                        if (equipoAnterior.NombrePc          != equipo.NombrePc)          cambios.Add($"Nombre PC: '{equipoAnterior.NombrePc}' → '{equipo.NombrePc}'");
+                        if (equipoAnterior.sistema_operativo != equipo.sistema_operativo) cambios.Add($"SO: '{equipoAnterior.sistema_operativo}' → '{equipo.sistema_operativo}'");
+                        if (equipoAnterior.version           != equipo.version)           cambios.Add($"Versión: '{equipoAnterior.version}' → '{equipo.version}'");
+                        if (equipoAnterior.Procesador        != equipo.Procesador)        cambios.Add($"Procesador: '{equipoAnterior.Procesador}' → '{equipo.Procesador}'");
+                        if (equipoAnterior.Ram               != equipo.Ram)               cambios.Add($"RAM: '{equipoAnterior.Ram}' → '{equipo.Ram}'");
+                        if (equipoAnterior.Disco             != equipo.Disco)             cambios.Add($"Disco: '{equipoAnterior.Disco}' → '{equipo.Disco}'");
+                        if (equipoAnterior.PcCpuSistemaOperativo != equipo.PcCpuSistemaOperativo) cambios.Add($"SO (PC): '{equipoAnterior.PcCpuSistemaOperativo}' → '{equipo.PcCpuSistemaOperativo}'");
+                        if (equipoAnterior.PcCpuVersionSO        != equipo.PcCpuVersionSO)        cambios.Add($"Versión SO (PC): '{equipoAnterior.PcCpuVersionSO}' → '{equipo.PcCpuVersionSO}'");
+                        if (equipoAnterior.Observaciones     != equipo.Observaciones)     cambios.Add($"Observaciones actualizadas");
+                        if (equipoAnterior.idTipoEquipo      != equipo.idTipoEquipo)      cambios.Add($"Tipo cambiado");
                     }
  
                     var desc = esPcCompleto
@@ -331,8 +350,6 @@ namespace PROYJHOME2026.Controllers
                         : "Sin cambios detectados";
  
                     await _auditoriaService.RegistrarAsync("Editar", "Equipo", id, desc, datosAnteriores);
-
-                    await _auditoriaService.RegistrarAsync("Editar", "Equipo", id, desc);
                     await _notifService.NotificarAccionAsync("Edicion", "Equipo", desc, $"/Equipos/Details/{id}",
                         idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq2) ? _eq2 : null);
 

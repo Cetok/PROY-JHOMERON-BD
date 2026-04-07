@@ -47,39 +47,39 @@ namespace PROYJHOME2026.Controllers
         {
             string? tipoNombre = null;
             bool incluirPcCompleto = false;
+            int? tipoIdPcCompleto = null;
             if (tipoId.HasValue)
             {
                 var tipoObj = await _context.TiposEquipo.FindAsync(tipoId.Value);
                 tipoNombre = tipoObj?.tipo;
                 incluirPcCompleto = EsComponentePcCompleto(tipoNombre);
+                if (incluirPcCompleto)
+                {
+                    var pcObj = await _context.TiposEquipo
+                        .FirstOrDefaultAsync(t => t.tipo != null && t.tipo.ToUpper().Contains("PC COMPLETO"));
+                    tipoIdPcCompleto = pcObj?.idTipoEquipo;
+                }
             }
 
-            IQueryable<PROYJHOME2026.Models.Equipo> query;
+            // Siempre arrancamos con una query base
+            var query = _context.Equipos
+                .Include(e => e.TipoEquipo)
+                .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
+                    .ThenInclude(a => a.Empleado)
+                .AsQueryable();
 
-            if (incluirPcCompleto)
+            if (tipoId.HasValue)
             {
-                query = _context.Equipos
-                    .Include(e => e.TipoEquipo)
-                    .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
-                        .ThenInclude(a => a.Empleado)
-                    .Where(e => e.TipoEquipo != null && e.TipoEquipo.tipo != null &&
-                                e.TipoEquipo.tipo.ToUpper().Contains("PC COMPLETO"));
-            }
-            else
-            {
-                query = _context.Equipos
-                    .Include(e => e.TipoEquipo)
-                    .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
-                        .ThenInclude(a => a.Empleado)
-                    .AsQueryable();
-
-                if (tipoId.HasValue)
+                if (incluirPcCompleto && tipoIdPcCompleto.HasValue)
+                    // Mostrar el tipo específico (ej: CPU) Y los PC Completo
+                    query = query.Where(e => e.idTipoEquipo == tipoId || e.idTipoEquipo == tipoIdPcCompleto);
+                else
                     query = query.Where(e => e.idTipoEquipo == tipoId);
-                if (grupoId.HasValue)
+            }
+            if (grupoId.HasValue)
                 query = query.Where(e => e.Asignaciones.Any(a =>
                     (a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado") &&
                     a.IdGrupo == grupoId));
-            }
 
             if (fechaDesde.HasValue) query = query.Where(e => e.fecha_compra >= fechaDesde.Value);
             if (fechaHasta.HasValue) query = query.Where(e => e.fecha_compra <= fechaHasta.Value.AddDays(1));
@@ -104,23 +104,34 @@ namespace PROYJHOME2026.Controllers
 
             var equipos = await query.OrderByDescending(e => e.fecha_compra).ToListAsync();
 
-            if (incluirPcCompleto)
-            {
-                var dataPc = equipos.Select(e => new {
+            // Retornamos todos los equipos en un solo formato unificado.
+            // Cada registro indica si es PC Completo para que la vista lo renderice correctamente.
+            var data = equipos.Select(e => {
+                var esPc = e.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true;
+                var asig = e.Asignaciones.FirstOrDefault();
+                return new {
                     e.idEquipo,
-                    tipo          = e.TipoEquipo?.tipo ?? "PC Completo",
-                    nombre        = e.NombrePc ?? "Sin nombre",
+                    tipo          = e.TipoEquipo?.tipo ?? "—",
+                    // nombre: PC Completo usa NombrePc; el resto usa marca+modelo
+                    nombre        = esPc ? (e.NombrePc ?? "Sin nombre") : ((e.marca ?? "") + " " + (e.modelo ?? "")).Trim(),
+                    e.NombrePc,
+                    e.marca,
+                    e.modelo,
+                    e.numero_serie,
                     e.estado_equipo,
                     fechaCompra   = e.fecha_compra.ToString("dd/MM/yyyy"),
-                    asignado      = e.Asignaciones.FirstOrDefault() is var asig && asig != null
-                        ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim() : "—",
+                    asignado      = asig != null ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim() : "—",
+                    procesador    = esPc ? (e.PcCpuProcesador ?? "—") : (e.Procesador ?? "—"),
+                    ram           = esPc ? (e.PcCpuRam        ?? "—") : (e.Ram        ?? "—"),
+                    disco         = esPc ? (e.PcCpuDisco      ?? "—") : (e.Disco      ?? "—"),
+                    so            = esPc ? (e.PcCpuSistemaOperativo ?? "—") : (e.sistema_operativo ?? "—"),
+                    version       = esPc ? (e.PcCpuVersionSO  ?? "—") : (e.version    ?? "—"),
+                    observaciones = e.Observaciones ?? "—",
+                    esPcCompleto  = esPc,
+                    // Campos extra PC Completo (la vista los usa si esPcCompleto==true)
                     cpuMarca      = e.PcCpuMarca      ?? "—",
                     cpuModelo     = e.PcCpuModelo     ?? "—",
                     cpuSerie      = e.PcCpuSerie      ?? "—",
-                    procesador    = e.PcCpuProcesador ?? "—",
-                    ram           = e.PcCpuRam        ?? "—",
-                    disco         = e.PcCpuDisco      ?? "—",
-                    so            = e.PcCpuSistemaOperativo ?? "—",
                     monitorMarca  = e.PcMonitorMarca  ?? "—",
                     monitorModelo = e.PcMonitorModelo ?? "—",
                     monitorSerie  = e.PcMonitorSerie  ?? "—",
@@ -133,36 +144,11 @@ namespace PROYJHOME2026.Controllers
                     tecladoModelo = e.PcTecladoModelo ?? "—",
                     tecladoSerie  = e.PcTecladoSerie  ?? "—",
                     mousepadMarca = e.PcMousepadMarca ?? "—",
-                    observaciones = e.Observaciones   ?? "—",
-                    esPcCompleto  = true,
                     componenteFiltrado = tipoNombre ?? "Todos"
-                }).ToList();
+                };
+            }).ToList();
 
-                return Json(new { total = dataPc.Count, registros = dataPc, esPcCompleto = true });
-            }
-            else
-            {
-                var data = equipos.Select(e => new {
-                    e.idEquipo,
-                    tipo          = e.TipoEquipo?.tipo ?? "—",
-                    nombre        = (e.marca ?? "") + " " + (e.modelo ?? ""),
-                    e.NombrePc,
-                    e.marca,
-                    e.modelo,
-                    e.numero_serie,
-                    e.estado_equipo,
-                    fechaCompra   = e.fecha_compra.ToString("dd/MM/yyyy"),
-                    asignado      = e.Asignaciones.FirstOrDefault() is var asig && asig != null
-                        ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim() : "—",
-                    procesador    = e.Procesador ?? e.PcCpuProcesador,
-                    ram           = e.Ram        ?? e.PcCpuRam,
-                    disco         = e.Disco      ?? e.PcCpuDisco,
-                    observaciones = e.Observaciones ?? "—",   // ← agregado
-                    esPcCompleto  = false
-                }).ToList();
-
-                return Json(new { total = data.Count, registros = data, esPcCompleto = false });
-            }
+            return Json(new { total = data.Count, registros = data, esPcCompleto = incluirPcCompleto });
         }
 
           [HttpGet]
@@ -375,6 +361,20 @@ namespace PROYJHOME2026.Controllers
             DateTime? fechaDesde, DateTime? fechaHasta,
             string? estadoAsig, int? grupoId, int? tipoId, string? buscar)
         {
+            // Si el tipo seleccionado es un componente de PC Completo (CPU, Monitor, etc.)
+            // también incluir los equipos de tipo "PC Completo"
+            int? tipoIdPcCompleto = null;
+            if (tipoId.HasValue)
+            {
+                var tipoObj = await _context.TiposEquipo.FindAsync(tipoId.Value);
+                if (EsComponentePcCompleto(tipoObj?.tipo))
+                {
+                    var pcCompleto = await _context.TiposEquipo
+                        .FirstOrDefaultAsync(t => t.tipo != null && t.tipo.ToUpper().Contains("PC COMPLETO"));
+                    tipoIdPcCompleto = pcCompleto?.idTipoEquipo;
+                }
+            }
+
             var query = _context.Asignaciones
                 .Include(a => a.Empleado)
                 .Include(a => a.Equipo).ThenInclude(e => e.TipoEquipo)
@@ -390,7 +390,14 @@ namespace PROYJHOME2026.Controllers
                 query = query.Where(a => estados.Contains(a.EstadoAsignacion));
             }
             if (grupoId.HasValue) query = query.Where(a => a.IdGrupo == grupoId);
-            if (tipoId.HasValue) query = query.Where(a => a.Equipo.idTipoEquipo == tipoId);
+            if (tipoId.HasValue)
+            {
+                if (tipoIdPcCompleto.HasValue)
+                    // Mostrar el componente específico Y PC Completo
+                    query = query.Where(a => a.Equipo.idTipoEquipo == tipoId || a.Equipo.idTipoEquipo == tipoIdPcCompleto);
+                else
+                    query = query.Where(a => a.Equipo.idTipoEquipo == tipoId);
+            }
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(a =>
                     (a.Empleado.nombre  != null && a.Empleado.nombre.Contains(buscar))  ||

@@ -63,16 +63,6 @@
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Grupo / Área</label>
-                <select id="eq-grupo" class="form-control">
-                    <option value="">— Todos —</option>
-                    @foreach (var g in grupos)
-                    {
-                        <option value="@g.idGrupo">@g.area</option>
-                    }
-                </select>
-            </div>
-            <div class="form-group">
                 <label class="form-label">Buscar</label>
                 <input type="text" id="eq-buscar" class="form-control" placeholder="Marca, modelo, serie..." />
             </div>
@@ -177,7 +167,7 @@
         <div style="margin-top:12px;">
             <label class="form-label">Estado de asignación</label>
             <div class="rep-checks">
-                @foreach (var est in new[] { "Activo","Asignado","En mantenimiento","Devuelto","Inactivo","Baja","Perdida","Rotura" })
+                @foreach (var est in new[] { "Activo", "Mantenimiento", "Inactivo" })
                 {
                     <label class="rep-check-item">
                         <input type="checkbox" class="as-estado" value="@est" checked />
@@ -357,7 +347,6 @@ async function consultarEquipos() {
         fechaDesde: document.getElementById('eq-desde').value,
         fechaHasta: document.getElementById('eq-hasta').value,
         tipoId:     document.getElementById('eq-tipo').value,
-        grupoId:    document.getElementById('eq-grupo').value,
         buscar:     document.getElementById('eq-buscar').value,
         estado:     getChecked('eq-estado')
     };

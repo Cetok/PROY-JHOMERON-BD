@@ -422,6 +422,22 @@ function toggleGraficosPC() {
 document.addEventListener('DOMContentLoaded', () => {
     // Pequeño delay para asegurar que asp-items renderizó el select correctamente
     setTimeout(() => { toggleCamposTecnicos(); }, 0);
+
+    // Deshabilitar inputs de secciones ocultas antes del submit
+    // para evitar que campos duplicados (ej: sistema_operativo) envíen valor vacío
+    document.querySelector('form').addEventListener('submit', function() {
+        const ocultarSecciones = ['seccionTecnica', 'campoCelular', 'campoMouse',
+                                   'campoFuente', 'campoTarjetaGrafica',
+                                   'seccionPcCompleto', 'seccionEstandar'];
+        ocultarSecciones.forEach(id => {
+            const sec = document.getElementById(id);
+            if (sec && sec.style.display === 'none') {
+                sec.querySelectorAll('input, select, textarea').forEach(el => {
+                    el.disabled = true;
+                });
+            }
+        });
+    });
 });
 </script>
 }

@@ -157,6 +157,7 @@ namespace PROYJHOME2026.Filters
             if (ctrl.Equals("InspeccionBotiquinGrupo", StringComparison.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("InspeccionExtintor", StringComparison.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("CarroAsesorios", StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("GrupoAsesorios", StringComparison.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("Notificaciones", StringComparison.OrdinalIgnoreCase)) return true;
             return false;
         }
