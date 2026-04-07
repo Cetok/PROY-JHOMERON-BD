@@ -86,17 +86,20 @@
             </div>
         </div>
 
-         <nav class="sidebar__nav">
+        <nav class="sidebar__nav">
         @{
-            var rolActual = Context.Session.GetString("UsuarioRol") ?? "";
+            var rolActual    = Context.Session.GetString("UsuarioRol") ?? "";
             var esAdmin      = rolActual == "Admin";
             var esSoporteTI  = rolActual == "SoporteTI";
             var esTransporte = rolActual == "Transporte";
             var esProduccion = rolActual == "Produccion";
+            var esSSoma      = rolActual == "SSOMA";
+            var esYanet      = rolActual == "Logistica";
+            var accion       = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
             var ctrl         = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
         }
 
-            <!-- PRINCIPAL — solo Admin ve el Dashboard principal -->
+            <!-- PRINCIPAL — solo Admin -->
             @if (esAdmin)
             {
                 <div class="sidebar__section">
@@ -111,8 +114,8 @@
                 </div>
             }
 
-            <!-- RECURSOS HUMANOS — Admin ve todo, SoporteTI y Transporte solo empleados -->
-            @if (esAdmin || esSoporteTI || esTransporte)
+            <!-- RECURSOS HUMANOS -->
+            @if (esAdmin || esSoporteTI || esTransporte || esYanet)
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Recursos Humanos</p>
@@ -143,8 +146,30 @@
                 </div>
             }
 
-            <!-- EQUIPOS TI — Admin y SoporteTI -->
-            @if (esAdmin || esSoporteTI)
+            <!-- SSOMA — Vehículos + Accesorios -->
+            @if (esSSoma)
+            {
+                <div class="sidebar__section">
+                    <p class="sidebar__section-label">Vehículos</p>
+                    <div class="sidebar__item">
+                        <a class="sidebar__link @(ctrl == "Carros" ? "active" : "")"
+                           asp-controller="Carros" asp-action="Index">
+                            <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                            Vehículos
+                        </a>
+                    </div>
+                    <div class="sidebar__item">
+                        <a class="sidebar__link @(ctrl == "Asesorios" ? "active" : "")"
+                           asp-controller="Asesorios" asp-action="Index">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                            Accesorios
+                        </a>
+                    </div>
+                </div>
+            }
+
+            <!-- EQUIPOS TI — Admin, SoporteTI, Yanet -->
+            @if (esAdmin || esSoporteTI || esYanet)
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Equipos TI</p>
@@ -155,13 +180,17 @@
                             Equipos
                         </a>
                     </div>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Chips" ? "active" : "")"
-                           asp-controller="Chips" asp-action="Index">
-                            <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/></svg>
-                            Chips / SIM
-                        </a>
-                    </div>
+                    @* Chips: solo Admin y Yanet (Oliver NO) *@
+                    @if (esAdmin || esYanet)
+                    {
+                        <div class="sidebar__item">
+                            <a class="sidebar__link @(ctrl == "Chips" ? "active" : "")"
+                               asp-controller="Chips" asp-action="Index">
+                                <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/></svg>
+                                Chips / SIM
+                            </a>
+                        </div>
+                    }
                     <div class="sidebar__item">
                         <a class="sidebar__link @(ctrl == "Asignaciones" ? "active" : "")"
                            asp-controller="Asignaciones" asp-action="Index">
@@ -169,41 +198,16 @@
                             Asignaciones
                         </a>
                     </div>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Historiales" ? "active" : "")"
-                           asp-controller="Historiales" asp-action="Index">
-                            <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Historial de Equipos
-                        </a>
-                    </div>
-                </div>
-            }
-            <!-- PRODUCCIÓN — Admin y Produccion -->
-            @if (esAdmin || rolActual == "Produccion")
-            {
-                <div class="sidebar__section">
-                    <p class="sidebar__section-label">Producción</p>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Maquinas" ? "active" : "")"
-                           asp-controller="Maquinas" asp-action="Index">
-                            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-                            Máquinas
-                        </a>
-                    </div>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "MaquinaAsignaciones" ? "active" : "")"
-                           asp-controller="MaquinaAsignaciones" asp-action="Index">
-                            <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>
-                            Asignaciones
-                        </a>
-                    </div>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Maquinas" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") == "Historial" ? "active" : "")"
-                           asp-controller="Maquinas" asp-action="Historial">
-                            <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Historial
-                        </a>
-                    </div>
+                    @if (esAdmin || esSoporteTI)
+                    {
+                        <div class="sidebar__item">
+                            <a class="sidebar__link @(ctrl == "Historiales" ? "active" : "")"
+                               asp-controller="Historiales" asp-action="Index">
+                                <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Historial de Equipos
+                            </a>
+                        </div>
+                    }
                 </div>
             }
 
@@ -233,24 +237,52 @@
                             Historial de Carros
                         </a>
                     </div>
-
                 </div>
             }
 
-            <!-- REPORTES — según rol -->
-            @if (esAdmin || esSoporteTI)
+            <!-- PRODUCCIÓN — Admin y Produccion -->
+            @if (esAdmin || esProduccion)
+            {
+                <div class="sidebar__section">
+                    <p class="sidebar__section-label">Producción</p>
+                    <div class="sidebar__item">
+                        <a class="sidebar__link @(ctrl == "Maquinas" && accion != "Historial" ? "active" : "")"
+                           asp-controller="Maquinas" asp-action="Index">
+                            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+                            Máquinas
+                        </a>
+                    </div>
+                    <div class="sidebar__item">
+                        <a class="sidebar__link @(ctrl == "MaquinaAsignaciones" ? "active" : "")"
+                           asp-controller="MaquinaAsignaciones" asp-action="Index">
+                            <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>
+                            Asignaciones
+                        </a>
+                    </div>
+                    <div class="sidebar__item">
+                        <a class="sidebar__link @(ctrl == "Maquinas" && accion == "Historial" ? "active" : "")"
+                           asp-controller="Maquinas" asp-action="Historial">
+                            <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Historial
+                        </a>
+                    </div>
+                </div>
+            }
+
+            <!-- REPORTES TI — Admin, SoporteTI, Yanet -->
+            @if (esAdmin || esSoporteTI || esYanet)
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Reportes TI</p>
                     <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") != "Dashboard" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") != "DashboardFlota" ? "active" : "")"
+                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "Index" ? "active" : "")"
                            asp-controller="Reportes" asp-action="Index">
                             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
                             Reportes
                         </a>
                     </div>
                     <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") == "Dashboard" ? "active" : "")"
+                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "Dashboard" ? "active" : "")"
                            asp-controller="Reportes" asp-action="Dashboard">
                             <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                             Dashboard
@@ -258,19 +290,21 @@
                     </div>
                 </div>
             }
+
+            <!-- REPORTES FLOTA — Admin y Transporte -->
             @if (esAdmin || esTransporte)
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Reportes Flota</p>
                     <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") == "IndexFlota" ? "active" : "")"
+                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "IndexFlota" ? "active" : "")"
                            asp-controller="Reportes" asp-action="IndexFlota">
                             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
                             Reportes Flota
                         </a>
                     </div>
                     <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") == "DashboardFlota" ? "active" : "")"
+                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "DashboardFlota" ? "active" : "")"
                            asp-controller="Reportes" asp-action="DashboardFlota">
                             <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                             Dashboard Flota
@@ -278,19 +312,21 @@
                     </div>
                 </div>
             }
-            @if (esAdmin || rolActual == "Produccion")
+
+            <!-- REPORTES PRODUCCIÓN — Admin y Produccion -->
+            @if (esAdmin || esProduccion)
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Reportes Producción</p>
                     <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") == "IndexProduccion" ? "active" : "")"
+                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "IndexProduccion" ? "active" : "")"
                            asp-controller="Reportes" asp-action="IndexProduccion">
                             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
                             Reportes
                         </a>
                     </div>
                     <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") == "DashboardProduccion" ? "active" : "")"
+                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "DashboardProduccion" ? "active" : "")"
                            asp-controller="Reportes" asp-action="DashboardProduccion">
                             <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                             Dashboard
@@ -298,6 +334,7 @@
                     </div>
                 </div>
             }
+
         </nav>
 
         <div class="sidebar__footer">
@@ -526,5 +563,20 @@
 </script>
 
 @await RenderSectionAsync("Scripts", required: false)
+<script>
+// ── Fix sidebar: scroll automático al ítem activo al cargar la página ──────
+(function () {
+    var nav    = document.querySelector('.sidebar__nav');
+    var activo = document.querySelector('.sidebar__link.active');
+    if (nav && activo) {
+        // Calcular posición del ítem activo relativa al nav
+        var navRect    = nav.getBoundingClientRect();
+        var activoRect = activo.getBoundingClientRect();
+        // Hacer scroll para centrar el ítem activo dentro del nav
+        var offset = activoRect.top - navRect.top - (nav.clientHeight / 2) + (activo.clientHeight / 2);
+        nav.scrollTop = offset;
+    }
+})();
+</script>
 </body>
 </html>

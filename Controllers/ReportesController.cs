@@ -43,7 +43,7 @@ namespace PROYJHOME2026.Controllers
         [HttpGet]
         public async Task<IActionResult> EquiposData(
             DateTime? fechaDesde, DateTime? fechaHasta,
-            int? tipoId, string? estado, string? buscar)
+            int? tipoId, int? grupoId, string? estado, string? buscar)
         {
             string? tipoNombre = null;
             bool incluirPcCompleto = false;
@@ -75,6 +75,10 @@ namespace PROYJHOME2026.Controllers
 
                 if (tipoId.HasValue)
                     query = query.Where(e => e.idTipoEquipo == tipoId);
+                if (grupoId.HasValue)
+                query = query.Where(e => e.Asignaciones.Any(a =>
+                    (a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado") &&
+                    a.IdGrupo == grupoId));
             }
 
             if (fechaDesde.HasValue) query = query.Where(e => e.fecha_compra >= fechaDesde.Value);
@@ -369,7 +373,7 @@ namespace PROYJHOME2026.Controllers
         [HttpGet]
         public async Task<IActionResult> AsignacionesData(
             DateTime? fechaDesde, DateTime? fechaHasta,
-            string? estadoAsig, int? grupoId, string? buscar)
+            string? estadoAsig, int? grupoId, int? tipoId, string? buscar)
         {
             var query = _context.Asignaciones
                 .Include(a => a.Empleado)
@@ -386,6 +390,7 @@ namespace PROYJHOME2026.Controllers
                 query = query.Where(a => estados.Contains(a.EstadoAsignacion));
             }
             if (grupoId.HasValue) query = query.Where(a => a.IdGrupo == grupoId);
+            if (tipoId.HasValue) query = query.Where(a => a.Equipo.idTipoEquipo == tipoId);
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(a =>
                     (a.Empleado.nombre  != null && a.Empleado.nombre.Contains(buscar))  ||

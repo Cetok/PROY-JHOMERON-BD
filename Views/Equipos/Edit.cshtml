@@ -376,7 +376,10 @@ const TIPO_PC_COMPLETO = 'PC COMPLETO';
 
 function getNombreTipo() {
     const sel = document.getElementById('selectTipo');
-    return sel.options[sel.selectedIndex]?.text?.toUpperCase().trim() ?? '';
+    // Buscar el option seleccionado por su value, no por índice
+    const selVal = sel.value;
+    const opt = Array.from(sel.options).find(o => o.value === selVal);
+    return opt?.text?.toUpperCase().trim() ?? '';
 }
 
 function toggleCamposTecnicos() {
@@ -415,6 +418,10 @@ function toggleGraficosPC() {
     if (!dedicada) { const el = document.querySelector('[name="PcCpuTarjetaGrafica"]'); if(el) el.value = ''; }
 }
 
-document.addEventListener('DOMContentLoaded', () => { toggleCamposTecnicos(); });
+// Ejecutar después del render completo del DOM y del select
+document.addEventListener('DOMContentLoaded', () => {
+    // Pequeño delay para asegurar que asp-items renderizó el select correctamente
+    setTimeout(() => { toggleCamposTecnicos(); }, 0);
+});
 </script>
 }

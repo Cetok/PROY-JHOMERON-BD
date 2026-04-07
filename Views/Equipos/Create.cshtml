@@ -377,7 +377,9 @@ const TIPO_PC_COMPLETO = 'PC COMPLETO';
 
 function getNombreTipo() {
     const sel = document.getElementById('selectTipo');
-    return sel.options[sel.selectedIndex]?.text?.toUpperCase().trim() ?? '';
+    const selVal = sel.value;
+    const opt = Array.from(sel.options).find(o => o.value === selVal);
+    return opt?.text?.toUpperCase().trim() ?? '';
 }
 
 function toggleCamposTecnicos() {
@@ -415,6 +417,8 @@ function toggleGraficosPC() {
     if (!dedicada) { const el = document.querySelector('[name="PcCpuTarjetaGrafica"]'); if(el) el.value = ''; }
 }
 
-document.addEventListener('DOMContentLoaded', () => { toggleCamposTecnicos(); });
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => { toggleCamposTecnicos(); }, 0);
+});
 </script>
 }

@@ -13,23 +13,32 @@ namespace PROYJHOME2026.Services
             _context = context;
         }
 
-        /// <summary>Crea notificación para todos los usuarios activos o uno específico.</summary>
+        /// <summary>
+        /// Crea notificación para destinatarios según lógica de roles:
+        /// - Admins (rol "Admin") siempre reciben todas las notificaciones.
+        /// - El usuario que realizó la acción recibe su propia notificación.
+        /// - Los demás roles NO reciben notificaciones ajenas.
+        /// </summary>
         public async Task CrearAsync(
             string tipo,
             string titulo,
             string? mensaje,
-            string? url = null,
-            int? idMante = null,
-            int? soloParaUsuario = null)
+            string? url         = null,
+            int? idMante        = null,
+            int? idUsuarioAccion = null)   // ID del usuario que hizo la acción
         {
-            var usuariosIds = soloParaUsuario.HasValue
-                ? new List<int> { soloParaUsuario.Value }
-                : await _context.Usuarios
-                    .Where(u => u.activo)
-                    .Select(u => u.idUsuario)
-                    .ToListAsync();
+            // Obtener todos los admins
+            var adminsIds = await _context.Usuarios
+                .Where(u => u.activo && u.rol == "Admin")
+                .Select(u => u.idUsuario)
+                .ToListAsync();
 
-            foreach (var uid in usuariosIds)
+            // Destinatarios = admins + el propio usuario que actuó (sin duplicados)
+            var destinatarios = new HashSet<int>(adminsIds);
+            if (idUsuarioAccion.HasValue)
+                destinatarios.Add(idUsuarioAccion.Value);
+
+            foreach (var uid in destinatarios)
             {
                 _context.Notificaciones.Add(new Notificacion
                 {
@@ -46,12 +55,16 @@ namespace PROYJHOME2026.Services
             await _context.SaveChangesAsync();
         }
 
-        /// <summary>Shortcut para notificaciones de sistema (Crear/Editar/Eliminar).</summary>
+        /// <summary>
+        /// Shortcut para notificaciones de acciones del sistema.
+        /// Pasa el IHttpContextAccessor para obtener el usuario activo.
+        /// </summary>
         public async Task NotificarAccionAsync(
-            string accion,       // "Creacion" | "Edicion" | "Eliminacion" | "CambioEstado"
-            string entidad,      // "Empleado", "Carro", "Equipo", etc.
-            string descripcion,  // "Registró empleado Juan Pérez"
-            string? url = null)
+            string accion,
+            string entidad,
+            string descripcion,
+            string? url = null,
+            int? idUsuarioAccion = null)
         {
             var tipo = accion switch {
                 "Creacion"    => "Creacion",
@@ -67,7 +80,7 @@ namespace PROYJHOME2026.Services
                 _             => $"🔄 Cambio de estado — {entidad}"
             };
 
-            await CrearAsync(tipo, titulo, descripcion, url);
+            await CrearAsync(tipo, titulo, descripcion, url, null, idUsuarioAccion);
         }
 
         public async Task<int> ContarNoLeidasAsync(int idUsuario) =>

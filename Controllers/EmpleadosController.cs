@@ -96,6 +96,11 @@ namespace PROYJHOME2026.Controllers
             ViewBag.Grupos    = grupos;
             ViewBag.Seguros   = seguros;
             ViewBag.EstadoLog = estadoLog;
+            ViewBag.HistorialCambios = await _context.AuditoriaLogs
+            .Where(l => l.Entidad == "Empleado" && l.IdEntidad == id)
+            .OrderByDescending(l => l.FechaHora)
+            .Take(50)
+            .ToListAsync();
             return View(empleado);
         }
 
@@ -160,7 +165,9 @@ namespace PROYJHOME2026.Controllers
                 await _auditoriaService.RegistrarAsync("Crear", "Empleado", vm.Empleado.idEmpleado,
                     $"Registró empleado {vm.Empleado.nombre} {vm.Empleado.paterno} (DNI: {vm.Empleado.dni})");
                 
-                await _notifService.NotificarAccionAsync("Creacion", "Empleado", $"Registró empleado {vm.Empleado.nombre} {vm.Empleado.paterno} (DNI: {vm.Empleado.dni})");
+                await _notifService.NotificarAccionAsync("Creacion", "Empleado",
+                    $"Registró empleado {vm.Empleado.nombre} {vm.Empleado.paterno} (DNI: {vm.Empleado.dni})",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _e1) ? _e1 : null);
                 TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} registrado correctamente.";
                 return RedirectToAction(nameof(Details), new { id = vm.Empleado.idEmpleado });
             }
@@ -242,10 +249,26 @@ namespace PROYJHOME2026.Controllers
                     }
 
                     await _context.SaveChangesAsync();
+                    var empAnterior = await _context.Empleados.AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.idEmpleado == id);
+                    var cambiosEmp = new List<string>();
+                    if (empAnterior != null)
+                    {
+                        if (empAnterior.nombre     != vm.Empleado.nombre)     cambiosEmp.Add($"Nombre: '{empAnterior.nombre}' → '{vm.Empleado.nombre}'");
+                        if (empAnterior.paterno    != vm.Empleado.paterno)    cambiosEmp.Add($"Apellido: '{empAnterior.paterno}' → '{vm.Empleado.paterno}'");
+                        if (empAnterior.materno    != vm.Empleado.materno)    cambiosEmp.Add($"Apellido materno: '{empAnterior.materno}' → '{vm.Empleado.materno}'");
+                        if (empAnterior.dni        != vm.Empleado.dni)        cambiosEmp.Add($"DNI: '{empAnterior.dni}' → '{vm.Empleado.dni}'");
+                        if (empAnterior.correo     != vm.Empleado.correo)     cambiosEmp.Add($"Correo: '{empAnterior.correo ?? "—"}' → '{vm.Empleado.correo ?? "—"}'");
+                        if (empAnterior.direccion  != vm.Empleado.direccion)  cambiosEmp.Add($"Dirección actualizada");
+                        if (empAnterior.estado     != vm.Empleado.estado)     cambiosEmp.Add($"Estado: '{empAnterior.estado}' → '{vm.Empleado.estado}'");
+                    }
+                    var datosEmpAnt = cambiosEmp.Any() ? string.Join(" | ", cambiosEmp) : null;
                     await _auditoriaService.RegistrarAsync("Editar", "Empleado", id,
-                        $"Editó empleado {vm.Empleado.nombre} {vm.Empleado.paterno}");
+                        $"Editó empleado {vm.Empleado.nombre} {vm.Empleado.paterno}", datosEmpAnt);
                     
-                await _notifService.NotificarAccionAsync("Edicion", "Empleado", $"Editó empleado {vm.Empleado.nombre} {vm.Empleado.paterno}");
+                await _notifService.NotificarAccionAsync("Edicion", "Empleado",
+                    $"Editó empleado {vm.Empleado.nombre} {vm.Empleado.paterno}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _e2) ? _e2 : null);
                 TempData["Success"] = $"Empleado {vm.Empleado.nombre} {vm.Empleado.paterno} actualizado correctamente.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
@@ -293,7 +316,9 @@ namespace PROYJHOME2026.Controllers
                 await _auditoriaService.RegistrarAsync("Eliminar", "Empleado", id,
                     $"Eliminó empleado {empleado.nombre} {empleado.paterno}");
                 
-                await _notifService.NotificarAccionAsync("Eliminacion", "Empleado", $"Eliminó empleado {empleado.nombre} {empleado.paterno}");
+                await _notifService.NotificarAccionAsync("Eliminacion", "Empleado",
+                    $"Eliminó empleado {empleado.nombre} {empleado.paterno}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _e3) ? _e3 : null);
                 TempData["Success"] = $"Empleado {empleado.nombre} {empleado.paterno} eliminado.";
             }
             catch (DbUpdateException)
@@ -356,9 +381,10 @@ namespace PROYJHOME2026.Controllers
             await _auditoriaService.RegistrarAsync("CambioEstado", "Empleado", idEmpleado,
                 $"Cambió estado empleado #{idEmpleado} de {estadoAnterior} → {nuevoEstado}");
 
-            await _notifService.NotificarAccionAsync("CambioEstado", "Empleado",
+           await _notifService.NotificarAccionAsync("CambioEstado", "Empleado",
                 $"Estado de empleado cambió a {nuevoEstado}",
-                $"/Empleados/Details/{idEmpleado}");
+                $"/Empleados/Details/{idEmpleado}",
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _e4) ? _e4 : null);
 
             TempData["Success"] = $"Estado cambiado a '{nuevoEstado}'. Registrado en historial.";
             return RedirectToAction(nameof(Details), new { id = idEmpleado });

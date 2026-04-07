@@ -21,16 +21,24 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, string? estado, int pagina = 1)
+       public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, int pagina = 1)
         {
             int porPagina = 10;
-
+ 
             var query = _context.Asignaciones
                 .Include(a => a.Empleado)
-                .Include(a => a.Equipo)
+                .Include(a => a.Equipo).ThenInclude(e => e.TipoEquipo)
                 .Include(a => a.Chip)
                 .Include(a => a.Grupo)
                 .AsQueryable();
+ 
+// LUEGO agrega el filtro por tipoId DESPUÉS del filtro de estado (agrega esta línea):
+            if (tipoId.HasValue)
+                query = query.Where(a => a.Equipo.idTipoEquipo == tipoId);
+ 
+// Y en los ViewBag al final agrega:
+            ViewBag.TipoId       = tipoId;
+            ViewBag.Tipos        = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
 
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(a =>
@@ -77,6 +85,11 @@ namespace PROYJHOME2026.Controllers
                 .FirstOrDefaultAsync(a => a.IdAsignacion == id);
 
             if (asignacion == null) return NotFound();
+            ViewBag.HistorialCambios = await _context.AuditoriaLogs
+            .Where(l => l.Entidad == "Asignacion" && l.IdEntidad == id)
+            .OrderByDescending(l => l.FechaHora)
+            .Take(50)
+            .ToListAsync();
             return View(asignacion);
         }
 
@@ -139,7 +152,8 @@ namespace PROYJHOME2026.Controllers
                     $"Registró asignación #{asignacion.IdAsignacion} — Empleado {asignacion.IdEmpleado}, Equipo {asignacion.IdEquipo}");
                 await _notifService.NotificarAccionAsync("Creacion", "Asignacion",
                     $"Registró asignación #{asignacion.IdAsignacion}",
-                    $"/Asignaciones/Details/{asignacion.IdAsignacion}");
+                    $"/Asignaciones/Details/{asignacion.IdAsignacion}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _as1) ? _as1 : null);
 
                 TempData["Success"] = "Asignación registrada correctamente.";
                 return RedirectToAction(nameof(Details), new { id = asignacion.IdAsignacion });
@@ -233,9 +247,34 @@ namespace PROYJHOME2026.Controllers
 
                     await _context.SaveChangesAsync();
 
-                    await _auditoriaService.RegistrarAsync("Editar", "Asignacion", id, $"Editó asignación #{id}");
+                     // Capturar datos anteriores
+                    var asigAnterior = await _context.Asignaciones.AsNoTracking()
+                        .Include(a => a.Empleado).Include(a => a.Equipo).Include(a => a.Grupo)
+                        .FirstOrDefaultAsync(a => a.IdAsignacion == id);
+ 
+                    var cambiosAsig = new List<string>();
+                    if (asigAnterior != null)
+                    {
+                        if (asigAnterior.IdEmpleado != asignacion.IdEmpleado)
+                            cambiosAsig.Add($"Empleado: '{asigAnterior.Empleado?.nombre} {asigAnterior.Empleado?.paterno}' → nuevo empleado");
+                        if (asigAnterior.IdEquipo != asignacion.IdEquipo)
+                            cambiosAsig.Add($"Equipo: '{asigAnterior.Equipo?.marca} {asigAnterior.Equipo?.modelo}' → nuevo equipo");
+                        if (asigAnterior.IdGrupo != asignacion.IdGrupo)
+                            cambiosAsig.Add($"Grupo: '{asigAnterior.Grupo?.area}' → nuevo grupo");
+                        if (asigAnterior.EstadoAsignacion != asignacion.EstadoAsignacion)
+                            cambiosAsig.Add($"Estado: '{asigAnterior.EstadoAsignacion}' → '{asignacion.EstadoAsignacion}'");
+                        if (asigAnterior.CorreoEquipo != asignacion.CorreoEquipo)
+                            cambiosAsig.Add($"Correo equipo: '{asigAnterior.CorreoEquipo ?? "—"}' → '{asignacion.CorreoEquipo ?? "—"}'");
+                        if (asigAnterior.NumeroCargo != asignacion.NumeroCargo)
+                            cambiosAsig.Add($"N° Cargo: '{asigAnterior.NumeroCargo ?? "—"}' → '{asignacion.NumeroCargo ?? "—"}'");
+                    }
+ 
+                    var datosAsigAnt = cambiosAsig.Any() ? string.Join(" | ", cambiosAsig) : "Sin cambios detectados";
+                    await _auditoriaService.RegistrarAsync("Editar", "Asignacion", id,
+                        $"Editó asignación #{id}", datosAsigAnt);
                     await _notifService.NotificarAccionAsync("Edicion", "Asignacion",
-                        $"Editó asignación #{id}", $"/Asignaciones/Details/{id}");
+                        $"Editó asignación #{id}", $"/Asignaciones/Details/{id}",
+                        idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _as2) ? _as2 : null);
 
                     TempData["Success"] = "Asignación actualizada correctamente.";
                     return RedirectToAction(nameof(Details), new { id = asignacion.IdAsignacion });
@@ -286,7 +325,9 @@ namespace PROYJHOME2026.Controllers
                 await _context.SaveChangesAsync();
 
                 await _auditoriaService.RegistrarAsync("Eliminar", "Asignacion", id, $"Eliminó asignación #{id}");
-                await _notifService.NotificarAccionAsync("Eliminacion", "Asignacion", $"Eliminó asignación #{id}");
+                await _notifService.NotificarAccionAsync("Eliminacion", "Asignacion",
+                    $"Eliminó asignación #{id}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _as3) ? _as3 : null);
 
                 TempData["Success"] = "Asignación eliminada correctamente.";
             }
@@ -322,7 +363,11 @@ namespace PROYJHOME2026.Controllers
 
             var equipos = await _context.Equipos
                 .Include(e => e.TipoEquipo)
-                .Where(e => e.estado_equipo == "Activo" && !equiposOcupados.Contains(e.idEquipo))
+                .Where(e =>
+                    // Equipos disponibles (Activos y no ocupados por otra asignación)
+                    (e.estado_equipo == "Activo" && !equiposOcupados.Contains(e.idEquipo))
+                    // O el equipo actualmente asignado (para que aparezca en el dropdown al editar)
+                    || (equipoSel.HasValue && e.idEquipo == equipoSel.Value))
                 .OrderBy(e => e.marca)
                 .Select(e => new {
                     e.idEquipo,

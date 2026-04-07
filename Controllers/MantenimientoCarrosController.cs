@@ -116,12 +116,13 @@ namespace PROYJHOME2026.Controllers
                 await _context.SaveChangesAsync();
 
                 // Notificación de creación
-                await _notifService.CrearAsync(
+                 await _notifService.CrearAsync(
                     tipo:    "Creacion",
                     titulo:  $"Nuevo mantenimiento registrado — {vm.Carro?.Placa ?? "vehículo"}",
                     mensaje: $"Se programó un mantenimiento para el {vm.FechaProgramada:dd/MM/yyyy}.",
                     url:     $"/MantenimientoCarros/Details/{vm.IdMante}",
-                    idMante: vm.IdMante
+                    idMante: vm.IdMante,
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mc1) ? _mc1 : null
                 );
 
                 // Auditoría
@@ -192,7 +193,8 @@ namespace PROYJHOME2026.Controllers
                 titulo:  $"Mantenimiento en proceso — {m.Carro?.Placa}",
                 mensaje: $"El mantenimiento de {m.TipoMantenimiento?.Nombre} ya está en proceso.",
                 url:     $"/MantenimientoCarros/Details/{id}",
-                idMante: id
+                idMante: id,
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mc2) ? _mc2 : null
             );
 
             await _auditoriaService.RegistrarAsync(
@@ -243,7 +245,8 @@ namespace PROYJHOME2026.Controllers
                 titulo:  $"Mantenimiento culminado — {m.Carro?.Placa}",
                 mensaje: $"El mantenimiento de {m.TipoMantenimiento?.Nombre} fue culminado.",
                 url:     $"/MantenimientoCarros/Details/{id}",
-                idMante: id
+                idMante: id,
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mc3) ? _mc3 : null
             );
 
             await _auditoriaService.RegistrarAsync(

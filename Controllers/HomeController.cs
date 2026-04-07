@@ -13,30 +13,89 @@ namespace PROYJHOME2026.Controllers
         public async Task<IActionResult> Index()
         {
             var rol = HttpContext.Session.GetString("UsuarioRol") ?? "";
-
             return rol switch
             {
-                "SoporteTI"  => RedirectToAction("Dashboard",          "Reportes"),
-                "Transporte" => RedirectToAction("DashboardFlota",     "Reportes"),
-                "Produccion" => RedirectToAction("DashboardProduccion","Reportes"),
+                "SoporteTI"  => RedirectToAction("Dashboard",           "Reportes"),
+                "Transporte" => RedirectToAction("DashboardFlota",      "Reportes"),
+                "Produccion" => RedirectToAction("DashboardProduccion", "Reportes"),
+                "SSOMA"      => RedirectToAction("Index",               "Carros"),
+                "Logistica"  => RedirectToAction("Dashboard",           "Reportes"),
                 _            => await MostrarDashboardAdmin()
             };
+        }
+
+        // ── AJAX: movimientos paginados ───────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> MovimientosData(int pagina = 1)
+        {
+            const int porPagina  = 10;
+            const int maxPaginas = 10;
+            const int totalMax   = porPagina * maxPaginas; // máx 100
+
+            var totalReal = await _context.AuditoriaLogs.CountAsync();
+            var total     = Math.Min(totalReal, totalMax);
+
+            var movimientos = await _context.AuditoriaLogs
+                .OrderByDescending(l => l.FechaHora)
+                .Take(totalMax)
+                .Skip((pagina - 1) * porPagina)
+                .Take(porPagina)
+                .Select(l => new {
+                    fecha        = l.FechaHora.ToString("dd/MM/yyyy HH:mm"),
+                    l.Accion,
+                    l.Entidad,
+                    l.Descripcion,
+                    l.NombreUsuario
+                })
+                .ToListAsync();
+
+            return Json(new {
+                total,
+                pagina,
+                totalPaginas = (int)Math.Ceiling((double)total / porPagina),
+                registros    = movimientos
+            });
         }
 
         private async Task<IActionResult> MostrarDashboardAdmin()
         {
             var vm = new DashboardViewModel
             {
-                TotalEmpleados          = await _context.Empleados.CountAsync(),
-                EmpleadosActivos        = await _context.Empleados.CountAsync(e => e.estado == "Activo"),
-                TotalEquipos            = await _context.Equipos.CountAsync(),
-                EquiposAsignados        = await _context.Asignaciones.Where(a => a.EstadoAsignacion == "Activo").Select(a => a.IdEquipo).Distinct().CountAsync(),
-                TotalCarros             = await _context.Carros.CountAsync(),
-                CarrosActivos           = await _context.Carros.CountAsync(c => c.Estado == "Activo"),
-                MantenimientosPendientes= await _context.MantenimientosCarros.CountAsync(m => m.Estado == "Pendiente"),
-                UltimasAsignaciones     = await _context.Asignaciones.Include(a => a.Empleado).Include(a => a.Equipo).OrderByDescending(a => a.FechaAsignacion).Take(6).ToListAsync(),
-                MantenimientosRecientes = await _context.MantenimientosCarros.Include(m => m.Carro).Include(m => m.TipoMantenimiento).Include(m => m.UsuarioCreador).Where(m => m.Estado == "Pendiente").OrderBy(m => m.FechaProgramada).Take(6).ToListAsync(),
-                UltimosMovimientos      = await _context.AuditoriaLogs.OrderByDescending(l => l.FechaHora).Take(8).ToListAsync(),
+                TotalEmpleados           = await _context.Empleados.CountAsync(),
+                EmpleadosActivos         = await _context.Empleados.CountAsync(e => e.estado == "Activo"),
+                TotalEquipos             = await _context.Equipos.CountAsync(),
+                EquiposAsignados         = await _context.Asignaciones
+                    .Where(a => a.EstadoAsignacion == "Activo")
+                    .Select(a => a.IdEquipo).Distinct().CountAsync(),
+                TotalCarros              = await _context.Carros.CountAsync(),
+                CarrosActivos            = await _context.Carros.CountAsync(c => c.Estado == "Activo"),
+                MantenimientosPendientes = await _context.MantenimientosCarros.CountAsync(m => m.Estado == "Pendiente"),
+                TotalMaquinas            = await _context.Maquinas.CountAsync(),
+                MaquinasActivas          = await _context.Maquinas.CountAsync(m => m.Estado == "Activo"),
+
+                UltimasAsignaciones = await _context.Asignaciones
+                    .Include(a => a.Empleado).Include(a => a.Equipo)
+                    .OrderByDescending(a => a.FechaAsignacion).Take(6).ToListAsync(),
+
+                MantenimientosRecientes = await _context.MantenimientosCarros
+                    .Include(m => m.Carro).Include(m => m.TipoMantenimiento).Include(m => m.UsuarioCreador)
+                    .Where(m => m.Estado == "Pendiente")
+                    .OrderBy(m => m.FechaProgramada).Take(6).ToListAsync(),
+
+                EquiposPorEstado = await _context.Equipos
+                    .GroupBy(e => e.estado_equipo)
+                    .Select(g => new EstadoCount { Estado = g.Key ?? "—", Total = g.Count() })
+                    .ToListAsync(),
+
+                CarrosPorEstado = await _context.Carros
+                    .GroupBy(c => c.Estado)
+                    .Select(g => new EstadoCount { Estado = g.Key ?? "—", Total = g.Count() })
+                    .ToListAsync(),
+
+                MaquinasPorEstado = await _context.Maquinas
+                    .GroupBy(m => m.Estado)
+                    .Select(g => new EstadoCount { Estado = g.Key ?? "—", Total = g.Count() })
+                    .ToListAsync(),
             };
             return View("Index", vm);
         }
@@ -51,8 +110,20 @@ namespace PROYJHOME2026.Controllers
         public int TotalCarros               { get; set; }
         public int CarrosActivos             { get; set; }
         public int MantenimientosPendientes  { get; set; }
+        public int TotalMaquinas             { get; set; }
+        public int MaquinasActivas           { get; set; }
+
         public List<Asignacion>         UltimasAsignaciones     { get; set; } = new();
         public List<MantenimientoCarro> MantenimientosRecientes { get; set; } = new();
         public List<AuditoriaLog>       UltimosMovimientos      { get; set; } = new();
+        public List<EstadoCount>        EquiposPorEstado        { get; set; } = new();
+        public List<EstadoCount>        CarrosPorEstado         { get; set; } = new();
+        public List<EstadoCount>        MaquinasPorEstado       { get; set; } = new();
+    }
+
+    public class EstadoCount
+    {
+        public string Estado { get; set; } = "";
+        public int    Total  { get; set; }
     }
 }

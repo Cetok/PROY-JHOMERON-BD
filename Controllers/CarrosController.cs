@@ -98,7 +98,11 @@ namespace PROYJHOME2026.Controllers
                 })
                 .ToListAsync();
             ViewBag.EmpleadosList = new SelectList(empleados, "idEmpleado", "NombreCompleto");
-
+            ViewBag.HistorialCambios = await _context.AuditoriaLogs
+            .Where(l => l.Entidad == "Carro" && l.IdEntidad == id)
+            .OrderByDescending(l => l.FechaHora)
+            .Take(50)
+            .ToListAsync();
             return View(carro);
         }
 
@@ -172,7 +176,8 @@ namespace PROYJHOME2026.Controllers
             await _notifService.NotificarAccionAsync(
                 idNuevo.HasValue ? "Creacion" : "Eliminacion",
                 "Conductor",
-                idNuevo.HasValue ? "Conductor asignado a vehículo" : "Conductor removido del vehículo");
+                idNuevo.HasValue ? "Conductor asignado a vehículo" : "Conductor removido del vehículo",
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _ca0) ? _ca0 : null);
 
             TempData["Success"] = idNuevo.HasValue
                 ? $"Conductor asignado: {nombreNuevo}."
@@ -257,8 +262,8 @@ namespace PROYJHOME2026.Controllers
 
                 await _notifService.NotificarAccionAsync("Creacion", "Carro",
                     $"Registró vehículo {carro.Placa} — {carro.Marca} {carro.Modelo}",
-                    $"/Carros/Details/{carro.IdCarro}");
-
+                    $"/Carros/Details/{carro.IdCarro}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _ca1) ? _ca1 : null);
                 TempData["Success"] = $"Vehículo {carro.Placa} registrado correctamente.";
                 return RedirectToAction(nameof(Details), new { id = carro.IdCarro });
             }
@@ -303,12 +308,24 @@ namespace PROYJHOME2026.Controllers
                     _context.Update(carro);
                     await _context.SaveChangesAsync();
 
+                    var carroAnterior = await _context.Carros.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.IdCarro == id);
+                    var cambiosCarro = new List<string>();
+                    if (carroAnterior != null)
+                    {
+                        if (carroAnterior.Placa   != carro.Placa)   cambiosCarro.Add($"Placa: '{carroAnterior.Placa}' → '{carro.Placa}'");
+                        if (carroAnterior.Marca   != carro.Marca)   cambiosCarro.Add($"Marca: '{carroAnterior.Marca}' → '{carro.Marca}'");
+                        if (carroAnterior.Modelo  != carro.Modelo)  cambiosCarro.Add($"Modelo: '{carroAnterior.Modelo}' → '{carro.Modelo}'");
+                        if (carroAnterior.Estado  != carro.Estado)  cambiosCarro.Add($"Estado: '{carroAnterior.Estado}' → '{carro.Estado}'");
+                    }
+                    var datosCarroAnt = cambiosCarro.Any() ? string.Join(" | ", cambiosCarro) : null;
                     await _auditoriaService.RegistrarAsync("Editar", "Carro", id,
-                        $"Editó vehículo {carro.Placa}");
+                        $"Editó vehículo {carro.Placa}", datosCarroAnt);
 
                     await _notifService.NotificarAccionAsync("Edicion", "Carro",
                         $"Editó vehículo {carro.Placa}",
-                        $"/Carros/Details/{id}");
+                        $"/Carros/Details/{id}",
+                        idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _ca2) ? _ca2 : null);
 
                     TempData["Success"] = $"Vehículo {carro.Placa} actualizado.";
                     return RedirectToAction(nameof(Details), new { id = carro.IdCarro });
@@ -346,7 +363,8 @@ namespace PROYJHOME2026.Controllers
                     $"Eliminó vehículo {carro.Placa}");
 
                 await _notifService.NotificarAccionAsync("Eliminacion", "Carro",
-                    $"Eliminó vehículo {carro.Placa}");
+                    $"Eliminó vehículo {carro.Placa}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _ca3) ? _ca3 : null);
 
                 TempData["Success"] = $"Vehículo {carro.Placa} eliminado.";
             }

@@ -12,18 +12,33 @@ namespace PROYJHOME2026.Seeds
             var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await context.Database.MigrateAsync();
 
-            if (!await context.Usuarios.AnyAsync(u => u.username == "admin"))
-                context.Usuarios.Add(new Usuario { username="admin", passwordHash=BCrypt.Net.BCrypt.HashPassword("jhomeron",12), rol="Admin", nombreCompleto="Administrador del Sistema", correo="admin@sistema.com", activo=true, creadoEn=DateTime.Now });
+            var usuarios = new (string username, string pass, string rol, string nombre, string correo)[]
+            {
+                ("admin",   "jhomeron",    "Admin",      "Administrador del Sistema", "admin@sistema.com"),
+                ("oliver",  "s0p0rt3-6",  "SoporteTI",  "Oliver Amaricua",           "oliver@sistema.com"),
+                ("silvana", "tr4nsp0-7",  "Transporte", "Silvana",                   "silvana@sistema.com"),
+                ("eusebio", "electric0-0","Produccion", "Eusebio",                   "eusebio@sistema.com"),
+                ("ssoma",   "segu0-0",    "SSOMA",      "SSOMA",                     "ssoma@sistema.com"),
+                ("danitza", "sistem4-7",  "Admin",      "Danitza",                   "danitza@sistema.com"),
+                ("yanet",   "logist1-0",  "Logistica",  "Yanet",                     "yanet@sistema.com"),
+            };
 
-            if (!await context.Usuarios.AnyAsync(u => u.username == "oliver"))
-                context.Usuarios.Add(new Usuario { username="oliver", passwordHash=BCrypt.Net.BCrypt.HashPassword("s0p0rt3-6",12), rol="SoporteTI", nombreCompleto="Oliver Amaricua", correo="oliver@sistema.com", activo=true, creadoEn=DateTime.Now });
-
-            if (!await context.Usuarios.AnyAsync(u => u.username == "silvana"))
-                context.Usuarios.Add(new Usuario { username="silvana", passwordHash=BCrypt.Net.BCrypt.HashPassword("tr4nsp0-7",12), rol="Transporte", nombreCompleto="Silvana", correo="silvana@sistema.com", activo=true, creadoEn=DateTime.Now });
-
-            if (!await context.Usuarios.AnyAsync(u => u.username == "eusebio"))
-                context.Usuarios.Add(new Usuario { username="eusebio", passwordHash=BCrypt.Net.BCrypt.HashPassword("electric0-0",12), rol="Produccion", nombreCompleto="Eusebio", correo="eusebio@sistema.com", activo=true, creadoEn=DateTime.Now });
-
+            foreach (var (username, pass, rol, nombre, correo) in usuarios)
+            {
+                if (!await context.Usuarios.AnyAsync(u => u.username == username))
+                {
+                    context.Usuarios.Add(new Usuario
+                    {
+                        username       = username,
+                        passwordHash   = BCrypt.Net.BCrypt.HashPassword(pass, workFactor: 12),
+                        rol            = rol,
+                        nombreCompleto = nombre,
+                        correo         = correo,
+                        activo         = true,
+                        creadoEn       = DateTime.Now
+                    });
+                }
+            }
             await context.SaveChangesAsync();
         }
     }

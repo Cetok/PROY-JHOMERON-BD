@@ -27,7 +27,7 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, int pagina = 1)
+         public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, int pagina = 1)
         {
             int porPagina = 10;
             var query = _context.Equipos.Include(e => e.TipoEquipo).AsQueryable();
@@ -79,22 +79,8 @@ namespace PROYJHOME2026.Controllers
                 bool esComponentePc  = componentesPc.Any(c => tipoNombreUpper.Contains(c))
                                        && !tipoNombreUpper.Contains("PC COMPLETO");
  
-                if (esComponentePc)
-                {
-                    // Mostrar equipos de ese tipo + PC Completo que tienen ese componente
-                    var idPcCompleto = await _context.TiposEquipo
-                        .Where(t => t.tipo != null && t.tipo.ToUpper().Contains("PC COMPLETO"))
-                        .Select(t => t.idTipoEquipo)
-                        .FirstOrDefaultAsync();
- 
-                    query = query.Where(e =>
-                        e.idTipoEquipo == tipoId ||
-                        e.idTipoEquipo == idPcCompleto);
-                }
-                else
-                {
-                    query = query.Where(e => e.idTipoEquipo == tipoId);
-                }
+                // Filtrar SOLO por el tipo seleccionado (sin mezclar con PC Completo)
+                query = query.Where(e => e.idTipoEquipo == tipoId);
             }
  
             int total   = await query.CountAsync();
@@ -126,6 +112,11 @@ namespace PROYJHOME2026.Controllers
                 .FirstOrDefaultAsync(e => e.idEquipo == id);
 
             if (equipo == null) return NotFound();
+            ViewBag.HistorialCambios = await _context.AuditoriaLogs
+            .Where(l => l.Entidad == "Equipo" && l.IdEntidad == id)
+            .OrderByDescending(l => l.FechaHora)
+            .Take(50)
+            .ToListAsync();
             return View(equipo);
         }
 
@@ -187,7 +178,17 @@ namespace PROYJHOME2026.Controllers
                 else if (equipo.GraficosIntegrados == true)
                     equipo.TarjetaGrafica = null;
             }
-
+            var rolUsuario = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            if (rolUsuario == "Logistica")
+            {
+                var tipoCheck = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
+                if (tipoCheck == null || !tipoCheck.tipo.ToUpper().Contains("CELULAR"))
+                {
+                    TempData["Error"] = "Solo puedes registrar equipos de tipo Celular.";
+                    await CargarTipos();
+                    return View(equipo);
+                }
+            }
             if (ModelState.IsValid)
             {
                 if (!esPcCompleto && !string.IsNullOrEmpty(equipo.numero_serie) &&
@@ -206,7 +207,8 @@ namespace PROYJHOME2026.Controllers
                     : $"Se registró el equipo {equipo.marca} {equipo.modelo} — {tipo?.tipo}";
 
                 await _auditoriaService.RegistrarAsync("Crear", "Equipo", equipo.idEquipo, desc);
-                await _notifService.NotificarAccionAsync("Creacion", "Equipo", desc, $"/Equipos/Details/{equipo.idEquipo}");
+                await _notifService.NotificarAccionAsync("Creacion", "Equipo", desc, $"/Equipos/Details/{equipo.idEquipo}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq1) ? _eq1 : null);
 
                 TempData["Success"] = esPcCompleto
                     ? "PC Completo registrado correctamente."
@@ -232,6 +234,17 @@ namespace PROYJHOME2026.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Equipo equipo)
         {
+            // Restricción Logistica: solo puede editar Celulares
+            var rolUsuario = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            if (rolUsuario == "Logistica")
+            {
+                var tipoCheck = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
+                if (tipoCheck == null || !tipoCheck.tipo.ToUpper().Contains("CELULAR"))
+                {
+                    TempData["Error"] = "Solo puedes editar equipos de tipo Celular.";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
             if (id != equipo.idEquipo) return NotFound();
             ModelState.Remove("TipoEquipo");
             ModelState.Remove("Asignaciones");
@@ -286,19 +299,42 @@ namespace PROYJHOME2026.Controllers
 
                 try
                 {
-                    var estadoActual = await _context.Equipos
-                        .Where(e => e.idEquipo == id).Select(e => e.estado_equipo).FirstAsync();
+                    // Capturar datos ANTERIORES antes de actualizar
+                    var equipoAnterior = await _context.Equipos.AsNoTracking()
+                        .Include(e => e.TipoEquipo)
+                        .FirstOrDefaultAsync(e => e.idEquipo == id);
+ 
+                    var estadoActual = equipoAnterior?.estado_equipo ?? "Activo";
                     equipo.estado_equipo = estadoActual;
-
+ 
                     _context.Update(equipo);
                     await _context.SaveChangesAsync();
-
+ 
+                    // Construir descripción de cambios campo por campo
+                    var cambios = new List<string>();
+                    if (equipoAnterior != null)
+                    {
+                        if (equipoAnterior.marca        != equipo.marca)        cambios.Add($"Marca: '{equipoAnterior.marca}' → '{equipo.marca}'");
+                        if (equipoAnterior.modelo       != equipo.modelo)       cambios.Add($"Modelo: '{equipoAnterior.modelo}' → '{equipo.modelo}'");
+                        if (equipoAnterior.numero_serie != equipo.numero_serie) cambios.Add($"Serie: '{equipoAnterior.numero_serie}' → '{equipo.numero_serie}'");
+                        if (equipoAnterior.NombrePc     != equipo.NombrePc)     cambios.Add($"Nombre PC: '{equipoAnterior.NombrePc}' → '{equipo.NombrePc}'");
+                        if (equipoAnterior.Observaciones!= equipo.Observaciones)cambios.Add($"Observaciones actualizadas");
+                        if (equipoAnterior.idTipoEquipo != equipo.idTipoEquipo) cambios.Add($"Tipo cambiado");
+                    }
+ 
                     var desc = esPcCompleto
-                        ? $"Editó PC Completo #{id}"
+                        ? $"Editó PC Completo '{equipo.NombrePc ?? "sin nombre"}' (#{id})"
                         : $"Editó equipo #{id} {equipo.marca} {equipo.modelo}";
+ 
+                    var datosAnteriores = cambios.Any()
+                        ? string.Join(" | ", cambios)
+                        : "Sin cambios detectados";
+ 
+                    await _auditoriaService.RegistrarAsync("Editar", "Equipo", id, desc, datosAnteriores);
 
                     await _auditoriaService.RegistrarAsync("Editar", "Equipo", id, desc);
-                    await _notifService.NotificarAccionAsync("Edicion", "Equipo", desc, $"/Equipos/Details/{id}");
+                    await _notifService.NotificarAccionAsync("Edicion", "Equipo", desc, $"/Equipos/Details/{id}",
+                        idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq2) ? _eq2 : null);
 
                     TempData["Success"] = "Equipo actualizado correctamente.";
                     return RedirectToAction(nameof(Details), new { id });
@@ -377,9 +413,10 @@ namespace PROYJHOME2026.Controllers
             await _auditoriaService.RegistrarAsync("CambioComponente", "Equipo", idEquipo,
                 $"Cambió {componente} de equipo #{idEquipo}: {valorAnterior} → {valorNuevo}");
 
-            await _notifService.NotificarAccionAsync("CambioEstado", "Equipo",
+           await _notifService.NotificarAccionAsync("CambioEstado", "Equipo",
                 $"Cambio de {componente} en equipo {equipo.marca} {equipo.modelo}: {valorAnterior} → {valorNuevo}",
-                $"/Equipos/Details/{idEquipo}");
+                $"/Equipos/Details/{idEquipo}",
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq3) ? _eq3 : null);
 
             TempData["Success"] = $"{componente} actualizado correctamente. Cambio registrado en historial.";
             return RedirectToAction(nameof(Details), new { id = idEquipo });
@@ -451,7 +488,8 @@ namespace PROYJHOME2026.Controllers
 
             await _notifService.NotificarAccionAsync("CambioEstado", "Equipo",
                 $"Equipo {equipo.marca} {equipo.modelo} en mantenimiento",
-                $"/Equipos/Details/{idEquipo}");
+                $"/Equipos/Details/{idEquipo}",
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq4) ? _eq4 : null);
 
             TempData["Success"] = "Equipo enviado a mantenimiento.";
             return RedirectToAction(nameof(Details), new { id = idEquipo });
@@ -518,7 +556,8 @@ namespace PROYJHOME2026.Controllers
 
             await _notifService.NotificarAccionAsync("CambioEstado", "Equipo",
                 $"Mantenimiento finalizado — equipo #{idEquipo} volvió a Activo",
-                $"/Equipos/Details/{idEquipo}");
+                $"/Equipos/Details/{idEquipo}",
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq5) ? _eq5 : null);
 
             TempData["Success"] = "Mantenimiento finalizado. Equipo vuelto a Activo.";
             return RedirectToAction(nameof(Details), new { id = idEquipo });
@@ -550,7 +589,8 @@ namespace PROYJHOME2026.Controllers
                     $"Eliminó equipo #{id} {equipo.marca} {equipo.modelo}");
 
                 await _notifService.NotificarAccionAsync("Eliminacion", "Equipo",
-                    $"Se eliminó el equipo {equipo.marca} {equipo.modelo}");
+                    $"Se eliminó el equipo {equipo.marca} {equipo.modelo}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq6) ? _eq6 : null);
 
                 TempData["Success"] = "Equipo eliminado correctamente.";
             }

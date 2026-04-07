@@ -128,7 +128,8 @@ namespace PROYJHOME2026.Controllers
                     $"Asignó máquina {maquina?.NumeroMaquina} al grupo {grupo?.area}");
                 await _notifService.NotificarAccionAsync("Creacion", "Asignación Máquina",
                     $"Máquina {maquina?.NumeroMaquina} asignada al grupo {grupo?.area}",
-                    $"/Maquinas/Details/{asig.IdMaquina}");
+                    $"/Maquinas/Details/{asig.IdMaquina}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mq) ? _mq : null);
 
                 TempData["Success"] = "Máquina asignada correctamente.";
                 return RedirectToAction("Details", "Maquinas", new { id = asig.IdMaquina });

@@ -133,7 +133,9 @@ namespace PROYJHOME2026.Controllers
                 "SoporteTI"  => RedirectToAction("Dashboard",           "Reportes"),
                 "Transporte" => RedirectToAction("DashboardFlota",      "Reportes"),
                 "Produccion" => RedirectToAction("DashboardProduccion", "Reportes"),
-                _            => RedirectToAction("Index", "Home")
+                "SSOMA"      => RedirectToAction("Index",               "Carros"),
+                "Logistica"  => RedirectToAction("Dashboard",           "Reportes"),
+                _            => RedirectToAction("Index", "Home")   // Admin y cualquier otro
             };
         }
 

@@ -342,6 +342,78 @@
         }
         else { <div style="text-align:center; padding:20px; color:var(--gris-400); font-size:0.82rem;">Sin asignaciones registradas.</div> }
     </div>
+    @{
+    var historial = ViewBag.HistorialCambios as List<PROYJHOME2026.Models.AuditoriaLog>;
+}
+
+@if (historial != null && historial.Any())
+{
+    <div class="card" style="padding:0; overflow:hidden; margin-top:16px;">
+        <div style="padding:14px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+                📋 Historial de cambios
+            </span>
+            <span class="badge badge--gris">@historial.Count registro(s)</span>
+        </div>
+        <div class="table-wrapper" style="border:none; border-radius:0; max-height:380px; overflow-y:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Acción</th>
+                        <th>Descripción / Cambio</th>
+                        <th>Datos anteriores</th>
+                        <th>Usuario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in historial)
+                    {
+                        string accionColor;
+                        if      (log.Accion == "Crear")        accionColor = "badge--verde";
+                        else if (log.Accion == "Editar")       accionColor = "badge--azul";
+                        else if (log.Accion == "Eliminar")     accionColor = "badge--rojo";
+                        else if (log.Accion == "CambioEstado") accionColor = "badge--amarillo";
+                        else                                    accionColor = "badge--gris";
+
+                        <tr>
+                            <td style="font-size:0.75rem; color:var(--gris-400); white-space:nowrap;">
+                                @log.FechaHora.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td>
+                                <span class="badge @accionColor" style="font-size:0.68rem;">@log.Accion</span>
+                            </td>
+                            <td style="font-size:0.8rem; color:var(--gris-800); max-width:280px;">
+                                @(log.Descripcion ?? "—")
+                            </td>
+                            <td style="font-size:0.75rem; color:var(--gris-500); max-width:200px;">
+                                @if (!string.IsNullOrEmpty(log.DatosAnteriores))
+                                {
+                                    <span title="@log.DatosAnteriores" style="cursor:help; text-decoration:underline dotted;">
+                                        @(log.DatosAnteriores.Length > 60 ? log.DatosAnteriores[..60] + "..." : log.DatosAnteriores)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--gris-300);">—</span>
+                                }
+                            </td>
+                            <td style="font-size:0.75rem; color:var(--azul);">
+                                @(log.NombreUsuario ?? "—")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (historial != null)
+{
+    <div style="margin-top:16px; padding:14px 20px; background:var(--gris-50); border-radius:var(--r-md); border:1px solid var(--gris-200); font-size:0.82rem; color:var(--gris-400);">
+        📋 Sin historial de cambios registrado.
+    </div>
+}
 
 </div>
 

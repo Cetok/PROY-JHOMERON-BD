@@ -99,7 +99,8 @@ namespace PROYJHOME2026.Controllers
                     $"Registró máquina {maquina.NumeroMaquina} — {maquina.NombreMaquina}");
                 await _notifService.NotificarAccionAsync("Creacion", "Máquina",
                     $"Se registró la máquina {maquina.NumeroMaquina} — {maquina.NombreMaquina}",
-                    $"/Maquinas/Details/{maquina.IdMaquina}");
+                    $"/Maquinas/Details/{maquina.IdMaquina}",
+                    idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mq1) ? _mq1 : null);
 
                 TempData["Success"] = $"Máquina {maquina.NumeroMaquina} registrada correctamente.";
                 return RedirectToAction(nameof(Details), new { id = maquina.IdMaquina });
@@ -177,7 +178,8 @@ namespace PROYJHOME2026.Controllers
                     await _auditoriaService.RegistrarAsync("Editar", "Maquina", id,
                         $"Editó máquina {maquina.NumeroMaquina}");
                     await _notifService.NotificarAccionAsync("Edicion", "Máquina",
-                        $"Se actualizó la máquina {maquina.NumeroMaquina}", $"/Maquinas/Details/{id}");
+                        $"Se actualizó la máquina {maquina.NumeroMaquina}", $"/Maquinas/Details/{id}",
+                        idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mq) ? _mq : null);
 
                     TempData["Success"] = "Máquina actualizada correctamente.";
                     return RedirectToAction(nameof(Details), new { id });
@@ -211,7 +213,8 @@ namespace PROYJHOME2026.Controllers
                 $"Máquina #{idMaquina} activada");
             await _notifService.NotificarAccionAsync("CambioEstado", "Máquina",
                 $"Máquina {maquina.NumeroMaquina} fue activada",
-                $"/Maquinas/Details/{idMaquina}");
+                $"/Maquinas/Details/{idMaquina}",
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mq) ? _mq : null);
 
             TempData["Success"] = "Máquina activada correctamente.";
             return RedirectToAction(nameof(Details), new { id = idMaquina });
@@ -247,7 +250,8 @@ namespace PROYJHOME2026.Controllers
                 $"Máquina #{idMaquina}: {estadoAnterior} → {nuevoEstado}");
             await _notifService.NotificarAccionAsync("CambioEstado", "Máquina",
                 $"Máquina {maquina.NumeroMaquina} cambió a estado: {nuevoEstado}",
-                $"/Maquinas/Details/{idMaquina}");
+                $"/Maquinas/Details/{idMaquina}",
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mq) ? _mq : null);
 
             TempData["Success"] = $"Estado cambiado a '{nuevoEstado}'. Registrado en historial.";
             return RedirectToAction(nameof(Details), new { id = idMaquina });
