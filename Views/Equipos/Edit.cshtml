@@ -87,14 +87,7 @@
                             <label class="form-label">Fuente de energía</label>
                             <input asp-for="FuenteEnergia" class="form-control" />
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Sistema operativo</label>
-                            <input asp-for="sistema_operativo" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Versión</label>
-                            <input asp-for="version" class="form-control" />
-                        </div>
+
                     </div>
                     <div style="margin-top:12px; padding:14px 16px; background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-sm);">
                         <label class="form-label" style="margin-bottom:10px;">Gráficos</label>
@@ -127,14 +120,7 @@
                             <label class="form-label">IMEI</label>
                             <input asp-for="IMEI" class="form-control" maxlength="50" />
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Sistema operativo</label>
-                            <input asp-for="sistema_operativo" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Versión</label>
-                            <input asp-for="version" class="form-control" />
-                        </div>
+
                     </div>
                 </div>
 
@@ -331,6 +317,23 @@
 
             </div>
 
+            <!-- SO y Version — campo único compartido para CPU/Laptop/Celular -->
+            <div id="bloqueSOVersion" style="display:none; margin-bottom:24px;">
+                <p class="form-section-title">Sistema operativo</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Sistema operativo</label>
+                        <input asp-for="sistema_operativo" class="form-control"
+                               id="inputSO" placeholder="Ej: Windows / Android / iOS" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Versión</label>
+                        <input asp-for="version" class="form-control"
+                               id="inputVersion" placeholder="Ej: Windows 11 Pro / Android 14" />
+                    </div>
+                </div>
+            </div>
+
             <!-- Fecha de compra + Observaciones (siempre al final) -->
             <div style="margin-bottom:24px;">
                 <p class="form-section-title">General</p>
@@ -393,6 +396,23 @@ function toggleCamposTecnicos() {
     document.getElementById('seccionEstandar').style.display   = esPcCompleto ? 'none'  : 'block';
     document.getElementById('seccionPcCompleto').style.display = esPcCompleto ? 'block' : 'none';
 
+    // Mostrar bloque SO/Version para CPU, Laptop y Celular
+    const mostrarSO = !esPcCompleto && (esTec || esCelular);
+    document.getElementById('bloqueSOVersion').style.display = mostrarSO ? 'block' : 'none';
+
+    // Actualizar placeholder según tipo
+    const inputSO  = document.getElementById('inputSO');
+    const inputVer = document.getElementById('inputVersion');
+    if (inputSO && inputVer) {
+        if (esCelular) {
+            inputSO.placeholder  = 'Ej: Android, iOS';
+            inputVer.placeholder = 'Ej: Android 14';
+        } else {
+            inputSO.placeholder  = 'Ej: Windows';
+            inputVer.placeholder = 'Ej: Windows 11 Pro';
+        }
+    }
+
     if (!esPcCompleto) {
         document.getElementById('seccionTecnica').style.display = esTec     ? 'block' : 'none';
         if (esTec) {
@@ -423,21 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pequeño delay para asegurar que asp-items renderizó el select correctamente
     setTimeout(() => { toggleCamposTecnicos(); }, 0);
 
-    // Deshabilitar inputs de secciones ocultas antes del submit
-    // para evitar que campos duplicados (ej: sistema_operativo) envíen valor vacío
-    document.querySelector('form').addEventListener('submit', function() {
-        const ocultarSecciones = ['seccionTecnica', 'campoCelular', 'campoMouse',
-                                   'campoFuente', 'campoTarjetaGrafica',
-                                   'seccionPcCompleto', 'seccionEstandar'];
-        ocultarSecciones.forEach(id => {
-            const sec = document.getElementById(id);
-            if (sec && sec.style.display === 'none') {
-                sec.querySelectorAll('input, select, textarea').forEach(el => {
-                    el.disabled = true;
-                });
-            }
-        });
-    });
+    // Sin duplicados: un solo campo SO/version, sin lógica extra en submit.
 });
 </script>
 }

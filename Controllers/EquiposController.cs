@@ -188,7 +188,7 @@ namespace PROYJHOME2026.Controllers
             if (rolUsuario == "Logistica")
             {
                 var tipoCheck = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
-                if (tipoCheck == null || !tipoCheck.tipo.ToUpper().Contains("CELULAR"))
+                if (tipoCheck == null || !(tipoCheck.tipo?.ToUpper() ?? "").Contains("CELULAR"))
                 {
                     TempData["Error"] = "Solo puedes registrar equipos de tipo Celular.";
                     await CargarTipos();
@@ -245,7 +245,7 @@ namespace PROYJHOME2026.Controllers
             if (rolUsuario == "Logistica")
             {
                 var tipoCheck = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
-                if (tipoCheck == null || !tipoCheck.tipo.ToUpper().Contains("CELULAR"))
+                if (tipoCheck == null || !(tipoCheck.tipo?.ToUpper() ?? "").Contains("CELULAR"))
                 {
                     TempData["Error"] = "Solo puedes editar equipos de tipo Celular.";
                     return RedirectToAction(nameof(Index));
