@@ -20,10 +20,13 @@
             <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Volver a Empleados
         </a>
+        @if (Context.Session.GetString("UsuarioRol") != "SSOMA")
+        {
         <a asp-action="Create" class="btn btn--celeste">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nuevo grupo
         </a>
+        }
     </div>
 </div>
 
@@ -97,10 +100,13 @@
                                        class="btn btn--ghost btn--icon" title="Ver detalle">
                                         <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </a>
+                                    @if (Context.Session.GetString("UsuarioRol") != "SSOMA")
+                                    {
                                     <a asp-action="Edit" asp-route-id="@g.idGrupo"
                                        class="btn btn--secondary btn--icon" title="Editar">
                                         <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                     </a>
+                                    }
                                     
                                 </div>
                             </td>
