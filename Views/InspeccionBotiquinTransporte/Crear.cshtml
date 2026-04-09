@@ -83,6 +83,7 @@
                 <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 Elementos del Botiquín
             </div>
+            <div class="insp-tabla-scroll">
             <div class="insp-tabla-header">
                 <div class="th-label">Elemento</div>
                 <div class="th-label" style="text-align:center;">Se encuentra</div>
@@ -125,6 +126,7 @@
                     </div>
                 </div>
             }
+            </div><!-- /insp-tabla-scroll -->
         </div>
 
         <!-- FIRMA -->
@@ -186,8 +188,9 @@
 .toggle-si input[type="radio"]:checked ~ span { background:#dcfce7; border-color:#16a34a; color:#16a34a; }
 .toggle-no input[type="radio"]:checked ~ span { background:#fee2e2; border-color:#dc2626; color:#dc2626; }
 .insp-section-title { font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200); }
-.insp-tabla-header  { display:grid; grid-template-columns:2fr 100px 90px 140px 1fr; gap:8px; padding:7px 12px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px; }
-.insp-tabla-row     { display:grid; grid-template-columns:2fr 100px 90px 140px 1fr; gap:8px; align-items:center; padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px; }
+.insp-tabla-scroll  { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.insp-tabla-header  { display:grid; grid-template-columns:2fr 100px 90px 140px 1fr; gap:8px; padding:7px 12px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px; min-width:620px; }
+.insp-tabla-row     { display:grid; grid-template-columns:2fr 100px 90px 140px 1fr; gap:8px; align-items:center; padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px; min-width:620px; }
 .insp-tabla-row:hover { background:var(--gris-50); }
 .insp-elem-nombre   { font-size:0.84rem; color:var(--gris-900); font-weight:500; }
 .insp-cell-center   { display:flex; gap:4px; justify-content:center; }

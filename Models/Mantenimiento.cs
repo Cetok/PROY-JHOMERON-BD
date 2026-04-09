@@ -45,6 +45,10 @@ namespace PROYJHOME2026.Models
         // Fecha en que se culminó
         public DateTime? FechaCulminada { get; set; }
 
+        // Comentario al culminar
+        [StringLength(500)]
+        public string? ComentarioCulminacion { get; set; }
+
         [StringLength(500)]
         public string? Observaciones { get; set; }
 

@@ -211,7 +211,7 @@ namespace PROYJHOME2026.Controllers
         // ── CULMINAR (En proceso → Culminado) ───────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Culminar(int id)
+        public async Task<IActionResult> Culminar(int id, string? comentarioCulminacion)
         {
             var m = await _context.MantenimientosCarros
                 .Include(x => x.Carro)
@@ -225,8 +225,9 @@ namespace PROYJHOME2026.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            m.Estado         = "Culminado";
-            m.FechaCulminada = DateTime.Now;
+            m.Estado                 = "Culminado";
+            m.FechaCulminada         = DateTime.Now;
+            m.ComentarioCulminacion  = comentarioCulminacion;
 
             // Devolver carro a Activo si no tiene otros mantenimientos en proceso
             bool otrosEnProceso = await _context.MantenimientosCarros
@@ -240,10 +241,14 @@ namespace PROYJHOME2026.Controllers
 
             await _context.SaveChangesAsync();
 
+            var descComentario = !string.IsNullOrWhiteSpace(comentarioCulminacion)
+                ? $" — {comentarioCulminacion}"
+                : "";
+
             await _notifService.CrearAsync(
                 tipo:    "CambioEstado",
                 titulo:  $"Mantenimiento culminado — {m.Carro?.Placa}",
-                mensaje: $"El mantenimiento de {m.TipoMantenimiento?.Nombre} fue culminado.",
+                mensaje: $"El mantenimiento de {m.TipoMantenimiento?.Nombre} fue culminado{descComentario}.",
                 url:     $"/MantenimientoCarros/Details/{id}",
                 idMante: id,
                 idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _mc3) ? _mc3 : null
@@ -253,7 +258,7 @@ namespace PROYJHOME2026.Controllers
                 accion:      "CambioEstado",
                 entidad:     "MantenimientoCarro",
                 idEntidad:   id,
-                descripcion: $"Culminó mantenimiento #{id} a las {DateTime.Now:HH:mm}"
+                descripcion: $"Culminó mantenimiento #{id} — {m.TipoMantenimiento?.Nombre} ({m.Carro?.Placa}){descComentario}"
             );
 
             TempData["Success"] = "Mantenimiento culminado. El vehículo volvió a Activo.";

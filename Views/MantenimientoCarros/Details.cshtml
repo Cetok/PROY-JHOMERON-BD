@@ -93,6 +93,13 @@
                         <div class="det-value">@Model.Observaciones</div>
                     </div>
                 }
+                @if (!string.IsNullOrEmpty(Model.ComentarioCulminacion))
+                {
+                    <div class="det-field" style="grid-column:1/-1;">
+                        <div class="det-label">Comentario al culminar</div>
+                        <div class="det-value" style="color:#15803d; font-weight:500;">✅ @Model.ComentarioCulminacion</div>
+                    </div>
+                }
             </div>
         </div>
 
@@ -162,9 +169,15 @@
                 <div style="font-size:0.75rem; color:var(--gris-600); margin-bottom:12px;">El vehículo volverá a estado Activo.</div>
                 <form asp-action="Culminar" asp-route-id="@Model.IdMante" method="post">
                     @Html.AntiForgeryToken()
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="form-label" style="font-size:0.75rem;">Comentario al culminar (opcional)</label>
+                        <textarea name="comentarioCulminacion" class="form-control" rows="2"
+                                  maxlength="500" placeholder="Ej: Se reemplazaron frenos, todo en orden..."
+                                  style="font-size:0.82rem; resize:vertical;"></textarea>
+                    </div>
                     <button type="submit" class="btn btn--sm" style="width:100%; justify-content:center; background:#16a34a; color:white; border:none; cursor:pointer; border-radius:var(--r-sm); padding:8px 12px; display:flex; align-items:center; gap:6px;">
                         <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:white;fill:none;stroke-width:2.5;stroke-linecap:round;"><polyline points="20 6 9 17 4 12"/></svg>
-                        Culminado
+                        Marcar como culminado
                     </button>
                 </form>
             </div>

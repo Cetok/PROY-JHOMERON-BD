@@ -39,7 +39,7 @@
                 <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:var(--azul-dark); margin-top:4px;">ÁREA DE TRANSPORTE</div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+            <div class="cl-meta-grid">
                 <div>
                     <div class="det-label">Fecha de inspección</div>
                     <div class="det-value" style="font-weight:700; color:var(--azul);">@DateTime.Today.ToString("dd/MM/yyyy")</div>
@@ -79,8 +79,9 @@
                     </div>
                 </div>
 
-                <!-- Cabecera tabla -->
-                <div style="display:grid; grid-template-columns:1fr 60px 60px 1fr; gap:8px; padding:6px 10px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px;">
+                <!-- Cabecera tabla con scroll horizontal -->
+                <div class="cl-tabla-scroll">
+                <div class="cl-tabla-header">
                     <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500);">Elemento a inspeccionar</div>
                     <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--verde); text-align:center;">SI</div>
                     <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--rojo, #dc2626); text-align:center;">NO</div>
@@ -91,7 +92,7 @@
                 @foreach (var item in secGroup)
                 {
                     var idx = itemIndex;
-                    <div style="display:grid; grid-template-columns:1fr 60px 60px 1fr; gap:8px; align-items:center; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px;" class="checklist-row">
+                    <div class="checklist-row cl-tabla-row">
                         <div style="font-size:0.84rem; color:var(--gris-900);">@item.Elemento</div>
 
                         <!-- SI -->
@@ -119,6 +120,7 @@
                     </div>
                     itemIndex++;
                 }
+                </div><!-- /cl-tabla-scroll -->
             </div>
         }
 
@@ -138,9 +140,9 @@
             </div>
 
             <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-start;">
-                <div style="position:relative; border:2px dashed var(--gris-300); border-radius:var(--r-md); overflow:hidden; background:var(--blanco);">
+                <div class="cl-canvas-wrap">
                     <canvas id="firmaCanvas" width="500" height="160"
-                            style="display:block; cursor:crosshair; touch-action:none;"></canvas>
+                            style="display:block; cursor:crosshair; touch-action:none; width:100%; height:auto;"></canvas>
                     <div id="firmaPlaceholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:var(--gris-300);font-size:0.85rem;">
                         Dibuje su firma aquí
                     </div>
@@ -156,7 +158,7 @@
         </div>
 
         <!-- BOTÓN GUARDAR ──────────────────────────────────────── -->
-        <div style="display:flex; gap:10px; justify-content:flex-end; padding-bottom:32px;">
+        <div class="cl-botones">
             <a asp-controller="Carros" asp-action="Details" asp-route-id="@carro?.IdCarro" class="btn btn--secondary">
                 Cancelar
             </a>
@@ -171,9 +173,39 @@
 
 @section Styles {
 <style>
-.checklist-row:hover { background: var(--gris-50); }
 .det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
 .det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
+
+.cl-meta-grid   { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.cl-tabla-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.cl-tabla-header { display:grid; grid-template-columns:1fr 60px 60px 1fr; gap:8px; padding:6px 10px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px; min-width:480px; }
+.cl-tabla-row   { display:grid; grid-template-columns:1fr 60px 60px 1fr; gap:8px; align-items:center; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px; min-width:480px; }
+.checklist-row:hover { background:var(--gris-50); }
+.cl-canvas-wrap { position:relative; border:2px dashed var(--gris-300); border-radius:var(--r-md); overflow:hidden; background:var(--blanco); width:100%; max-width:520px; }
+.cl-botones     { display:flex; gap:10px; justify-content:flex-end; padding-bottom:32px; flex-wrap:wrap; }
+
+@@media (max-width: 640px) {
+    .cl-meta-grid    { grid-template-columns:1fr 1fr; }
+    .cl-tabla-header { display:none; }
+    .cl-tabla-row    {
+        grid-template-columns:1fr;
+        gap:6px; padding:12px 14px;
+        background:var(--gris-50);
+        border-radius:var(--r-md);
+        border:1px solid var(--gris-200);
+        margin-bottom:8px;
+    }
+    /* Agregar labels con CSS para las columnas SI/NO/Obs en móvil */
+    .cl-tabla-row > div:nth-child(2)::before { content:"¿Cumple? "; font-size:0.7rem; font-weight:700; color:var(--gris-400); text-transform:uppercase; display:block; margin-bottom:4px; }
+    .cl-tabla-row > div:nth-child(2) { display:flex; align-items:center; gap:16px; }
+    .cl-tabla-row > div:nth-child(3) { display:none; } /* NO radio — combinado con SI en layout */
+    .cl-botones { flex-direction:column; }
+    .cl-botones .btn { width:100%; justify-content:center; }
+    .cl-canvas-wrap { max-width:100%; }
+}
+@@media (max-width: 420px) {
+    .cl-meta-grid { grid-template-columns:1fr; }
+}
 </style>
 }
 

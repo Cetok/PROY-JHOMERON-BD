@@ -2,6 +2,7 @@
 @{
     ViewData["Title"]      = "Detalle Accesorio";
     ViewData["Breadcrumb"] = "Accesorios / Detalle";
+    bool esExtintorAccesorio = Model.TipoAsesorio?.ToLower().Contains("extintor") == true;
 }
 
 <div class="page-header">
@@ -26,8 +27,8 @@
 
     <!-- Vehículos -->
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
-            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+        <div class="acc-card-header">
+            <div class="acc-section-title">
                 <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                 Vehículos con este accesorio
             </div>
@@ -35,52 +36,45 @@
         </div>
         @if (Model.CarroAsesorios.Any())
         {
-            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:10px;">
+            <div class="acc-grid">
                 @foreach (var ca in Model.CarroAsesorios)
                 {
-                    bool caEsExtintor = !string.IsNullOrEmpty(ca.TipoExtintor);
-                    <div style="padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
-                        <div style="font-weight:600; font-size:0.85rem; font-family:monospace; color:var(--azul);">@ca.Carro?.Placa</div>
-                        <div style="font-size:0.76rem; color:var(--gris-500);">@ca.Carro?.Marca @ca.Carro?.Modelo</div>
-                        @if (ca.FechaAsignada.HasValue)
+                    bool caExt = !string.IsNullOrEmpty(ca.TipoExtintor);
+                    var venceC = ca.FechaVencimientoExtintor;
+                    var diasC  = venceC.HasValue ? venceC.Value.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber : (int?)null;
+                    var borderC = caExt && diasC.HasValue ? (diasC <= 0 ? "#dc2626" : diasC <= 30 ? "#d97706" : "#e2e8f0") : "#e2e8f0";
+                    var bgC     = caExt && diasC.HasValue ? (diasC <= 0 ? "rgba(220,38,38,0.03)" : diasC <= 30 ? "rgba(217,119,6,0.03)" : "var(--gris-50)") : "var(--gris-50)";
+                    <div style="border:1.5px solid @borderC; border-radius:var(--r-md); padding:12px 14px; background:@bgC;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                            <span style="font-family:monospace; font-weight:800; font-size:0.95rem; color:var(--azul);">@ca.Carro?.Placa</span>
+                            <span style="font-size:0.78rem; color:var(--gris-500);">@ca.Carro?.Marca @ca.Carro?.Modelo</span>
+                        </div>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:0.74rem; color:var(--gris-500);">
+                            @if (ca.FechaAsignada.HasValue) { <span>📅 Desde @ca.FechaAsignada.Value.ToString("dd/MM/yyyy")</span> }
+                            @if (!string.IsNullOrEmpty(ca.Observaciones)) { <span>💬 @ca.Observaciones</span> }
+                        </div>
+                        @if (caExt)
                         {
-                            <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px;">Desde @ca.FechaAsignada.Value.ToString("dd/MM/yyyy")</div>
-                        }
-                        @if (!string.IsNullOrEmpty(ca.Observaciones))
-                        {
-                            <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px; font-style:italic;">@ca.Observaciones</div>
-                        }
-                        @if (caEsExtintor)
-                        {
-                            var vence    = ca.FechaVencimientoExtintor;
-                            var diasRest = vence.HasValue ? vence.Value.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber : (int?)null;
-                            var colVenc  = diasRest.HasValue ? (diasRest <= 30 ? "#dc2626" : diasRest <= 90 ? "#d97706" : "var(--gris-500)") : "var(--gris-500)";
-                            <div style="display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap;">
+                            var cC = diasC.HasValue ? (diasC <= 0 ? "#dc2626" : diasC <= 30 ? "#d97706" : "var(--gris-500)") : "var(--gris-500)";
+                            var tC = diasC.HasValue ? (diasC <= 0 ? $"⛔ Vencido hace {Math.Abs(diasC.Value)} días"
+                                     : diasC <= 30 ? $"⚠️ Vence en {diasC} días" : $"✅ Vence {venceC!.Value:dd/MM/yyyy}") : "Sin fecha";
+                            <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:7px;">
                                 <span class="badge" style="background:rgba(220,38,38,0.1); color:#dc2626; font-size:0.68rem;">🧯 @ca.TipoExtintor</span>
                                 @if (!string.IsNullOrEmpty(ca.PesoExtintor)) { <span style="font-size:0.72rem; color:var(--gris-600);">@ca.PesoExtintor</span> }
-                                @if (vence.HasValue)
-                                {
-                                    <span style="font-size:0.72rem; color:@colVenc; font-weight:600;">
-                                        Vence: @vence.Value.ToString("dd/MM/yyyy")
-                                        @if (diasRest.HasValue && diasRest <= 90) { <span>(@diasRest días)</span> }
-                                    </span>
-                                }
+                                <span style="font-size:0.73rem; font-weight:600; color:@cC;">@tC</span>
                             </div>
                         }
                     </div>
                 }
             </div>
         }
-        else
-        {
-            <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Ningún vehículo tiene este accesorio.</div>
-        }
+        else { <div class="acc-empty">Ningún vehículo tiene este accesorio.</div> }
     </div>
 
     <!-- Grupos -->
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
-            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
+        <div class="acc-card-header">
+            <div class="acc-section-title">
                 <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--celeste);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                 Grupos con este accesorio
             </div>
@@ -88,58 +82,50 @@
         </div>
         @if (Model.GrupoAsesorios.Any())
         {
-            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:10px;">
+            <div class="acc-grid">
                 @foreach (var ga in Model.GrupoAsesorios)
                 {
-                    bool gaEsExtintor = !string.IsNullOrEmpty(ga.TipoExtintor);
-                    <div style="padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
-                        <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@ga.Grupo?.area</div>
-                        @if (ga.FechaAsignada.HasValue)
+                    bool gaExt = !string.IsNullOrEmpty(ga.TipoExtintor);
+                    var venceG = ga.FechaVencimientoExtintor;
+                    var diasG  = venceG.HasValue ? venceG.Value.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber : (int?)null;
+                    var borderG = gaExt && diasG.HasValue ? (diasG <= 0 ? "#dc2626" : diasG <= 30 ? "#d97706" : "#e2e8f0") : "#e2e8f0";
+                    var bgG     = gaExt && diasG.HasValue ? (diasG <= 0 ? "rgba(220,38,38,0.03)" : diasG <= 30 ? "rgba(217,119,6,0.03)" : "var(--gris-50)") : "var(--gris-50)";
+                    <div style="border:1.5px solid @borderG; border-radius:var(--r-md); padding:12px 14px; background:@bgG;">
+                        <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:6px;">
+                            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--celeste);fill:none;stroke-width:2;vertical-align:middle;margin-right:4px;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                            @ga.Grupo?.area
+                        </div>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:0.74rem; color:var(--gris-500);">
+                            @if (ga.FechaAsignada.HasValue) { <span>📅 Desde @ga.FechaAsignada.Value.ToString("dd/MM/yyyy")</span> }
+                            @if (!string.IsNullOrEmpty(ga.Observaciones)) { <span>💬 @ga.Observaciones</span> }
+                        </div>
+                        @if (gaExt)
                         {
-                            <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px;">Desde @ga.FechaAsignada.Value.ToString("dd/MM/yyyy")</div>
-                        }
-                        @if (!string.IsNullOrEmpty(ga.Observaciones))
-                        {
-                            <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px; font-style:italic;">@ga.Observaciones</div>
-                        }
-                        @if (gaEsExtintor)
-                        {
-                            var vence    = ga.FechaVencimientoExtintor;
-                            var diasRest = vence.HasValue ? vence.Value.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber : (int?)null;
-                            var colVenc  = diasRest.HasValue ? (diasRest <= 30 ? "#dc2626" : diasRest <= 90 ? "#d97706" : "var(--gris-500)") : "var(--gris-500)";
-                            <div style="display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap;">
+                            var cG = diasG.HasValue ? (diasG <= 0 ? "#dc2626" : diasG <= 30 ? "#d97706" : "var(--gris-500)") : "var(--gris-500)";
+                            var tG = diasG.HasValue ? (diasG <= 0 ? $"⛔ Vencido hace {Math.Abs(diasG.Value)} días"
+                                     : diasG <= 30 ? $"⚠️ Vence en {diasG} días" : $"✅ Vence {venceG!.Value:dd/MM/yyyy}") : "Sin fecha";
+                            <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:7px;">
                                 <span class="badge" style="background:rgba(220,38,38,0.1); color:#dc2626; font-size:0.68rem;">🧯 @ga.TipoExtintor</span>
                                 @if (!string.IsNullOrEmpty(ga.PesoExtintor)) { <span style="font-size:0.72rem; color:var(--gris-600);">@ga.PesoExtintor</span> }
-                                @if (vence.HasValue)
-                                {
-                                    <span style="font-size:0.72rem; color:@colVenc; font-weight:600;">
-                                        Vence: @vence.Value.ToString("dd/MM/yyyy")
-                                        @if (diasRest.HasValue && diasRest <= 90) { <span>(@diasRest días)</span> }
-                                    </span>
-                                }
+                                <span style="font-size:0.73rem; font-weight:600; color:@cG;">@tG</span>
                             </div>
                         }
                     </div>
                 }
             </div>
         }
-        else
-        {
-            <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Ningún grupo tiene este accesorio.</div>
-        }
+        else { <div class="acc-empty">Ningún grupo tiene este accesorio.</div> }
     </div>
-    @{
-        bool esExtintorAccesorio = Model.TipoAsesorio?.ToLower().Contains("extintor") == true;
-    }
+
     @if (esExtintorAccesorio)
     {
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
-                <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
-                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#dc2626;fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div class="acc-card-header">
+                <div class="acc-section-title">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#dc2626;fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     Inspección de Extintores
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     <a asp-controller="InspeccionExtintor" asp-action="Crear" asp-route-idAsesorio="@Model.IdAsesorio"
                        class="btn btn--celeste btn--sm">
                         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -159,3 +145,16 @@
     }
 
 </div>
+
+@section Styles {
+<style>
+.acc-card-header   { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200); flex-wrap:wrap; gap:8px; }
+.acc-section-title { font-weight:700; font-size:0.9rem; color:var(--gris-900); }
+.acc-grid          { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:10px; }
+.acc-empty         { text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem; }
+
+@@media (max-width: 500px) {
+    .acc-grid { grid-template-columns:1fr; }
+}
+</style>
+}

@@ -36,7 +36,7 @@
 </div>
 
 
-<div style="display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start; max-width:1000px;">
+<div class="emp-details-layout">
 
     <!-- COLUMNA IZQUIERDA: datos + seguros -->
     <div style="display:flex; flex-direction:column; gap:16px;">
@@ -277,15 +277,15 @@
             </span>
             <span class="badge badge--gris">@historial.Count registro(s)</span>
         </div>
-        <div class="table-wrapper" style="border:none; border-radius:0; max-height:380px; overflow-y:auto;">
-            <table>
+        <div style="overflow-x:auto; overflow-y:auto; max-height:500px; border:none; border-radius:0;">
+            <table style="min-width:700px;">
                 <thead>
                     <tr>
-                        <th>Fecha / Hora</th>
-                        <th>Acción</th>
-                        <th>Descripción / Cambio</th>
-                        <th>Datos anteriores</th>
-                        <th>Usuario</th>
+                        <th style="white-space:nowrap; min-width:130px;">Fecha / Hora</th>
+                        <th style="min-width:110px;">Acción</th>
+                        <th style="min-width:240px;">Descripción / Cambio</th>
+                        <th style="min-width:200px;">Datos anteriores</th>
+                        <th style="min-width:130px;">Usuario</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -305,22 +305,19 @@
                             <td>
                                 <span class="badge @accionColor" style="font-size:0.68rem;">@log.Accion</span>
                             </td>
-                            <td style="font-size:0.8rem; color:var(--gris-800); max-width:280px;">
+                            <td style="font-size:0.8rem; color:var(--gris-800);">
                                 @(log.Descripcion ?? "—")
                             </td>
-                            <td style="font-size:0.75rem; color:var(--gris-500); max-width:200px;">
+                            <td style="font-size:0.75rem; color:var(--gris-500);">
                                 @if (!string.IsNullOrEmpty(log.DatosAnteriores))
                                 {
                                     <span title="@log.DatosAnteriores" style="cursor:help; text-decoration:underline dotted;">
-                                        @(log.DatosAnteriores.Length > 60 ? log.DatosAnteriores[..60] + "..." : log.DatosAnteriores)
+                                        @(log.DatosAnteriores.Length > 80 ? log.DatosAnteriores[..80] + "..." : log.DatosAnteriores)
                                     </span>
                                 }
-                                else
-                                {
-                                    <span style="color:var(--gris-300);">—</span>
-                                }
+                                else { <span style="color:var(--gris-300);">—</span> }
                             </td>
-                            <td style="font-size:0.75rem; color:var(--azul);">
+                            <td style="font-size:0.75rem; color:var(--azul); white-space:nowrap;">
                                 @(log.NombreUsuario ?? "—")
                             </td>
                         </tr>
@@ -351,8 +348,28 @@ else if (historial != null)
 }
 .det-label { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gris-400); margin-bottom: 3px; }
 .det-value { font-size: 0.88rem; font-weight: 500; color: var(--gris-900); }
+
+/* Layout principal */
+.emp-details-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    align-items: start;
+    max-width: 1000px;
+}
+
 @@media (max-width: 820px) {
-    .page-header ~ div { grid-template-columns: 1fr !important; }
+    .emp-details-layout { grid-template-columns: 1fr; }
+}
+
+/* Campos de datos en móvil — 1 columna */
+@@media (max-width: 500px) {
+    .emp-details-layout .card .det-field-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .emp-details-layout .card .det-field[style*="grid-column"] {
+        grid-column: 1 !important;
+    }
 }
 </style>
 }

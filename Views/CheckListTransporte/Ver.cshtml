@@ -41,7 +41,7 @@
             <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:800; color:var(--azul-dark); margin-top:4px;">ÁREA DE TRANSPORTE</div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
+        <div class="ver-meta-grid">
             <div>
                 <div class="det-label">Fecha de inspección</div>
                 <div class="det-value" style="font-weight:700; color:var(--azul);">@Model.FechaInspeccion.ToString("dd/MM/yyyy")</div>
@@ -104,7 +104,8 @@
             </div>
 
             <!-- Cabecera -->
-            <div style="display:grid; grid-template-columns:1fr 60px 1fr; gap:8px; padding:6px 10px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px;">
+            <div class="ver-tabla-scroll">
+<div class="ver-header-grid">
                 <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500);">Elemento</div>
                 <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500); text-align:center;">Cumple</div>
                 <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500);">Observación</div>
@@ -117,7 +118,7 @@
                 string  badgeText  = item.Cumple == true  ? "SI" :
                                      item.Cumple == false ? "NO" : "—";
 
-                <div style="display:grid; grid-template-columns:1fr 60px 1fr; gap:8px; align-items:center; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px; @(item.Cumple == false ? "background:rgba(220,38,38,0.03);" : "")">
+                <div class="ver-row-grid" style="@(item.Cumple == false ? "background:rgba(220,38,38,0.03);" : "")">
                     <div style="font-size:0.84rem; color:var(--gris-900);">@item.Elemento</div>
                     <div style="text-align:center;">
                         <span class="badge @badgeClass" style="font-size:0.72rem;">@badgeText</span>
@@ -127,6 +128,7 @@
                     </div>
                 </div>
             }
+            </div><!-- /ver-tabla-scroll -->
         </div>
     }
 
@@ -160,5 +162,20 @@
 .det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
 .det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
 .badge--rojo { background: rgba(220,38,38,0.1); color: #dc2626; }
+
+/* Responsive Ver CheckList */
+.ver-meta-grid   { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+.ver-tabla-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.ver-row-grid    { display:grid; grid-template-columns:1fr 60px 1fr; gap:8px; align-items:center; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px; min-width:420px; }
+.ver-header-grid { display:grid; grid-template-columns:1fr 60px 1fr; gap:8px; padding:6px 10px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px; min-width:420px; }
+
+@@media (max-width: 640px) {
+    .ver-meta-grid   { grid-template-columns:1fr 1fr; }
+    .ver-header-grid { display:none; }
+    .ver-row-grid    { grid-template-columns:1fr; gap:4px; padding:10px 12px; background:var(--gris-50); border-radius:var(--r-md); border:1px solid var(--gris-200); margin-bottom:8px; }
+}
+@@media (max-width: 420px) {
+    .ver-meta-grid { grid-template-columns:1fr; }
+}
 </style>
 }
