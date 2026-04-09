@@ -399,56 +399,66 @@
         </div>
         @if (Model.CarroAsesorios.Any())
         {
-            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px;">
+            <div style="display:flex; flex-direction:column; gap:8px;">
                 @foreach (var ca in Model.CarroAsesorios)
                 {
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
-                        <div>
-                            <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@ca.Asesorio?.TipoAsesorio</div>
-                            @if (ca.FechaAsignada.HasValue)
-                            {
-                                <div style="font-size:0.72rem; color:var(--gris-400); margin-top:2px;">@ca.FechaAsignada.Value.ToString("dd/MM/yyyy")</div>
-                            }
-                            @if (!string.IsNullOrEmpty(ca.Observaciones))
-                            {
-                                <div style="font-size:0.72rem; color:var(--gris-400); font-style:italic;">@ca.Observaciones</div>
-                            }
-                            @if (!string.IsNullOrEmpty(ca.TipoExtintor))
-                            {
-                                <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
-                                    <span class="badge badge--rojo" style="font-size:0.68rem;">🧯 @ca.TipoExtintor</span>
-                                    @if (!string.IsNullOrEmpty(ca.PesoExtintor))
+                    var esExt = !string.IsNullOrEmpty(ca.TipoExtintor);
+                    var venceExt = ca.FechaVencimientoExtintor;
+                    var diasExt = venceExt.HasValue ? venceExt.Value.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber : (int?)null;
+                    var borderAcc = esExt && diasExt.HasValue ? (diasExt <= 0 ? "#dc2626" : diasExt <= 30 ? "#d97706" : diasExt <= 90 ? "#f59e0b" : "#e2e8f0") : "#e2e8f0";
+                    var bgAcc     = esExt && diasExt.HasValue ? (diasExt <= 0 ? "rgba(220,38,38,0.03)" : diasExt <= 30 ? "rgba(217,119,6,0.03)" : "var(--gris-50)") : "var(--gris-50)";
+                    <div style="border:1.5px solid @borderAcc; border-radius:var(--r-md); padding:12px 14px; background:@bgAcc;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:4px;">
+                                    @ca.Asesorio?.TipoAsesorio
+                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:0.76rem; color:var(--gris-500);">
+                                    @if (ca.FechaAsignada.HasValue)
                                     {
-                                        <span style="font-size:0.72rem; color:var(--gris-600);">@ca.PesoExtintor</span>
+                                        <span>📅 Asignado: <strong>@ca.FechaAsignada.Value.ToString("dd/MM/yyyy")</strong></span>
                                     }
-                                    @if (ca.FechaVencimientoExtintor.HasValue)
+                                    @if (!string.IsNullOrEmpty(ca.Observaciones))
                                     {
-                                        var vence    = ca.FechaVencimientoExtintor.Value;
-                                        var diasRest = vence.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber;
-                                        var colVenc  = diasRest <= 30 ? "#dc2626" : diasRest <= 90 ? "#d97706" : "var(--gris-500)";
-                                        <span style="font-size:0.72rem; color:@colVenc; font-weight:600;">
-                                            Vence: @vence.ToString("dd/MM/yyyy")
-                                            @if (diasRest <= 90) { <span>(@diasRest días)</span> }
-                                        </span>
+                                        <span>💬 @ca.Observaciones</span>
                                     }
                                 </div>
-                            }
-                        </div>
-                        <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
-                            <a asp-controller="CarroAsesorios" asp-action="Editar"
-                            asp-route-idCarro="@Model.IdCarro" asp-route-idAsesorio="@ca.IdAsesorio"
-                            class="btn btn--ghost btn--icon btn--sm" title="Editar">
-                                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            </a>
-                            <form asp-controller="CarroAsesorios" asp-action="Quitar" method="post" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="idCarro"    value="@Model.IdCarro" />
-                                <input type="hidden" name="idAsesorio" value="@ca.IdAsesorio" />
-                                <button type="submit" class="btn btn--danger btn--icon btn--sm"
-                                        onclick="return confirm('¿Quitar este accesorio?')">
-                                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                </button>
-                            </form>
+                                @if (esExt)
+                                {
+                                    <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px;">
+                                        <span class="badge" style="background:rgba(220,38,38,0.1); color:#dc2626; font-size:0.68rem;">🧯 @ca.TipoExtintor</span>
+                                        @if (!string.IsNullOrEmpty(ca.PesoExtintor))
+                                        {
+                                            <span style="font-size:0.72rem; color:var(--gris-600);">@ca.PesoExtintor</span>
+                                        }
+                                        @if (venceExt.HasValue)
+                                        {
+                                            var cExt = diasExt <= 0 ? "#dc2626" : diasExt <= 30 ? "#dc2626" : diasExt <= 90 ? "#d97706" : "var(--gris-500)";
+                                            var tExt = diasExt <= 0 ? $"⛔ Vencido hace {Math.Abs(diasExt.Value)} días"
+                                                     : diasExt <= 30 ? $"⚠️ Vence en {diasExt} días ({venceExt.Value:dd/MM/yyyy})"
+                                                     : diasExt <= 90 ? $"⚡ Vence en {diasExt} días ({venceExt.Value:dd/MM/yyyy})"
+                                                     : $"✅ Vence {venceExt.Value:dd/MM/yyyy}";
+                                            <span style="font-size:0.73rem; font-weight:600; color:@cExt;">@tExt</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div style="display:flex; gap:4px; flex-shrink:0;">
+                                <a asp-controller="CarroAsesorios" asp-action="Editar"
+                                   asp-route-idCarro="@Model.IdCarro" asp-route-idAsesorio="@ca.IdAsesorio"
+                                   class="btn btn--ghost btn--icon btn--sm" title="Editar">
+                                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </a>
+                                <form asp-controller="CarroAsesorios" asp-action="Quitar" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="idCarro"    value="@Model.IdCarro" />
+                                    <input type="hidden" name="idAsesorio" value="@ca.IdAsesorio" />
+                                    <button type="submit" class="btn btn--danger btn--icon btn--sm"
+                                            onclick="return confirm('¿Quitar este accesorio?')">
+                                        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 }

@@ -33,6 +33,7 @@ namespace PROYJHOME2026.Filters
                 "Carros", "MantenimientoCarros", "CarroEstadoLogs",
                 "CarroConductorLog", "CarroAsesorios", "CarroModalidades",
                 "CarroSeguros", "Seguros", "Asesorios", "Modalidades",
+                "TipoMantenimientos",
                 "CheckListTransporte", "InspeccionBotiquinTransporte",
                 "InspeccionBotiquinGrupo", "InspeccionExtintor",
                 "Reportes.IndexFlota", "Reportes.VehiculosData",

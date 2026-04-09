@@ -23,54 +23,49 @@
     @Html.AntiForgeryToken()
     <input type="hidden" name="idGrupo" value="@grupo?.idGrupo" />
 
-    <div style="max-width:950px; display:flex; flex-direction:column; gap:16px;">
+    <div class="insp-container">
 
-        <!-- ENCABEZADO ──────────────────────────────────────────── -->
+        <!-- ENCABEZADO -->
         <div class="card">
-            <div style="text-align:center; padding-bottom:14px; border-bottom:1px solid var(--gris-200); margin-bottom:18px;">
-                <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-400);">FMT-SST-019 · Versión 00</div>
-                <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:var(--azul-dark); margin-top:4px;">INSPECCIÓN DE BOTIQUINES</div>
+            <div class="insp-header-title">
+                <div class="insp-codigo">FMT-SST-019 · Versión 00</div>
+                <div class="insp-titulo">INSPECCIÓN DE BOTIQUINES</div>
             </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; margin-bottom:20px;">
+            <div class="insp-meta-grid">
                 <div>
-                    <div class="det-label">Fecha de inspección</div>
-                    <div class="det-value" style="font-weight:700; color:var(--azul);">@DateTime.Today.ToString("dd/MM/yyyy")</div>
+                    <div class="det-label">Fecha</div>
+                    <div class="det-value insp-azul">@DateTime.Today.ToString("dd/MM/yyyy")</div>
                 </div>
                 <div>
                     <label class="form-label">Piso</label>
                     <input type="text" name="piso" class="form-control" maxlength="50" placeholder="Ej: 1° piso" />
                 </div>
                 <div>
-                    <label class="form-label">N° de Botiquín <span class="req">*</span></label>
+                    <label class="form-label">N° Botiquín <span class="req">*</span></label>
                     <input type="text" name="numeroBotiquin" class="form-control" required maxlength="50" placeholder="Ej: BOT-01" />
                 </div>
                 <div>
                     <div class="det-label">Área</div>
-                    <div class="det-value" style="font-weight:700; color:var(--azul);">@grupo?.area</div>
+                    <div class="det-value insp-azul">@grupo?.area</div>
                 </div>
             </div>
-
-            <!-- 4 checks del encabezado ─────────────────────────── -->
-            <div style="background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-md); padding:14px 16px;">
-                <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:12px;">
-                    Marque según las condiciones observadas
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="insp-checks-box">
+                <div class="insp-checks-label">Marque según las condiciones observadas</div>
+                <div class="insp-checks-grid">
                     @{
                         var checks = new[]
                         {
-                            ("instaladoEnPared",  "El botiquín se encuentra instalado en la pared"),
-                            ("localizadoVisible", "Localizado en un lugar visible"),
-                            ("libreDeObstaculos", "El botiquín se encuentra libre de obstáculos"),
-                            ("senalizado",        "El botiquín se encuentra señalizado"),
+                            ("instaladoEnPared",  "Instalado en la pared"),
+                            ("localizadoVisible", "Localizado en lugar visible"),
+                            ("libreDeObstaculos", "Libre de obstáculos"),
+                            ("senalizado",        "Señalizado"),
                         };
                     }
                     @foreach (var (nombre, label) in checks)
                     {
-                        <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--blanco); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
-                            <span style="font-size:0.84rem; color:var(--gris-800);">@label</span>
-                            <div style="display:flex; gap:6px; flex-shrink:0; margin-left:12px;">
+                        <div class="insp-check-item">
+                            <span class="insp-check-label">@label</span>
+                            <div class="toggle-group">
                                 <label class="toggle-check toggle-si">
                                     <input type="radio" name="@nombre" value="true" required />
                                     <span>SI</span>
@@ -86,29 +81,29 @@
             </div>
         </div>
 
-        <!-- TABLA DE ELEMENTOS ──────────────────────────────────── -->
+        <!-- TABLA DE ELEMENTOS -->
         <div class="card">
-            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+            <div class="insp-section-title">
                 <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 Elementos del Botiquín
-                <span class="badge badge--azul" style="margin-left:6px; font-size:0.72rem;">@elementos.Count elementos</span>
+                <span class="badge badge--azul" style="margin-left:6px; font-size:0.72rem;">@elementos.Count</span>
             </div>
 
-            <!-- Cabecera -->
-            <div style="display:grid; grid-template-columns:2fr 90px 90px 140px 1fr; gap:8px; padding:7px 12px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px;">
+            <!-- Desktop header -->
+            <div class="insp-tabla-header">
                 <div class="th-label">Elemento</div>
                 <div class="th-label" style="text-align:center;">Se encuentra</div>
                 <div class="th-label" style="text-align:center;">Cantidad</div>
-                <div class="th-label" style="text-align:center;">Fecha vencimiento</div>
+                <div class="th-label" style="text-align:center;">Fecha venc.</div>
                 <div class="th-label">Observaciones</div>
             </div>
 
             @for (int i = 0; i < elementos.Count; i++)
             {
-                <div style="display:grid; grid-template-columns:2fr 90px 90px 140px 1fr; gap:8px; align-items:center; padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px;" class="elem-row">
-                    <div style="font-size:0.84rem; color:var(--gris-900);">@elementos[i]</div>
-
-                    <div style="display:flex; gap:4px; justify-content:center;">
+                <!-- Desktop row -->
+                <div class="insp-tabla-row">
+                    <div class="insp-elem-nombre">@elementos[i]</div>
+                    <div class="insp-cell-center">
                         <label class="toggle-check toggle-si">
                             <input type="radio" name="seencuentra_@i" value="si" required />
                             <span>SI</span>
@@ -118,45 +113,60 @@
                             <span>NO</span>
                         </label>
                     </div>
+                    <div><input type="number" name="cantidad_@i" class="form-control insp-input-sm" required min="0" max="9999" /></div>
+                    <div><input type="date" name="fvenc_@i" class="form-control insp-input-sm" required /></div>
+                    <div><input type="text" name="obs_@i" class="form-control insp-input-sm" maxlength="500" placeholder="Opcional..." /></div>
+                </div>
 
-                    <div>
-                        <input type="number" name="cantidad_@i" class="form-control" required
-                               min="0" max="9999" style="text-align:center; padding:5px 6px; font-size:0.82rem;" />
+                <!-- Mobile card -->
+                <div class="insp-mobile-card">
+                    <div class="insp-mobile-nombre">@elementos[i]</div>
+                    <div class="insp-mobile-row">
+                        <span class="insp-mobile-lbl">¿Se encuentra?</span>
+                        <div class="toggle-group">
+                            <label class="toggle-check toggle-si">
+                                <input type="radio" name="seencuentra_@i" value="si" required />
+                                <span>SI</span>
+                            </label>
+                            <label class="toggle-check toggle-no">
+                                <input type="radio" name="seencuentra_@i" value="no" />
+                                <span>NO</span>
+                            </label>
+                        </div>
                     </div>
-
-                    <div>
-                        <input type="date" name="fvenc_@i" class="form-control" required
-                               style="padding:5px 6px; font-size:0.82rem;" />
+                    <div class="insp-mobile-row">
+                        <span class="insp-mobile-lbl">Cantidad</span>
+                        <input type="number" name="cantidad_@i" class="form-control insp-input-mobile" required min="0" max="9999" />
                     </div>
-
-                    <div>
-                        <input type="text" name="obs_@i" class="form-control" maxlength="500"
-                               placeholder="Opcional..." style="padding:5px 6px; font-size:0.82rem;" />
+                    <div class="insp-mobile-row">
+                        <span class="insp-mobile-lbl">Fecha venc.</span>
+                        <input type="date" name="fvenc_@i" class="form-control insp-input-mobile" required />
+                    </div>
+                    <div class="insp-mobile-row">
+                        <span class="insp-mobile-lbl">Observaciones</span>
+                        <input type="text" name="obs_@i" class="form-control insp-input-mobile" maxlength="500" placeholder="Opcional..." />
                     </div>
                 </div>
             }
         </div>
 
-        <!-- FIRMA ───────────────────────────────────────────────── -->
+        <!-- FIRMA -->
         <div class="card">
-            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200);">
+            <div class="insp-section-title">
                 <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;vertical-align:middle;margin-right:6px;"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
                 Inspección realizada por <span class="req">*</span>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;">
+            <div class="insp-firma-grid">
                 <div>
                     <label class="form-label">Nombre completo <span class="req">*</span></label>
-                    <input type="text" name="inspeccionadoPor" class="form-control" required
-                           maxlength="200" placeholder="Nombre del encargado" />
+                    <input type="text" name="inspeccionadoPor" class="form-control" required maxlength="200" placeholder="Nombre del encargado" />
                 </div>
                 <div>
                     <label class="form-label">Firma y Sello <span class="req">*</span></label>
-                    <div style="position:relative; border:2px dashed var(--gris-300); border-radius:var(--r-md); overflow:hidden; background:#fff; width:100%;">
-                        <canvas id="firmaCanvas" width="400" height="130"
+                    <div class="insp-canvas-wrap">
+                        <canvas id="firmaCanvas" width="400" height="150"
                                 style="display:block; cursor:crosshair; touch-action:none; width:100%; height:auto;"></canvas>
-                        <div id="firmaPlaceholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:var(--gris-300);font-size:0.82rem;">
-                            Dibuje su firma aquí
-                        </div>
+                        <div id="firmaPlaceholder" class="insp-canvas-placeholder">Dibuje su firma aquí</div>
                     </div>
                     <button type="button" onclick="limpiarFirma()" class="btn btn--secondary btn--sm" style="margin-top:6px;">
                         <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
@@ -167,8 +177,8 @@
             </div>
         </div>
 
-        <!-- BOTONES ─────────────────────────────────────────────── -->
-        <div style="display:flex; gap:10px; justify-content:flex-end; padding-bottom:32px;">
+        <!-- BOTONES -->
+        <div class="insp-botones">
             <a asp-controller="Grupos" asp-action="Details" asp-route-id="@grupo?.idGrupo" class="btn btn--secondary">Cancelar</a>
             <button type="submit" class="btn btn--celeste" onclick="return prepararEnvio()">
                 <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -181,22 +191,95 @@
 
 @section Styles {
 <style>
-.det-label  { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
-.det-value  { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
-.th-label   { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500); }
-.elem-row:hover { background:var(--gris-50); }
+/* ── Contenedor principal ─────────────────────────── */
+.insp-container { max-width:950px; display:flex; flex-direction:column; gap:16px; }
+
+/* ── Encabezado ──────────────────────────────────── */
+.insp-header-title { text-align:center; padding-bottom:14px; border-bottom:1px solid var(--gris-200); margin-bottom:18px; }
+.insp-codigo { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--gris-400); }
+.insp-titulo { font-family:var(--font-display); font-size:1.1rem; font-weight:800; color:var(--azul-dark); margin-top:4px; }
+.insp-azul   { font-weight:700; color:var(--azul); }
+.insp-meta-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.insp-checks-box { background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-md); padding:14px 16px; }
+.insp-checks-label { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:12px; }
+.insp-checks-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.insp-check-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--blanco); border-radius:var(--r-sm); border:1px solid var(--gris-200); gap:8px; }
+.insp-check-label { font-size:0.84rem; color:var(--gris-800); flex:1; }
+
+/* ── Toggle SI/NO ────────────────────────────────── */
+.toggle-group { display:flex; gap:6px; flex-shrink:0; }
 .toggle-check { cursor:pointer; }
 .toggle-check input[type="radio"] { display:none; }
 .toggle-check span {
     display:inline-flex; align-items:center; justify-content:center;
-    width:38px; height:24px; border-radius:20px;
+    width:42px; height:28px; border-radius:20px;
     border:1.5px solid var(--gris-300); background:var(--gris-100);
-    font-size:0.68rem; font-weight:700; color:var(--gris-400);
+    font-size:0.72rem; font-weight:700; color:var(--gris-400);
     transition:all 0.15s ease;
 }
 .toggle-si input[type="radio"]:checked ~ span { background:#dcfce7; border-color:#16a34a; color:#16a34a; }
 .toggle-no input[type="radio"]:checked ~ span { background:#fee2e2; border-color:#dc2626; color:#dc2626; }
-.toggle-check:hover span { border-color:var(--gris-400); }
+
+/* ── Sección título ──────────────────────────────── */
+.insp-section-title { font-weight:700; font-size:0.9rem; color:var(--gris-900); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--gris-200); }
+
+/* ── Tabla desktop ───────────────────────────────── */
+.insp-tabla-header { display:grid; grid-template-columns:2fr 100px 90px 140px 1fr; gap:8px; padding:7px 12px; background:var(--gris-100); border-radius:var(--r-sm); margin-bottom:8px; }
+.insp-tabla-row    { display:grid; grid-template-columns:2fr 100px 90px 140px 1fr; gap:8px; align-items:center; padding:8px 12px; border-radius:var(--r-sm); border:1px solid var(--gris-100); margin-bottom:4px; }
+.insp-tabla-row:hover { background:var(--gris-50); }
+.insp-elem-nombre  { font-size:0.84rem; color:var(--gris-900); font-weight:500; }
+.insp-cell-center  { display:flex; gap:4px; justify-content:center; }
+.insp-input-sm     { padding:5px 6px !important; font-size:0.82rem !important; text-align:center; }
+.th-label          { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--gris-500); }
+
+/* ── Cards móvil (ocultas en desktop) ───────────── */
+.insp-mobile-card { display:none; }
+
+/* ── Firma ───────────────────────────────────────── */
+.insp-firma-grid     { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+.insp-canvas-wrap    { position:relative; border:2px dashed var(--gris-300); border-radius:var(--r-md); overflow:hidden; background:#fff; width:100%; }
+.insp-canvas-placeholder { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:var(--gris-300);font-size:0.82rem; }
+
+/* ── Botones ─────────────────────────────────────── */
+.insp-botones { display:flex; gap:10px; justify-content:flex-end; padding-bottom:32px; flex-wrap:wrap; }
+
+/* ── Labels ──────────────────────────────────────── */
+.det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
+.det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE — MÓVIL (< 640px)
+   ════════════════════════════════════════════════════ */
+@@media (max-width: 640px) {
+    .insp-meta-grid    { grid-template-columns:1fr 1fr; }
+    .insp-checks-grid  { grid-template-columns:1fr; }
+    .insp-check-item   { flex-direction:column; align-items:flex-start; gap:8px; }
+
+    /* Ocultar tabla desktop, mostrar cards móvil */
+    .insp-tabla-header { display:none; }
+    .insp-tabla-row    { display:none; }
+    .insp-mobile-card  {
+        display:flex; flex-direction:column; gap:8px;
+        background:var(--gris-50); border:1px solid var(--gris-200);
+        border-radius:var(--r-md); padding:12px 14px; margin-bottom:8px;
+    }
+    .insp-mobile-nombre { font-weight:700; font-size:0.88rem; color:var(--azul-dark); padding-bottom:8px; border-bottom:1px solid var(--gris-200); margin-bottom:4px; }
+    .insp-mobile-row    { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .insp-mobile-lbl    { font-size:0.76rem; font-weight:600; color:var(--gris-500); flex-shrink:0; min-width:90px; }
+    .insp-input-mobile  { max-width:160px; font-size:0.84rem !important; }
+
+    /* Firma en columna */
+    .insp-firma-grid { grid-template-columns:1fr; }
+
+    /* Botones full width */
+    .insp-botones { flex-direction:column; }
+    .insp-botones .btn { width:100%; justify-content:center; }
+}
+
+@@media (max-width: 420px) {
+    .insp-meta-grid { grid-template-columns:1fr; }
+    .insp-titulo    { font-size:0.95rem; }
+}
 </style>
 }
 
