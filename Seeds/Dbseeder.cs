@@ -21,6 +21,7 @@ namespace PROYJHOME2026.Seeds
                 ("ssoma",   "segu0-0",    "SSOMA",      "SSOMA",                     "ssoma@sistema.com"),
                 ("danitza", "sistem4-7",  "Admin",      "Danitza",                   "danitza@sistema.com"),
                 ("yanet",   "logist1-0",  "Logistica",  "Yanet",                     "yanet@sistema.com"),
+                ("ayde",    "legal0-0",   "Transporte", "Ayde",                      "ayde@sistema.com"),
             };
 
             foreach (var (username, pass, rol, nombre, correo) in usuarios)

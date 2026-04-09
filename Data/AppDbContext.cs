@@ -42,6 +42,7 @@ namespace PROYJHOME2026.Data
         public DbSet<InspeccionBotiquinGrupoItem> InspeccionBotiquinGrupoItems { get; set; }
         public DbSet<InspeccionExtintor>      InspeccionExtintores      { get; set; }
         public DbSet<InspeccionExtintorFila>  InspeccionExtintorFilas   { get; set; }
+        public DbSet<CarroModalidadLog>       CarroModalidadLogs        { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }
@@ -102,10 +103,10 @@ namespace PROYJHOME2026.Data
             modelBuilder.Entity<Asignacion>()
                 .HasOne(a => a.Chip).WithMany(c => c.Asignaciones)
                 .HasForeignKey(a => a.IdChip).OnDelete(DeleteBehavior.SetNull);
-                
+
             modelBuilder.Entity<Asignacion>()
                 .HasOne(a => a.Grupo).WithMany()
-                .HasForeignKey(a => a.IdGrupo).OnDelete(DeleteBehavior.SetNull);  
+                .HasForeignKey(a => a.IdGrupo).OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<MantenimientoCarro>()
                 .HasOne(m => m.TipoMantenimiento).WithMany(t => t.MantenimientosCarros)
@@ -135,63 +136,70 @@ namespace PROYJHOME2026.Data
                 .HasOne(l => l.Carro).WithMany()
                 .HasForeignKey(l => l.IdCarro).OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<CarroModalidadLog>()
+                .HasOne(l => l.Carro).WithMany()
+                .HasForeignKey(l => l.IdCarro).OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<Usuario>()
                 .HasIndex(u => u.username).IsUnique();
 
             modelBuilder.Entity<CheckListTransporte>()
                 .HasOne(cl => cl.Carro).WithMany()
                 .HasForeignKey(cl => cl.IdCarro).OnDelete(DeleteBehavior.Cascade);
- 
+
             modelBuilder.Entity<CheckListTransporteItem>()
                 .HasOne(i => i.CheckList).WithMany(cl => cl.Items)
                 .HasForeignKey(i => i.IdCheckList).OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<InspeccionBotiquinTransporte>()
                 .HasOne(i => i.Carro).WithMany()
                 .HasForeignKey(i => i.IdCarro).OnDelete(DeleteBehavior.Cascade);
- 
+
             modelBuilder.Entity<InspeccionBotiquinTransporteItem>()
                 .HasOne(i => i.Inspeccion).WithMany(ins => ins.Items)
                 .HasForeignKey(i => i.IdInspeccion).OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<InspeccionBotiquinGrupo>()
                 .HasOne(i => i.Grupo).WithMany()
                 .HasForeignKey(i => i.IdGrupo).OnDelete(DeleteBehavior.Cascade);
- 
+
             modelBuilder.Entity<InspeccionBotiquinGrupoItem>()
                 .HasOne(i => i.Inspeccion).WithMany(ins => ins.Items)
                 .HasForeignKey(i => i.IdInspeccion).OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<InspeccionExtintor>()
                 .HasOne(i => i.Asesorio).WithMany()
                 .HasForeignKey(i => i.IdAsesorio).OnDelete(DeleteBehavior.Cascade);
- 
+
             modelBuilder.Entity<InspeccionExtintorFila>()
                 .HasOne(f => f.Inspeccion).WithMany(i => i.Filas)
                 .HasForeignKey(f => f.IdInspeccion).OnDelete(DeleteBehavior.Cascade);
-            
+
             modelBuilder.Entity<InspeccionExtintorFila>()
                 .HasOne(f => f.Grupo).WithMany()
-                .HasForeignKey(f => f.IdGrupo).OnDelete(DeleteBehavior.Restrict); 
+                .HasForeignKey(f => f.IdGrupo).OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<MaquinaAsignacion>()
                 .HasOne(a => a.Maquina).WithMany()
                 .HasForeignKey(a => a.IdMaquina).OnDelete(DeleteBehavior.Cascade);
- 
+
             modelBuilder.Entity<MaquinaAsignacion>()
                 .HasOne(a => a.Grupo).WithMany()
                 .HasForeignKey(a => a.IdGrupo).OnDelete(DeleteBehavior.Restrict);
- 
+
             modelBuilder.Entity<MaquinaAsignacion>()
                 .HasOne(a => a.Encargado).WithMany()
                 .HasForeignKey(a => a.IdEmpleadoEncargado).OnDelete(DeleteBehavior.Restrict);
- 
+
             modelBuilder.Entity<MaquinaLog>()
                 .HasOne(l => l.Maquina).WithMany(m => m.Logs)
                 .HasForeignKey(l => l.IdMaquina).OnDelete(DeleteBehavior.Cascade);
- 
+
             modelBuilder.Entity<Maquina>()
                 .HasOne(m => m.AsignacionActual)
                 .WithOne(a => a.Maquina)
                 .HasForeignKey<MaquinaAsignacion>(a => a.IdMaquina)
                 .OnDelete(DeleteBehavior.Cascade);
- 
         }
     }
 }

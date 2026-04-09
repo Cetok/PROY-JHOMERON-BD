@@ -103,6 +103,12 @@ namespace PROYJHOME2026.Controllers
             .OrderByDescending(l => l.FechaHora)
             .Take(50)
             .ToListAsync();
+
+            // Historial de cambios de modalidad
+            ViewBag.ModalidadLog = await _context.CarroModalidadLogs
+                .Where(l => l.IdCarro == id)
+                .OrderByDescending(l => l.FechaRegistro)
+                .ToListAsync();
             return View(carro);
         }
 

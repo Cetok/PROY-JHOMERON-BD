@@ -11,6 +11,7 @@
     };
     var estadoLog    = ViewBag.EstadoLog    as List<PROYJHOME2026.Models.CarroEstadoLog>    ?? new();
     var conductorLog = ViewBag.ConductorLog as List<PROYJHOME2026.Models.CarroConductorLog> ?? new();
+    var modalidadLog = ViewBag.ModalidadLog as List<PROYJHOME2026.Models.CarroModalidadLog> ?? new();
 }
 
 <div class="page-header">
@@ -315,35 +316,58 @@
 
         @if (Model.CarroSeguros.Any())
         {
-            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
                 @foreach (var cs in Model.CarroSeguros)
                 {
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
-                        <div>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--azul);fill:none;stroke-width:2;flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                <span style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@cs.Seguro?.TipoSeguro</span>
+                    var hoyS   = DateTime.Today;
+                    var venceS = cs.FechaCulminada?.Date;
+                    var diasS  = venceS.HasValue ? (venceS.Value - hoyS).Days : (int?)null;
+                    var borderS = diasS.HasValue ? (diasS < 0 ? "#dc2626" : diasS <= 30 ? "#d97706" : "#e2e8f0") : "#e2e8f0";
+                    var bgS     = diasS.HasValue ? (diasS < 0 ? "rgba(220,38,38,0.03)" : diasS <= 30 ? "rgba(217,119,6,0.03)" : "var(--gris-50)") : "var(--gris-50)";
+                    var colorS  = diasS.HasValue ? (diasS < 0 ? "#dc2626" : diasS <= 30 ? "#d97706" : "var(--gris-500)") : "var(--gris-500)";
+                    var etiqS   = diasS.HasValue
+                        ? (diasS < 0  ? $"⛔ Vencido hace {Math.Abs(diasS.Value)} día(s)"
+                         : diasS == 0 ? "⚠️ Vence HOY"
+                         : diasS <= 30? $"⚠️ Vence en {diasS} día(s)"
+                                      : $"✅ Vence en {diasS} días")
+                        : "Sin fecha de vencimiento";
+                    <div style="border:1.5px solid @borderS; border-radius:var(--r-md); padding:14px 16px; background:@bgS;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <div style="font-weight:700; font-size:0.95rem; color:var(--gris-900); margin-bottom:4px;">
+                                    <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--azul);fill:none;stroke-width:2;vertical-align:middle;margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    @cs.Seguro?.TipoSeguro
+                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:0.78rem; color:var(--gris-600); margin-top:4px;">
+                                    @if (cs.FechaAsignada.HasValue)
+                                    {
+                                        <span>📅 Desde: <strong>@cs.FechaAsignada.Value.ToString("dd/MM/yyyy")</strong></span>
+                                    }
+                                    @if (venceS.HasValue)
+                                    {
+                                        <span>🏁 Vence: <strong>@venceS.Value.ToString("dd/MM/yyyy")</strong></span>
+                                    }
+                                </div>
+                                <div style="margin-top:6px; font-size:0.76rem; font-weight:600; color:@colorS;">
+                                    @etiqS
+                                </div>
                             </div>
-                            <div style="font-size:0.72rem; color:var(--gris-400); margin-top:3px;">
-                                @(cs.FechaAsignada.HasValue ? "Desde " + cs.FechaAsignada.Value.ToString("dd/MM/yyyy") : "Sin fecha de inicio")
-                                @if (cs.FechaCulminada.HasValue) { <span> · Vence @cs.FechaCulminada.Value.ToString("dd/MM/yyyy")</span> }
+                            <div style="display:flex; gap:6px; flex-shrink:0;">
+                                <a asp-controller="CarroSeguros" asp-action="Editar"
+                                   asp-route-idCarro="@Model.IdCarro" asp-route-idSeguro="@cs.IdSeguro"
+                                   class="btn btn--ghost btn--icon btn--sm" title="Editar fechas">
+                                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </a>
+                                <form asp-controller="CarroSeguros" asp-action="Quitar" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="idCarro"  value="@Model.IdCarro" />
+                                    <input type="hidden" name="idSeguro" value="@cs.IdSeguro" />
+                                    <button type="submit" class="btn btn--danger btn--icon btn--sm" title="Quitar seguro"
+                                            onclick="return confirm('¿Quitar este seguro del vehículo?')">
+                                        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                </form>
                             </div>
-                        </div>
-                        <div style="display:flex; gap:4px; flex-shrink:0; margin-left:8px;">
-                            <a asp-controller="CarroSeguros" asp-action="Editar"
-                               asp-route-idCarro="@Model.IdCarro" asp-route-idSeguro="@cs.IdSeguro"
-                               class="btn btn--ghost btn--icon btn--sm" title="Editar fechas">
-                                <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            </a>
-                            <form asp-controller="CarroSeguros" asp-action="Quitar" method="post" style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="idCarro"  value="@Model.IdCarro" />
-                                <input type="hidden" name="idSeguro" value="@cs.IdSeguro" />
-                                <button type="submit" class="btn btn--danger btn--icon btn--sm" title="Quitar seguro"
-                                        onclick="return confirm('¿Quitar este seguro del vehículo?')">
-                                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                </button>
-                            </form>
                         </div>
                     </div>
                 }
@@ -451,24 +475,101 @@
         </div>
         @if (Model.CarroModalidades.Any())
         {
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
                 @foreach (var cm in Model.CarroModalidades)
                 {
-                    <div style="display:flex; align-items:center; gap:8px; padding:8px 14px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200);">
-                        <span style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">@cm.Modalidad?.TipoModalidad</span>
-                        <span class="badge @(cm.Modalidad?.Estado == "Activo" ? "badge--verde" : "badge--gris")" style="font-size:0.68rem;">@cm.Modalidad?.Estado</span>
-                        <form asp-controller="CarroModalidades" asp-action="Quitar" method="post" style="display:inline;">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="idCarro"     value="@Model.IdCarro" />
-                            <input type="hidden" name="idModalidad" value="@cm.IdModalidad" />
-                            <button type="submit" class="btn btn--ghost btn--icon btn--sm"
-                                    onclick="return confirm('¿Quitar esta modalidad?')" title="Quitar">
-                                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            </button>
-                        </form>
+                    var hoy2      = DateTime.Today;
+                    var vence2    = cm.FechaVencimiento?.Date;
+                    var dias2     = vence2.HasValue ? (vence2.Value - hoy2).Days : (int?)null;
+                    var colorBorde = dias2.HasValue
+                        ? (dias2 < 0   ? "#dc2626"
+                         : dias2 <= 30 ? "#d97706"
+                                       : "#e2e8f0")
+                        : "#e2e8f0";
+                    var colorDias = dias2.HasValue
+                        ? (dias2 < 0   ? "#dc2626"
+                         : dias2 <= 30 ? "#d97706"
+                                       : "var(--gris-500)")
+                        : "var(--gris-500)";
+                    var etiquetaVenc = dias2.HasValue
+                        ? (dias2 < 0   ? $"⛔ Vencida hace {Math.Abs(dias2.Value)} día(s)"
+                         : dias2 == 0  ? "⚠️ Vence HOY"
+                         : dias2 <= 30 ? $"⚠️ Vence en {dias2} día(s)"
+                                       : $"✅ Vence en {dias2} días")
+                        : "Sin fecha de vencimiento";
+                    <div style="border:1.5px solid @colorBorde; border-radius:var(--r-md); padding:14px 16px; background:@(dias2.HasValue && dias2 < 0 ? "rgba(220,38,38,0.03)" : dias2.HasValue && dias2 <= 30 ? "rgba(217,119,6,0.03)" : "var(--gris-50)");">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <div style="font-weight:700; font-size:0.95rem; color:var(--gris-900); margin-bottom:4px;">
+                                    @cm.Modalidad?.TipoModalidad
+                                    <span style="font-size:0.72rem; font-weight:500; color:var(--gris-400); margin-left:6px;">Código: @(cm.Modalidad?.Codigo ?? "—")</span>
+                                </div>
+                                <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:0.78rem; color:var(--gris-600); margin-top:6px;">
+                                    @if (cm.FechaAsignacion.HasValue)
+                                    {
+                                        <span>📅 Asignado: <strong>@cm.FechaAsignacion.Value.ToString("dd/MM/yyyy")</strong></span>
+                                    }
+                                    @if (vence2.HasValue)
+                                    {
+                                        <span>🏁 Vencimiento: <strong>@vence2.Value.ToString("dd/MM/yyyy")</strong></span>
+                                    }
+                                </div>
+                                <div style="margin-top:6px; font-size:0.76rem; font-weight:600; color:@colorDias;">
+                                    @etiquetaVenc
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:6px; flex-shrink:0;">
+                                <a asp-controller="CarroModalidades" asp-action="Editar"
+                                   asp-route-idCarro="@Model.IdCarro" asp-route-idModalidad="@cm.IdModalidad"
+                                   class="btn btn--ghost btn--icon btn--sm" title="Editar fechas">
+                                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </a>
+                                <form asp-controller="CarroModalidades" asp-action="Quitar" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="idCarro"     value="@Model.IdCarro" />
+                                    <input type="hidden" name="idModalidad" value="@cm.IdModalidad" />
+                                    <button type="submit" class="btn btn--danger btn--icon btn--sm"
+                                            onclick="return confirm('¿Quitar esta modalidad del vehículo?')" title="Quitar">
+                                        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 }
             </div>
+
+            @* Historial de cambios de modalidad *@
+            @if (modalidadLog.Any())
+            {
+                <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--gris-200);">
+                    <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:10px;">
+                        Historial de cambios de modalidad
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto;">
+                        @foreach (var log in modalidadLog)
+                        {
+                            var accionColor = log.Accion == "Asignado"    ? "#16a34a"
+                                            : log.Accion == "Removido"    ? "#dc2626"
+                                            : "#2563eb";
+                            <div style="display:flex; align-items:flex-start; gap:10px; font-size:0.78rem; padding:8px 10px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-100);">
+                                <span style="background:@(accionColor)20; color:@accionColor; font-weight:700; font-size:0.68rem; padding:2px 7px; border-radius:20px; flex-shrink:0; margin-top:1px;">@log.Accion</span>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-weight:600; color:var(--gris-800);">@log.TipoModalidad <span style="font-weight:400; color:var(--gris-400);">(@(log.Codigo ?? "—"))</span></div>
+                                    <div style="color:var(--gris-500); margin-top:2px;">
+                                        @if (log.FechaAsignacion.HasValue) { <span>Desde @log.FechaAsignacion.Value.ToString("dd/MM/yyyy") </span> }
+                                        @if (log.FechaVencimiento.HasValue) { <span>→ hasta @log.FechaVencimiento.Value.ToString("dd/MM/yyyy")</span> }
+                                    </div>
+                                </div>
+                                <div style="text-align:right; flex-shrink:0; color:var(--gris-400);">
+                                    <div>@log.FechaRegistro.ToString("dd/MM/yy")</div>
+                                    <div style="font-size:0.7rem;">@(log.UsuarioNombre ?? "—")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
         }
         else { <div style="text-align:center; padding:16px 0; color:var(--gris-400); font-size:0.82rem;">Este vehículo no tiene modalidades asignadas.</div> }
     </div>

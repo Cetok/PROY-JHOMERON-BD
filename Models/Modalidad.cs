@@ -9,7 +9,6 @@ namespace PROYJHOME2026.Models
         [Key]
         public int IdModalidad { get; set; }
 
-        // Código de habilitación — determina el tipo automáticamente
         [Required]
         [StringLength(20)]
         public string Codigo { get; set; } = string.Empty;
@@ -24,11 +23,8 @@ namespace PROYJHOME2026.Models
         [StringLength(50)]
         public string Estado { get; set; } = string.Empty;
 
-        // Navegación
         public ICollection<CarroModalidad> CarroModalidades { get; set; } = new List<CarroModalidad>();
     }
-
-    // -------------------------------------------------------
 
     [Table("Carro_Modalidad")]
     public class CarroModalidad
@@ -39,11 +35,52 @@ namespace PROYJHOME2026.Models
         [Required]
         public int IdModalidad { get; set; }
 
-        // Navegación
+        // Fecha en que se asignó esta modalidad al vehículo
+        public DateTime? FechaAsignacion { get; set; }
+
+        // Fecha de vencimiento (~6 meses)
+        public DateTime? FechaVencimiento { get; set; }
+
         [ForeignKey("IdCarro")]
         public Carro Carro { get; set; } = null!;
 
         [ForeignKey("IdModalidad")]
         public Modalidad Modalidad { get; set; } = null!;
+    }
+
+    // ── Historial de cambios de modalidad por vehículo ───────
+    [Table("CarroModalidadLog")]
+    public class CarroModalidadLog
+    {
+        [Key]
+        public int IdLog { get; set; }
+
+        [Required]
+        public int IdCarro { get; set; }
+
+        [Required]
+        public int IdModalidad { get; set; }
+
+        [StringLength(200)]
+        public string? TipoModalidad { get; set; }
+
+        [StringLength(20)]
+        public string? Codigo { get; set; }
+
+        public DateTime? FechaAsignacion { get; set; }
+
+        public DateTime? FechaVencimiento { get; set; }
+
+        public DateTime FechaRegistro { get; set; } = DateTime.Now;
+
+        // "Asignado" | "Actualizado" | "Removido"
+        [StringLength(50)]
+        public string? Accion { get; set; }
+
+        [StringLength(200)]
+        public string? UsuarioNombre { get; set; }
+
+        [ForeignKey("IdCarro")]
+        public Carro Carro { get; set; } = null!;
     }
 }
