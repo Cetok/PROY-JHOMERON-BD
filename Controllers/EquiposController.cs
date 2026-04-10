@@ -31,6 +31,12 @@ namespace PROYJHOME2026.Controllers
         {
             int porPagina = 10;
             var query = _context.Equipos.Include(e => e.TipoEquipo).AsQueryable();
+
+            // Oliver (SoporteTI) no ve celulares
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            if (rolActual == "SoporteTI")
+                query = query.Where(e => e.TipoEquipo == null ||
+                    !e.TipoEquipo.tipo.ToUpper().Contains("CELULAR"));
  
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(e =>
@@ -112,6 +118,13 @@ namespace PROYJHOME2026.Controllers
                 .FirstOrDefaultAsync(e => e.idEquipo == id);
 
             if (equipo == null) return NotFound();
+
+            // Oliver (SoporteTI) no puede ver celulares
+            var rolD = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            if (rolD == "SoporteTI" &&
+                equipo.TipoEquipo?.tipo?.ToUpper().Contains("CELULAR") == true)
+                return RedirectToAction(nameof(Index));
+
             ViewBag.HistorialCambios = await _context.AuditoriaLogs
             .Where(l => l.Entidad == "Equipo" && l.IdEntidad == id)
             .OrderByDescending(l => l.FechaHora)
@@ -185,6 +198,12 @@ namespace PROYJHOME2026.Controllers
                     equipo.TarjetaGrafica = null;
             }
             var rolUsuario = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            if (rolUsuario == "SoporteTI" && tipoUpper.Contains("CELULAR"))
+            {
+                TempData["Error"] = "No tienes permiso para registrar equipos de tipo Celular.";
+                await CargarTipos();
+                return View(equipo);
+            }
             if (rolUsuario == "Logistica")
             {
                 var tipoCheck = await _context.TiposEquipo.FindAsync(equipo.idTipoEquipo);
@@ -522,14 +541,13 @@ namespace PROYJHOME2026.Controllers
                 .FirstOrDefaultAsync(e => e.idEquipo == idEquipo);
             if (equipo == null) return NotFound();
 
-            equipo.estado_equipo = "Activo";
-
             // Reactivar asignación si estaba en mantenimiento
             var asignacionMante = equipo.Asignaciones
                 .FirstOrDefault(a => a.EstadoAsignacion == "En mantenimiento");
             if (asignacionMante != null)
             {
                 asignacionMante.EstadoAsignacion = "Activo";
+                equipo.estado_equipo = "Asignado"; // tenía asignación → vuelve a Asignado
 
                 var motivoFin = await _context.Motivos
                     .FirstOrDefaultAsync(m => m.TipoMotivo == "Fin mantenimiento");
@@ -548,6 +566,10 @@ namespace PROYJHOME2026.Controllers
                     Observaciones = observaciones ?? "Mantenimiento finalizado"
                 });
             }
+            else
+            {
+                equipo.estado_equipo = "Activo"; // no tenía asignación → vuelve a Activo
+            }
 
             var idStr  = HttpContext.Session.GetString("UsuarioId");
             var nombre = HttpContext.Session.GetString("UsuarioNombre");
@@ -561,7 +583,7 @@ namespace PROYJHOME2026.Controllers
                 TipoEvento    = "Mantenimiento",
                 Componente    = "Estado",
                 ValorAnterior = "Mantenimiento",
-                ValorNuevo    = "Activo",
+                ValorNuevo    = asignacionMante != null ? "Asignado" : "Activo",
                 Observaciones = observaciones ?? "Mantenimiento finalizado",
                 FechaHora     = DateTime.Now
             });
@@ -576,7 +598,7 @@ namespace PROYJHOME2026.Controllers
                 $"/Equipos/Details/{idEquipo}",
                 idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq5) ? _eq5 : null);
 
-            TempData["Success"] = "Mantenimiento finalizado. Equipo vuelto a Activo.";
+            TempData["Success"] = asignacionMante != null ? "Mantenimiento finalizado. Equipo vuelto a Asignado." : "Mantenimiento finalizado. Equipo vuelto a Activo.";
             return RedirectToAction(nameof(Details), new { id = idEquipo });
         }
 

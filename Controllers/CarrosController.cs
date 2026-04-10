@@ -252,6 +252,12 @@ namespace PROYJHOME2026.Controllers
 
             carro.Estado = "Activo";
 
+            // Convertir a mayúsculas
+            carro.Placa        = carro.Placa?.ToUpper().Trim();
+            carro.Marca        = carro.Marca?.ToUpper().Trim();
+            carro.Modelo       = carro.Modelo?.ToUpper().Trim();
+            carro.NumeroMotor  = carro.NumeroMotor?.ToUpper().Trim();
+
             if (ModelState.IsValid)
             {
                 if (await _context.Carros.AnyAsync(c => c.Placa == carro.Placa))
@@ -296,6 +302,12 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("CarroModalidades");
             ModelState.Remove("MantenimientosCarros");
             ModelState.Remove("Estado");
+
+            // Convertir a mayúsculas
+            carro.Placa        = carro.Placa?.ToUpper().Trim();
+            carro.Marca        = carro.Marca?.ToUpper().Trim();
+            carro.Modelo       = carro.Modelo?.ToUpper().Trim();
+            carro.NumeroMotor  = carro.NumeroMotor?.ToUpper().Trim();
 
             if (ModelState.IsValid)
             {

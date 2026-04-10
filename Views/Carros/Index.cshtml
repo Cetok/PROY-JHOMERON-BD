@@ -81,7 +81,7 @@
     @if (Model.Any())
     {
         <!-- Desktop: tabla normal -->
-        <div class="table-wrapper carro-tabla-desktop" style="border:none; border-radius:0;">
+        <div class="table-wrapper" style="border:none; border-radius:0;">
             <table>
                 <thead>
                     <tr>
@@ -163,52 +163,6 @@
             </table>
         </div>
 
-        <!-- Móvil: cards -->
-        <div class="carro-cards-mobile" style="padding:12px; display:flex; flex-direction:column; gap:10px;">
-            @foreach (var c in Model)
-            {
-                var conductor2 = c.EmpleadosCarros.FirstOrDefault()?.Empleado;
-                var bcm = c.Estado switch {
-                    "Activo"           => "badge--verde",
-                    "Inactivo"         => "badge--gris",
-                    "En mantenimiento" => "badge--amarillo",
-                    "De baja"          => "badge--rojo",
-                    _                  => "badge--gris"
-                };
-                <div style="background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-md); padding:14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-                        <div>
-                            <div style="font-family:monospace; font-weight:800; font-size:1rem; color:var(--azul); letter-spacing:0.08em;">@c.Placa</div>
-                            <div style="font-weight:600; font-size:0.88rem; color:var(--gris-900); margin-top:2px;">@c.Marca @c.Modelo</div>
-                            @if (c.FechaCarro.HasValue) { <div style="font-size:0.72rem; color:var(--gris-400);">Año @c.FechaCarro.Value.Year</div> }
-                        </div>
-                        <span class="badge @bcm">@c.Estado</span>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.78rem; margin-bottom:12px;">
-                        <div>
-                            <div style="color:var(--gris-400); font-weight:600; font-size:0.68rem; text-transform:uppercase; margin-bottom:2px;">Conductor</div>
-                            <div style="color:var(--gris-800);">
-                                @if (conductor2 != null) { <span>@conductor2.nombre @conductor2.paterno</span> }
-                                else { <span style="color:var(--gris-400);">Sin asignar</span> }
-                            </div>
-                        </div>
-                        <div>
-                            <div style="color:var(--gris-400); font-weight:600; font-size:0.68rem; text-transform:uppercase; margin-bottom:2px;">Categoría / Ejes</div>
-                            <div style="color:var(--gris-800);">@(c.Categoria ?? "—") @(c.Ejes.HasValue ? $"· {c.Ejes} ejes" : "")</div>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <a asp-action="Details" asp-route-id="@c.IdCarro" class="btn btn--celeste btn--sm" style="flex:1; justify-content:center;">
-                            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            Ver detalle
-                        </a>
-                        <a asp-action="Edit" asp-route-id="@c.IdCarro" class="btn btn--secondary btn--sm btn--icon">
-                            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        </a>
-                    </div>
-                </div>
-            }
-        </div>
 
         @if (totalPaginas > 1)
         {
@@ -264,11 +218,6 @@
     display:grid; place-items:center; flex-shrink:0;
     font-family:var(--font-display); font-weight:800; font-size:0.65rem; color:var(--blanco);
 }
-/* Responsive */
-.carro-cards-mobile { display:none; }
-@@media (max-width: 700px) {
-    .carro-tabla-desktop { display:none; }
-    .carro-cards-mobile  { display:flex !important; }
-}
+
 </style>
 }

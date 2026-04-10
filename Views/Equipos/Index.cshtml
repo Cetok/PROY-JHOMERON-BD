@@ -55,6 +55,9 @@
                 <option value="">Todos</option>
                 @foreach (var t in tipos)
                 {
+                    // Oliver no ve celulares en el filtro
+                    if (Context.Session.GetString("UsuarioRol") == "SoporteTI" &&
+                        t.tipo?.ToUpper().Contains("CELULAR") == true) continue;
                     if (tipoId == t.idTipoEquipo)
                     { <option value="@t.idTipoEquipo" selected>@t.tipo</option> }
                     else

@@ -27,10 +27,7 @@
         <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
         Equipos
     </button>
-    <button class="rep-tab @(tab == "asignaciones" ? "rep-tab--active" : "")" onclick="cambiarTab('asignaciones')">
-        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        Asignaciones
-    </button>
+
     <button class="rep-tab @(tab == "historial"   ? "rep-tab--active" : "")" onclick="cambiarTab('historial')">
         <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Historial
@@ -52,15 +49,21 @@
                 <label class="form-label">Hasta</label>
                 <input type="date" id="eq-hasta" class="form-control" />
             </div>
-            <div class="form-group">
-                <label class="form-label">Tipo de equipo</label>
-                <select id="eq-tipo" class="form-control">
-                    <option value="">— Todos —</option>
+            <div class="form-group form-group--full">
+                <label class="form-label">Tipo de equipo (puedes combinar)</label>
+                <div class="rep-checks" style="flex-wrap:wrap;">
+                    <label class="rep-check-item">
+                        <input type="checkbox" class="eq-tipo-check" value="" checked id="eq-tipo-todos" onchange="toggleTodosTipos(this)" />
+                        <span class="rep-check-label">Todos</span>
+                    </label>
                     @foreach (var t in tipos)
                     {
-                        <option value="@t.idTipoEquipo">@t.tipo</option>
+                        <label class="rep-check-item">
+                            <input type="checkbox" class="eq-tipo-check eq-tipo-especifico" value="@t.idTipoEquipo" onchange="desmarcarTodos()" />
+                            <span class="rep-check-label">@t.tipo</span>
+                        </label>
                     }
-                </select>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Buscar</label>
@@ -111,6 +114,7 @@
                         <tr>
                             <th>Tipo</th><th>Marca / Modelo</th><th>N° Serie</th>
                             <th>Estado</th><th>Fecha Compra</th><th>Asignado a</th>
+                            <th>F. Asignación</th><th>Grupo / Área</th>
                             <th>Observaciones</th>
                         </tr>
                     </thead>
@@ -342,11 +346,28 @@ function estadoBadge(est) {
 
 // ── EQUIPOS ───────────────────────────────────────────────────
 let lastEqParams = {};
+function toggleTodosTipos(cb) {
+    if (cb.checked) {
+        document.querySelectorAll('.eq-tipo-especifico').forEach(c => c.checked = false);
+    }
+}
+function desmarcarTodos() {
+    document.getElementById('eq-tipo-todos').checked = false;
+    // Si ningún específico está marcado, marcar Todos
+    const alguno = [...document.querySelectorAll('.eq-tipo-especifico')].some(c => c.checked);
+    if (!alguno) document.getElementById('eq-tipo-todos').checked = true;
+}
+function getTiposSeleccionados() {
+    if (document.getElementById('eq-tipo-todos').checked) return '';
+    const ids = [...document.querySelectorAll('.eq-tipo-especifico:checked')].map(c => c.value);
+    return ids.join(',');
+}
+
 async function consultarEquipos() {
     const p = {
         fechaDesde: document.getElementById('eq-desde').value,
         fechaHasta: document.getElementById('eq-hasta').value,
-        tipoId:     document.getElementById('eq-tipo').value,
+        tipoIds:    getTiposSeleccionados(),
         buscar:     document.getElementById('eq-buscar').value,
         estado:     getChecked('eq-estado')
     };
@@ -376,6 +397,8 @@ async function consultarEquipos() {
             <td>${estadoBadge(e.estado_equipo)}</td>
             <td style="font-size:0.8rem; color:var(--gris-500);">${e.fechaCompra}</td>
             <td style="font-size:0.82rem;">${e.asignado}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${e.fechaAsig ?? '—'}</td>
+            <td style="font-size:0.82rem; color:var(--gris-600);">${e.grupoArea ?? '—'}</td>
             <td style="font-size:0.78rem; color:var(--gris-600); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.observaciones ?? '—'}</td>
         </tr>`).join('');
 }

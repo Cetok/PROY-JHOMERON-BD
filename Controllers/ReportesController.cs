@@ -43,16 +43,24 @@ namespace PROYJHOME2026.Controllers
         [HttpGet]
         public async Task<IActionResult> EquiposData(
             DateTime? fechaDesde, DateTime? fechaHasta,
-            int? tipoId, int? grupoId, string? estado, string? buscar)
+            string? tipoIds, int? grupoId, string? estado, string? buscar)
         {
-            string? tipoNombre = null;
+            // Parsear múltiples tipoIds
+            var tipoIdList = new List<int>();
+            if (!string.IsNullOrWhiteSpace(tipoIds))
+            {
+                foreach (var id in tipoIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (int.TryParse(id.Trim(), out int tid)) tipoIdList.Add(tid);
+            }
+
+            // Verificar si alguno de los tipos seleccionados es componente de PC Completo
             bool incluirPcCompleto = false;
             int? tipoIdPcCompleto = null;
-            if (tipoId.HasValue)
+            if (tipoIdList.Any())
             {
-                var tipoObj = await _context.TiposEquipo.FindAsync(tipoId.Value);
-                tipoNombre = tipoObj?.tipo;
-                incluirPcCompleto = EsComponentePcCompleto(tipoNombre);
+                var tiposSeleccionados = await _context.TiposEquipo
+                    .Where(t => tipoIdList.Contains(t.idTipoEquipo)).ToListAsync();
+                incluirPcCompleto = tiposSeleccionados.Any(t => EsComponentePcCompleto(t.tipo));
                 if (incluirPcCompleto)
                 {
                     var pcObj = await _context.TiposEquipo
@@ -66,15 +74,16 @@ namespace PROYJHOME2026.Controllers
                 .Include(e => e.TipoEquipo)
                 .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
                     .ThenInclude(a => a.Empleado)
+                .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
+                    .ThenInclude(a => a.Grupo)
                 .AsQueryable();
 
-            if (tipoId.HasValue)
+            if (tipoIdList.Any())
             {
+                var todosLosIds = new List<int>(tipoIdList);
                 if (incluirPcCompleto && tipoIdPcCompleto.HasValue)
-                    // Mostrar el tipo específico (ej: CPU) Y los PC Completo
-                    query = query.Where(e => e.idTipoEquipo == tipoId || e.idTipoEquipo == tipoIdPcCompleto);
-                else
-                    query = query.Where(e => e.idTipoEquipo == tipoId);
+                    todosLosIds.Add(tipoIdPcCompleto.Value);
+                query = query.Where(e => todosLosIds.Contains(e.idTipoEquipo));
             }
             if (grupoId.HasValue)
                 query = query.Where(e => e.Asignaciones.Any(a =>
@@ -121,6 +130,8 @@ namespace PROYJHOME2026.Controllers
                     e.estado_equipo,
                     fechaCompra   = e.fecha_compra.ToString("dd/MM/yyyy"),
                     asignado      = asig != null ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim() : "—",
+                    fechaAsig     = asig?.FechaAsignacion.ToString("dd/MM/yyyy") ?? "—",
+                    grupoArea     = asig?.Grupo?.area ?? "—",
                     procesador    = esPc ? (e.PcCpuProcesador ?? "—") : (e.Procesador ?? "—"),
                     ram           = esPc ? (e.PcCpuRam        ?? "—") : (e.Ram        ?? "—"),
                     disco         = esPc ? (e.PcCpuDisco      ?? "—") : (e.Disco      ?? "—"),
@@ -144,7 +155,7 @@ namespace PROYJHOME2026.Controllers
                     tecladoModelo = e.PcTecladoModelo ?? "—",
                     tecladoSerie  = e.PcTecladoSerie  ?? "—",
                     mousepadMarca = e.PcMousepadMarca ?? "—",
-                    componenteFiltrado = tipoNombre ?? "Todos"
+                    componenteFiltrado = tipoIdList.Any() ? string.Join(",", tipoIdList) : "Todos"
                 };
             }).ToList();
 
@@ -154,18 +165,25 @@ namespace PROYJHOME2026.Controllers
           [HttpGet]
         public async Task<IActionResult> EquiposCsv(
             DateTime? fechaDesde, DateTime? fechaHasta,
-            int? tipoId, string? estado, string? buscar)
+            string? tipoIds, string? estado, string? buscar)
         {
+            var tipoIdList = new List<int>();
+            if (!string.IsNullOrWhiteSpace(tipoIds))
+                foreach (var id in tipoIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (int.TryParse(id.Trim(), out int tid)) tipoIdList.Add(tid);
+
             var query = _context.Equipos
                 .Include(e => e.TipoEquipo)
                 .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
                     .ThenInclude(a => a.Empleado)
+                .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
+                    .ThenInclude(a => a.Grupo)
                 .Include(e => e.ComponenteLogs.Where(l => l.TipoEvento == "Mantenimiento"))
                 .AsQueryable();
- 
+
             if (fechaDesde.HasValue) query = query.Where(e => e.fecha_compra >= fechaDesde.Value);
             if (fechaHasta.HasValue) query = query.Where(e => e.fecha_compra <= fechaHasta.Value.AddDays(1));
-            if (tipoId.HasValue)     query = query.Where(e => e.idTipoEquipo == tipoId);
+            if (tipoIdList.Any())    query = query.Where(e => tipoIdList.Contains(e.idTipoEquipo));
             if (!string.IsNullOrWhiteSpace(estado))
             {
                 var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -182,17 +200,16 @@ namespace PROYJHOME2026.Controllers
             var sb = new StringBuilder();
             sb.AppendLine("sep=;");
  
-            // Cabecera sin columnas de componentes técnicos
-            sb.AppendLine("ID;Tipo;Nombre/Marca;Modelo;N° Serie;Estado;Fecha Compra;Asignado A;Observaciones;N° Mantenimientos");
+            sb.AppendLine("ID;Tipo;Nombre/Marca;Modelo;N° Serie;Estado;Fecha Compra;Asignado A;F. Asignación;Grupo/Área;Observaciones;N° Mantenimientos");
  
             foreach (var e in equipos)
             {
                 var esPc   = e.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true;
-                var asig   = e.Asignaciones.FirstOrDefault();
-                var nombre = asig != null
-                    ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim()
-                    : "Sin asignar";
-                var mantes = e.ComponenteLogs.Count(l => l.TipoEvento == "Mantenimiento");
+                var asig      = e.Asignaciones.FirstOrDefault();
+                var nombre    = asig != null ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim() : "Sin asignar";
+                var fechaAsig = asig?.FechaAsignacion.ToString("dd/MM/yyyy") ?? "—";
+                var grupo     = asig?.Grupo?.area ?? "—";
+                var mantes    = e.ComponenteLogs.Count(l => l.TipoEvento == "Mantenimiento" && l.ValorAnterior != "Mantenimiento");
  
                 // Para PC Completo: NombrePc en vez de marca/modelo/serie
                 var displayNombre = esPc ? (e.NombrePc ?? "Sin nombre") : (e.marca ?? "—");
@@ -207,6 +224,8 @@ namespace PROYJHOME2026.Controllers
                     $"\"{e.estado_equipo}\";" +
                     $"{e.fecha_compra:dd/MM/yyyy};" +
                     $"\"{nombre}\";" +
+                    $"\"{fechaAsig}\";" +
+                    $"\"{grupo}\";" +
                     $"\"{e.Observaciones ?? "—"}\";" +
                     $"{mantes}");
             }
@@ -218,18 +237,25 @@ namespace PROYJHOME2026.Controllers
         [HttpGet]
         public async Task<IActionResult> EquiposPdf(
             DateTime? fechaDesde, DateTime? fechaHasta,
-            int? tipoId, string? estado, string? buscar)
+            string? tipoIds, string? estado, string? buscar)
         {
             var query = _context.Equipos
                 .Include(e => e.TipoEquipo)
                 .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
                     .ThenInclude(a => a.Empleado)
+                .Include(e => e.Asignaciones.Where(a => a.EstadoAsignacion == "Activo" || a.EstadoAsignacion == "Asignado"))
+                    .ThenInclude(a => a.Grupo)
                 .Include(e => e.ComponenteLogs.Where(l => l.TipoEvento == "Mantenimiento"))
                 .AsQueryable();
- 
-            if (fechaDesde.HasValue) query = query.Where(e => e.fecha_compra >= fechaDesde.Value);
-            if (fechaHasta.HasValue) query = query.Where(e => e.fecha_compra <= fechaHasta.Value.AddDays(1));
-            if (tipoId.HasValue)     query = query.Where(e => e.idTipoEquipo == tipoId);
+
+            var tipoIdListPdf = new List<int>();
+            if (!string.IsNullOrWhiteSpace(tipoIds))
+                foreach (var id in tipoIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (int.TryParse(id.Trim(), out int tid)) tipoIdListPdf.Add(tid);
+
+            if (fechaDesde.HasValue)    query = query.Where(e => e.fecha_compra >= fechaDesde.Value);
+            if (fechaHasta.HasValue)    query = query.Where(e => e.fecha_compra <= fechaHasta.Value.AddDays(1));
+            if (tipoIdListPdf.Any())    query = query.Where(e => tipoIdListPdf.Contains(e.idTipoEquipo));
             if (!string.IsNullOrWhiteSpace(estado))
             {
                 var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -276,18 +302,20 @@ namespace PROYJHOME2026.Controllers
  
                     page.Content().PaddingTop(12).Table(table =>
                     {
-                        // Columnas: # | Tipo | Nombre/Marca Modelo | N°Serie | Estado | F.Compra | Asignado | Observaciones | Mant.
+                        // Columnas: # | Tipo | Nombre | Serie | Estado | F.Compra | Asignado | F.Asig | Grupo | Obs | Mant
                         table.ColumnsDefinition(c =>
                         {
-                            c.ConstantColumn(25);   // #
-                            c.RelativeColumn(1.2f); // Tipo
-                            c.RelativeColumn(2.2f); // Nombre/Marca Modelo
-                            c.RelativeColumn(1.8f); // N° Serie
-                            c.RelativeColumn(1.2f); // Estado
-                            c.RelativeColumn(1.2f); // F.Compra
-                            c.RelativeColumn(2f);   // Asignado a
-                            c.RelativeColumn(2.5f); // Observaciones
-                            c.ConstantColumn(35);   // Mant.
+                            c.ConstantColumn(22);   // #
+                            c.RelativeColumn(1.1f); // Tipo
+                            c.RelativeColumn(2f);   // Nombre/Marca Modelo
+                            c.RelativeColumn(1.5f); // N° Serie
+                            c.RelativeColumn(1.1f); // Estado
+                            c.RelativeColumn(1f);   // F.Compra
+                            c.RelativeColumn(1.8f); // Asignado a
+                            c.RelativeColumn(1f);   // F. Asignación
+                            c.RelativeColumn(1.5f); // Grupo/Área
+                            c.RelativeColumn(2f);   // Observaciones
+                            c.ConstantColumn(30);   // Mant.
                         });
  
                         static IContainer CeldaCab(IContainer c) =>
@@ -295,7 +323,7 @@ namespace PROYJHOME2026.Controllers
  
                         table.Header(h =>
                         {
-                            foreach (var t in new[] { "#", "Tipo", "Nombre / Marca Modelo", "N° Serie", "Estado", "F. Compra", "Asignado a", "Observaciones", "Mant." })
+                            foreach (var t in new[] { "#", "Tipo", "Nombre / Marca Modelo", "N° Serie", "Estado", "F. Compra", "Asignado a", "F. Asig.", "Grupo/Área", "Observaciones", "Mant." })
                                 h.Cell().Element(CeldaCab).Text(t).Bold().FontSize(8).FontColor(Colors.White);
                         });
  
@@ -304,11 +332,11 @@ namespace PROYJHOME2026.Controllers
                             var e      = equipos[i];
                             var bg     = i % 2 == 0 ? Color.FromHex("#f8fafc") : Colors.White;
                             var esPc   = e.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true;
-                            var asig   = e.Asignaciones.FirstOrDefault();
-                            var nombre = asig != null
-                                ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim()
-                                : "Sin asignar";
-                            var mantes = e.ComponenteLogs?.Count(l => l.TipoEvento == "Mantenimiento") ?? 0;
+                            var asig      = e.Asignaciones.FirstOrDefault();
+                            var nombre    = asig != null ? $"{asig.Empleado?.nombre} {asig.Empleado?.paterno}".Trim() : "Sin asignar";
+                            var fechaAsig = asig?.FechaAsignacion.ToString("dd/MM/yyyy") ?? "—";
+                            var grupoArea = asig?.Grupo?.area ?? "—";
+                            var mantes    = e.ComponenteLogs?.Count(l => l.TipoEvento == "Mantenimiento" && l.ValorAnterior != "Mantenimiento") ?? 0;
  
                             // Para PC Completo: solo NombrePc, sin marca/modelo ni serie
                             var displayNombreModelo = esPc
@@ -332,6 +360,8 @@ namespace PROYJHOME2026.Controllers
                             table.Cell().Element(Celda).Text(e.estado_equipo).FontColor(estadoColor);
                             table.Cell().Element(Celda).Text(e.fecha_compra.ToString("dd/MM/yyyy")).FontSize(8);
                             table.Cell().Element(Celda).Text(nombre).FontColor(Color.FromHex("#2563eb")).FontSize(8);
+                            table.Cell().Element(Celda).Text(fechaAsig).FontSize(8).FontColor(Color.FromHex("#4b5563"));
+                            table.Cell().Element(Celda).Text(grupoArea).FontSize(8).FontColor(Color.FromHex("#4b5563"));
                             table.Cell().Element(Celda).Text(e.Observaciones ?? "—").FontSize(7.5f).FontColor(Color.FromHex("#4b5563"));
                             table.Cell().Element(Celda).AlignCenter()
                                 .Text(mantes == 0 ? "—" : mantes.ToString())
