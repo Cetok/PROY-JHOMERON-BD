@@ -1,9 +1,15 @@
+@model PROYJHOME2026.Models.CheckListTransporte?
 @{
     ViewData["Title"]      = "Check List de Inspección — Transporte";
     ViewData["Breadcrumb"] = "Flota Vehicular / Check List";
     var carro      = ViewBag.Carro as PROYJHOME2026.Models.Carro;
     var estructura = ViewBag.Estructura as List<(int Sec, string NombreSec, string Elemento)> ?? new();
     var hora       = ViewBag.Hora as string ?? DateTime.Now.ToString("HH:mm");
+    bool esEdicion = Model != null;
+
+    // En edición, los ítems vienen del modelo ordenados
+    var itemsExistentes = esEdicion ? Model!.Items.OrderBy(i => i.IdItem).ToList()
+                                    : new List<PROYJHOME2026.Models.CheckListTransporteItem>();
 
     // Agrupar por sección
     var secciones = estructura
@@ -26,9 +32,10 @@
     </div>
 </div>
 
-<form asp-action="Crear" method="post" id="formChecklist">
+<form method="post" id="formChecklist"
+      action="@(esEdicion ? Url.Action("Editar", new { id = Model!.IdCheckList }) : Url.Action("Crear"))">
     @Html.AntiForgeryToken()
-    <input type="hidden" name="idCarro" value="@carro?.IdCarro" />
+    <input type="hidden" name="idCarro" value="@(esEdicion ? Model!.IdCarro : carro?.IdCarro)" />
 
     <div style="max-width:860px; display:flex; flex-direction:column; gap:16px;">
 
@@ -59,7 +66,8 @@
                 <div style="grid-column:span 2;">
                     <label class="form-label">Nombre responsable <span class="req">*</span></label>
                     <input type="text" name="nombreResponsable" class="form-control" required maxlength="200"
-                           placeholder="Nombre completo del responsable" />
+                           placeholder="Nombre completo del responsable"
+                           value="@(esEdicion ? Model!.NombreResponsable : "")" />
                 </div>
             </div>
         </div>
@@ -95,11 +103,16 @@
                     <div class="checklist-row cl-tabla-row">
                         <div style="font-size:0.84rem; color:var(--gris-900);">@item.Elemento</div>
 
+                        @{
+                            var itemEx = esEdicion && itemIndex < itemsExistentes.Count
+                                         ? itemsExistentes[itemIndex] : null;
+                        }
                         <!-- SI -->
                         <div style="text-align:center;">
                             <label style="cursor:pointer; display:flex; align-items:center; justify-content:center;">
                                 <input type="radio" name="cumple[@idx]" value="true"
-                                       style="width:18px; height:18px; accent-color:var(--verde);" />
+                                       style="width:18px; height:18px; accent-color:var(--verde);"
+                                       @(itemEx?.Cumple == true ? "checked" : "") />
                             </label>
                         </div>
 
@@ -107,7 +120,8 @@
                         <div style="text-align:center;">
                             <label style="cursor:pointer; display:flex; align-items:center; justify-content:center;">
                                 <input type="radio" name="cumple[@idx]" value="false"
-                                       style="width:18px; height:18px; accent-color:#dc2626;" />
+                                       style="width:18px; height:18px; accent-color:#dc2626;"
+                                       @(itemEx?.Cumple == false ? "checked" : "") />
                             </label>
                         </div>
 
@@ -115,7 +129,8 @@
                         <div>
                             <input type="text" name="observacion[@idx]" class="form-control"
                                    style="font-size:0.8rem; padding:5px 8px;"
-                                   maxlength="500" placeholder="Opcional..." />
+                                   maxlength="500" placeholder="Opcional..."
+                                   value="@(itemEx?.Observacion ?? "")" />
                         </div>
                     </div>
                     itemIndex++;
@@ -128,7 +143,7 @@
         <div class="card">
             <label class="form-label">Observaciones generales</label>
             <textarea name="observacionesGenerales" class="form-control" rows="3" maxlength="1000"
-                      placeholder="Observaciones adicionales sobre la inspección..."></textarea>
+                      placeholder="Observaciones adicionales sobre la inspección...">@(esEdicion ? Model!.ObservacionesGenerales : "")</textarea>
             <div class="form-hint">NA = No aplicable o no procede.</div>
         </div>
 
@@ -164,7 +179,7 @@
             </a>
             <button type="submit" class="btn btn--celeste" onclick="return prepararEnvio()">
                 <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                Guardar Check List
+                @(esEdicion ? "Guardar cambios" : "Guardar Check List")
             </button>
         </div>
 
@@ -217,6 +232,18 @@ const ctx         = canvas.getContext('2d');
 const placeholder = document.getElementById('firmaPlaceholder');
 let dibujando = false;
 let tieneFirma = false;
+
+// Precargar firma existente en modo edición
+const firmaExistente = '@(esEdicion ? Model!.FirmaBase64 : "")';
+if (firmaExistente && firmaExistente.startsWith('data:image')) {
+    const img = new Image();
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        tieneFirma = true;
+        if (placeholder) placeholder.style.display = 'none';
+    };
+    img.src = firmaExistente;
+}
 
 ctx.strokeStyle = '#1a3a6b';
 ctx.lineWidth   = 2.2;

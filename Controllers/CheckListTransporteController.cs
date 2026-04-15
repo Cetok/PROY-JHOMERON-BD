@@ -192,5 +192,92 @@ namespace PROYJHOME2026.Controllers
 
             return View(checkList);
         }
+
+        // ── EDITAR GET ───────────────────────────────────────────
+        public async Task<IActionResult> Editar(int id)
+        {
+            var checkList = await _context.CheckListTransportes
+                .Include(cl => cl.Items)
+                .Include(cl => cl.Carro)
+                .FirstOrDefaultAsync(cl => cl.IdCheckList == id);
+
+            if (checkList == null) return NotFound();
+
+            // Solo Admin o el usuario que lo creó
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var idActual  = HttpContext.Session.GetString("UsuarioId")  ?? "";
+            bool esAdmin  = rolActual == "Admin";
+            bool esCreador = checkList.IdUsuario?.ToString() == idActual;
+            if (!esAdmin && !esCreador)
+            {
+                TempData["Error"] = "No tienes permiso para editar este check list.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            if (checkList.FueEditado)
+            {
+                TempData["Warning"] = "Este check list ya fue editado anteriormente y no puede modificarse nuevamente.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            ViewBag.Carro      = checkList.Carro;
+            ViewBag.Estructura = _estructura;
+            ViewBag.Hora       = checkList.HoraInspeccion.ToString("HH:mm");
+            return View("Crear", checkList);
+        }
+
+        // ── EDITAR POST ──────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(int id, string nombreResponsable,
+            string firmaBase64, string? observacionesGenerales,
+            List<bool?> cumple, List<string?> observacion)
+        {
+            var checkList = await _context.CheckListTransportes
+                .Include(cl => cl.Items)
+                .Include(cl => cl.Carro)
+                .FirstOrDefaultAsync(cl => cl.IdCheckList == id);
+
+            if (checkList == null) return NotFound();
+
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var idActual  = HttpContext.Session.GetString("UsuarioId")  ?? "";
+            bool esAdmin  = rolActual == "Admin";
+            bool esCreador = checkList.IdUsuario?.ToString() == idActual;
+            if (!esAdmin && !esCreador)
+            {
+                TempData["Error"] = "No tienes permiso para editar este check list.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            if (checkList.FueEditado)
+            {
+                TempData["Warning"] = "Este check list ya fue editado y no puede modificarse nuevamente.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            // Actualizar encabezado
+            checkList.NombreResponsable      = nombreResponsable.Trim();
+            checkList.ObservacionesGenerales = observacionesGenerales?.Trim();
+            if (!string.IsNullOrWhiteSpace(firmaBase64))
+                checkList.FirmaBase64 = firmaBase64;
+            checkList.FueEditado = true;
+
+            // Actualizar ítems
+            var itemsList = checkList.Items.OrderBy(i => i.IdItem).ToList();
+            for (int i = 0; i < itemsList.Count; i++)
+            {
+                itemsList[i].Cumple      = i < cumple.Count ? cumple[i] : null;
+                itemsList[i].Observacion = i < observacion.Count ? observacion[i]?.Trim() : null;
+            }
+
+            await _context.SaveChangesAsync();
+
+            await _auditoriaService.RegistrarAsync("Editar", "CheckListTransporte", id,
+                $"Editó check list #{id} del vehículo {checkList.Carro?.Placa}");
+
+            TempData["Success"] = "Check List actualizado. Ya no podrá editarse nuevamente.";
+            return RedirectToAction(nameof(Ver), new { id });
+        }
     }
 }

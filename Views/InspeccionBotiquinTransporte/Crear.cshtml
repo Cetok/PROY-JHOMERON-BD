@@ -1,8 +1,12 @@
+@model PROYJHOME2026.Models.InspeccionBotiquinTransporte?
 @{
     ViewData["Title"]      = "Inspección de Botiquín — Transporte";
     ViewData["Breadcrumb"] = "Flota Vehicular / Inspección Botiquín";
-    var carro    = ViewBag.Carro     as PROYJHOME2026.Models.Carro;
+    var carro     = ViewBag.Carro     as PROYJHOME2026.Models.Carro;
     var elementos = ViewBag.Elementos as List<string> ?? new();
+    bool esEdicion = Model != null;
+    var itemsEx    = esEdicion ? Model!.Items.OrderBy(i => i.IdItem).ToList()
+                               : new List<PROYJHOME2026.Models.InspeccionBotiquinTransporteItem>();
 }
 
 <div class="page-header">
@@ -19,9 +23,10 @@
     </div>
 </div>
 
-<form asp-action="Crear" method="post" id="formBotiquin">
+@{ var _formAction = esEdicion ? Url.Action("Editar", new { id = Model!.IdInspeccion }) : Url.Action("Crear"); }
+<form method="post" id="formBotiquin" action="@_formAction">
     @Html.AntiForgeryToken()
-    <input type="hidden" name="idCarro" value="@carro?.IdCarro" />
+    <input type="hidden" name="idCarro" value="@(esEdicion ? Model!.IdCarro : carro?.IdCarro)" />
 
     <div class="insp-container">
 
@@ -38,7 +43,8 @@
                 </div>
                 <div>
                     <label class="form-label">N° Botiquín <span class="req">*</span></label>
-                    <input type="text" name="numeroBotiquin" class="form-control" required maxlength="50" placeholder="Ej: BOT-01" />
+                    <input type="text" name="numeroBotiquin" class="form-control" required maxlength="50" placeholder="Ej: BOT-01" @{ string _nbot = esEdicion ? Model!.NumeroBotiquin : ""; }
+                    value="@_nbot" />
                 </div>
                 <div>
                     <div class="det-label">Placa</div>
@@ -92,40 +98,92 @@
                 <div class="th-label">Observaciones</div>
             </div>
             @for (int i = 0; i < elementos.Count; i++)
-            {
-                <div class="insp-tabla-row">
-                    <div class="insp-elem-nombre">@elementos[i]</div>
-                    <div class="insp-cell-center">
-                        <label class="toggle-check toggle-si"><input type="radio" name="seencuentra_@i" value="si" required /><span>SI</span></label>
-                        <label class="toggle-check toggle-no"><input type="radio" name="seencuentra_@i" value="no" /><span>NO</span></label>
-                    </div>
-                    <div><input type="number" name="cantidad_@i" class="form-control insp-input-sm" required min="0" max="9999" /></div>
-                    <div><input type="date" name="fvenc_@i" class="form-control insp-input-sm" required /></div>
-                    <div><input type="text" name="obs_@i" class="form-control insp-input-sm" maxlength="500" placeholder="Opcional..." /></div>
-                </div>
-                <div class="insp-mobile-card">
-                    <div class="insp-mobile-nombre">@elementos[i]</div>
-                    <div class="insp-mobile-row">
-                        <span class="insp-mobile-lbl">¿Se encuentra?</span>
-                        <div class="toggle-group">
-                            <label class="toggle-check toggle-si"><input type="radio" name="seencuentra_@i" value="si" required /><span>SI</span></label>
-                            <label class="toggle-check toggle-no"><input type="radio" name="seencuentra_@i" value="no" /><span>NO</span></label>
+                {
+                    string? _siT   = (esEdicion && i < itemsEx.Count && itemsEx[i].SeEncuentra)  ? "checked" : null;
+                    string? _noT   = (esEdicion && i < itemsEx.Count && !itemsEx[i].SeEncuentra) ? "checked" : null;
+                    string  _cantT = (esEdicion && i < itemsEx.Count) ? itemsEx[i].Cantidad.ToString() : "";
+                    string  _fvencT= (esEdicion && i < itemsEx.Count) ? itemsEx[i].FechaVencimiento.ToString("yyyy-MM-dd") : "";
+                    string  _obsT  = (esEdicion && i < itemsEx.Count) ? (itemsEx[i].Observaciones ?? "") : "";
+                    string  _elemT = elementos[i];
+
+                    <div class="insp-tabla-row">
+                        <div class="insp-elem-nombre">@_elemT</div>
+
+                        <div class="insp-cell-center">
+                            <label class="toggle-check toggle-si">
+                                <input type="radio" name="seencuentra_@i" value="si" required @_siT />
+                                <span>SI</span>
+                            </label>
+
+                            <label class="toggle-check toggle-no">
+                                <input type="radio" name="seencuentra_@i" value="no" @_noT />
+                                <span>NO</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <input type="number" name="cantidad_@i"
+                                class="form-control insp-input-sm"
+                                required min="0" max="9999"
+                                value="@_cantT" />
+                        </div>
+
+                        <div>
+                            <input type="date" name="fvenc_@i"
+                                class="form-control insp-input-sm"
+                                required value="@_fvencT" />
+                        </div>
+
+                        <div>
+                            <input type="text" name="obs_@i"
+                                class="form-control insp-input-sm"
+                                maxlength="500"
+                                value="@_obsT" />
                         </div>
                     </div>
-                    <div class="insp-mobile-row">
-                        <span class="insp-mobile-lbl">Cantidad</span>
-                        <input type="number" name="cantidad_@i" class="form-control insp-input-mobile" required min="0" max="9999" />
+
+                    <!-- MOBILE -->
+                    <div class="insp-mobile-card">
+                        <div class="insp-mobile-nombre">@_elemT</div>
+
+                        <div class="insp-mobile-row">
+                            <span class="insp-mobile-lbl">¿Se encuentra?</span>
+
+                            <div class="toggle-group">
+                                <label class="toggle-check toggle-si">
+                                    <input type="radio" name="seencuentra_mobile_@i" value="si" @_siT readonly />
+                                    <span>SI</span>
+                                </label>
+
+                                <label class="toggle-check toggle-no">
+                                    <input type="radio" name="seencuentra_mobile_@i" value="no" @_noT readonly />
+                                    <span>NO</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="insp-mobile-row">
+                            <span class="insp-mobile-lbl">Cantidad</span>
+                            <input type="number"
+                                class="form-control insp-input-mobile"
+                                readonly value="@_cantT" />
+                        </div>
+
+                        <div class="insp-mobile-row">
+                            <span class="insp-mobile-lbl">Fecha venc.</span>
+                            <input type="date"
+                                class="form-control insp-input-mobile"
+                                readonly value="@_fvencT" />
+                        </div>
+
+                        <div class="insp-mobile-row">
+                            <span class="insp-mobile-lbl">Observaciones</span>
+                            <input type="text"
+                                class="form-control insp-input-mobile"
+                                readonly value="@_obsT" />
+                        </div>
                     </div>
-                    <div class="insp-mobile-row">
-                        <span class="insp-mobile-lbl">Fecha venc.</span>
-                        <input type="date" name="fvenc_@i" class="form-control insp-input-mobile" required />
-                    </div>
-                    <div class="insp-mobile-row">
-                        <span class="insp-mobile-lbl">Observaciones</span>
-                        <input type="text" name="obs_@i" class="form-control insp-input-mobile" maxlength="500" placeholder="Opcional..." />
-                    </div>
-                </div>
-            }
+                }
             </div><!-- /insp-tabla-scroll -->
         </div>
 
@@ -138,7 +196,8 @@
             <div class="insp-firma-grid">
                 <div>
                     <label class="form-label">Nombre completo <span class="req">*</span></label>
-                    <input type="text" name="inspeccionadoPor" class="form-control" required maxlength="200" placeholder="Nombre del encargado" />
+                    <input type="text" name="inspeccionadoPor" class="form-control" required maxlength="200" placeholder="Nombre del encargado" @{ string _inspPor = esEdicion ? Model!.InspeccionadoPor : ""; }
+                    value="@_inspPor" />
                 </div>
                 <div>
                     <label class="form-label">Firma y Sello <span class="req">*</span></label>
@@ -232,6 +291,18 @@ const canvas = document.getElementById('firmaCanvas');
 const ctx    = canvas.getContext('2d');
 const placeholder = document.getElementById('firmaPlaceholder');
 let dibujando = false, tieneFirma = false;
+
+// Precargar firma existente en modo edición
+const firmaExistente = '@(esEdicion ? Model!.FirmaBase64 : "")';
+if (firmaExistente && firmaExistente.startsWith('data:image')) {
+    const img = new Image();
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        tieneFirma = true;
+        if (placeholder) placeholder.style.display = 'none';
+    };
+    img.src = firmaExistente;
+}
 ctx.strokeStyle = '#1a3a6b'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
 function getPos(e) {

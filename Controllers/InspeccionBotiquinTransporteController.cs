@@ -183,5 +183,88 @@ namespace PROYJHOME2026.Controllers
             if (inspeccion == null) return NotFound();
             return View(inspeccion);
         }
+
+        // ── EDITAR GET ───────────────────────────────────────────
+        public async Task<IActionResult> Editar(int id)
+        {
+            var inspeccion = await _context.InspeccionBotiquinTransportes
+                .Include(i => i.Items)
+                .Include(i => i.Carro)
+                .FirstOrDefaultAsync(i => i.IdInspeccion == id);
+
+            if (inspeccion == null) return NotFound();
+
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var idActual  = HttpContext.Session.GetString("UsuarioId")  ?? "";
+            if (rolActual != "Admin" && inspeccion.IdUsuario?.ToString() != idActual)
+            {
+                TempData["Error"] = "No tienes permiso para editar esta inspección.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            if (inspeccion.FueEditado)
+            {
+                TempData["Warning"] = "Esta inspección ya fue editada y no puede modificarse nuevamente.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            ViewBag.Carro     = inspeccion.Carro;
+            ViewBag.Elementos = _elementos;
+            return View("Crear", inspeccion);
+        }
+
+        // ── EDITAR POST ──────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(int id, string numeroBotiquin,
+            string inspeccionadoPor, string firmaBase64,
+            List<bool> seEncuentra, List<int> cantidad, List<string?> fechaVenc,
+            List<string?> observaciones)
+        {
+            var inspeccion = await _context.InspeccionBotiquinTransportes
+                .Include(i => i.Items)
+                .Include(i => i.Carro)
+                .FirstOrDefaultAsync(i => i.IdInspeccion == id);
+
+            if (inspeccion == null) return NotFound();
+
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var idActual  = HttpContext.Session.GetString("UsuarioId")  ?? "";
+            if (rolActual != "Admin" && inspeccion.IdUsuario?.ToString() != idActual)
+            {
+                TempData["Error"] = "No tienes permiso para editar esta inspección.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            if (inspeccion.FueEditado)
+            {
+                TempData["Warning"] = "Esta inspección ya fue editada y no puede modificarse nuevamente.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            inspeccion.NumeroBotiquin  = numeroBotiquin.Trim();
+            inspeccion.InspeccionadoPor = inspeccionadoPor.Trim();
+            if (!string.IsNullOrWhiteSpace(firmaBase64))
+                inspeccion.FirmaBase64 = firmaBase64;
+            inspeccion.FueEditado = true;
+
+            var items = inspeccion.Items.OrderBy(i => i.IdItem).ToList();
+            for (int i = 0; i < items.Count; i++)
+            {
+                items[i].SeEncuentra = i < seEncuentra.Count && seEncuentra[i];
+                items[i].Cantidad    = i < cantidad.Count ? cantidad[i] : 0;
+                if (i < fechaVenc.Count && DateOnly.TryParse(fechaVenc[i], out var fv))
+                    items[i].FechaVencimiento = fv;
+                items[i].Observaciones = i < observaciones.Count ? observaciones[i]?.Trim() : null;
+            }
+
+            await _context.SaveChangesAsync();
+
+            await _auditoriaService.RegistrarAsync("Editar", "InspeccionBotiquinTransporte", id,
+                $"Editó inspección botiquín transporte #{id} — {inspeccion.Carro?.Placa}");
+
+            TempData["Success"] = "Inspección actualizada. Ya no podrá editarse nuevamente.";
+            return RedirectToAction(nameof(Ver), new { id });
+        }
     }
 }

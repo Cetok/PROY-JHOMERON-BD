@@ -1,9 +1,13 @@
+@model PROYJHOME2026.Models.InspeccionExtintor?
 @{
     ViewData["Title"]      = "Inspección de Extintores";
     ViewData["Breadcrumb"] = "Accesorios / Inspección Extintores";
     var accesorio         = ViewBag.Accesorio         as PROYJHOME2026.Models.Asesorio;
     var gruposConExtintor = ViewBag.GruposConExtintor  as List<PROYJHOME2026.Models.GrupoAsesorio> ?? new();
     var observaciones     = ViewBag.Observaciones      as Dictionary<int, string> ?? new();
+    bool esEdicion        = Model != null;
+    var filasEx           = esEdicion ? Model!.Filas.OrderBy(f => f.IdFila).ToList()
+                                      : new List<PROYJHOME2026.Models.InspeccionExtintorFila>();
 }
 
 <div class="page-header">
@@ -20,9 +24,10 @@
     </div>
 </div>
 
-<form asp-action="Crear" method="post" id="formInspeccion">
+<form method="post" id="formInspeccion"
+      action="@(esEdicion ? Url.Action("Editar", new { id = Model!.IdInspeccion }) : Url.Action("Crear"))">
     @Html.AntiForgeryToken()
-    <input type="hidden" name="idAsesorio" value="@accesorio?.IdAsesorio" />
+    <input type="hidden" name="idAsesorio" value="@(esEdicion ? Model!.IdAsesorio : accesorio?.IdAsesorio)" />
 
     <div style="max-width:1000px; display:flex; flex-direction:column; gap:16px;">
 
@@ -40,7 +45,8 @@
                 <div>
                     <label class="form-label">Inspeccionado por <span class="req">*</span></label>
                     <input type="text" name="inspeccionadoPor" class="form-control" required maxlength="200"
-                           placeholder="Nombre completo del inspector" />
+                           placeholder="Nombre completo del inspector"
+                           value="@(esEdicion ? Model!.InspeccionadoPor : "")" />
                 </div>
             </div>
         </div>
@@ -107,8 +113,14 @@
                 <!-- Comentario del área -->
                 <div class="form-group" style="margin-bottom:14px;">
                     <label class="form-label">Comentario del área</label>
+                    @{
+                        // Buscar fila por IdGrupo para garantizar coincidencia correcta
+                        var filaEx = esEdicion ? filasEx.FirstOrDefault(f => f.IdGrupo == ga.IdGrupo) : null;
+                        var obsIds = filaEx?.ObservacionesMarcadas?.Split(',').Select(x => int.TryParse(x.Trim(), out int n) ? n : 0).ToHashSet() ?? new HashSet<int>();
+                    }
                     <input type="text" name="comentario_@i" class="form-control"
-                           maxlength="500" placeholder="Ej: Abarca también pasillo norte y almacén secundario..." />
+                           maxlength="500" placeholder="Ej: Abarca también pasillo norte y almacén secundario..."
+                           value="@(filaEx?.Comentario ?? "")" />
                     <div class="form-hint">Indica si este extintor cubre otras áreas adicionales.</div>
                 </div>
 
@@ -122,7 +134,8 @@
                         {
                             <label style="display:flex; align-items:flex-start; gap:8px; padding:7px 10px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-100); cursor:pointer; font-size:0.8rem; color:var(--gris-800);">
                                 <input type="checkbox" name="obs_@(i)_@(obs.Key)"
-                                       style="margin-top:2px; width:15px; height:15px; accent-color:#dc2626; flex-shrink:0;" />
+                                       style="margin-top:2px; width:15px; height:15px; accent-color:#dc2626; flex-shrink:0;"
+                                       @(obsIds.Contains(obs.Key) ? "checked" : "") />
                                 <span><strong style="color:var(--azul-dark);">@obs.Key.</strong> @obs.Value</span>
                             </label>
                         }
@@ -133,13 +146,15 @@
                         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:8px;">
                             <input type="checkbox" name="obs_@(i)_18" id="check18_@i"
                                    style="width:16px; height:16px; accent-color:#dc2626;"
-                                   onchange="toggle18(@i)" />
+                                   onchange="toggle18(@i)"
+                                   @(obsIds.Contains(18) ? "checked" : "") />
                             <span style="font-size:0.82rem; font-weight:700; color:#dc2626;">18. Otros (Indicar)</span>
                         </label>
-                        <div id="div18_@i" style="display:none;">
+                        <div id="div18_@i" style="display:@(obsIds.Contains(18) ? "block" : "none");">
                             <input type="text" name="obs18text_@i" id="text18_@i"
                                    class="form-control" maxlength="500"
-                                   placeholder="Describa el problema encontrado..." />
+                                   placeholder="Describa el problema encontrado..."
+                                   value="@(filaEx?.Observacion18 ?? "")" />
                         </div>
                     </div>
                 </div>
@@ -229,6 +244,18 @@ const canvas      = document.getElementById('firmaCanvas');
 const ctx         = canvas.getContext('2d');
 const placeholder = document.getElementById('firmaPlaceholder');
 let dibujando = false, tieneFirma = false;
+
+// Precargar firma existente en modo edición
+const firmaExistente = '@(esEdicion ? Model!.FirmaBase64 : "")';
+if (firmaExistente && firmaExistente.startsWith('data:image')) {
+    const img = new Image();
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        tieneFirma = true;
+        if (placeholder) placeholder.style.display = 'none';
+    };
+    img.src = firmaExistente;
+}
 ctx.strokeStyle = '#1a3a6b'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
 function getPos(e) {

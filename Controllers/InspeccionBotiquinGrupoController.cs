@@ -226,5 +226,100 @@ namespace PROYJHOME2026.Controllers
             if (inspeccion == null) return NotFound();
             return View(inspeccion);
         }
+
+        // ── EDITAR GET ───────────────────────────────────────────
+        public async Task<IActionResult> Editar(int id)
+        {
+            var inspeccion = await _context.InspeccionBotiquinGrupos
+                .Include(i => i.Items)
+                .Include(i => i.Grupo)
+                .FirstOrDefaultAsync(i => i.IdInspeccion == id);
+
+            if (inspeccion == null) return NotFound();
+
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var idActual  = HttpContext.Session.GetString("UsuarioId")  ?? "";
+            if (rolActual != "Admin" && inspeccion.IdUsuario?.ToString() != idActual)
+            {
+                TempData["Error"] = "No tienes permiso para editar esta inspección.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            if (inspeccion.FueEditado)
+            {
+                TempData["Warning"] = "Esta inspección ya fue editada y no puede modificarse nuevamente.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            var grupo = inspeccion.Grupo;
+            ViewBag.Grupo     = grupo;
+            ViewBag.Elementos = ObtenerElementos(grupo?.area ?? "");
+            return View("Crear", inspeccion);
+        }
+
+        // ── EDITAR POST ──────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(int id, string numeroBotiquin,
+            string? piso, bool instaladoEnPared, bool localizadoVisible,
+            bool libreDeObstaculos, bool senalizado, string inspeccionadoPor,
+            string firmaBase64)
+        {
+            var inspeccion = await _context.InspeccionBotiquinGrupos
+                .Include(i => i.Items)
+                .Include(i => i.Grupo)
+                .FirstOrDefaultAsync(i => i.IdInspeccion == id);
+
+            if (inspeccion == null) return NotFound();
+
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var idActual  = HttpContext.Session.GetString("UsuarioId")  ?? "";
+            if (rolActual != "Admin" && inspeccion.IdUsuario?.ToString() != idActual)
+            {
+                TempData["Error"] = "No tienes permiso para editar esta inspección.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            if (inspeccion.FueEditado)
+            {
+                TempData["Warning"] = "Esta inspección ya fue editada y no puede modificarse nuevamente.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            inspeccion.NumeroBotiquin    = numeroBotiquin.Trim();
+            inspeccion.Piso              = piso?.Trim();
+            inspeccion.InstaladoEnPared  = instaladoEnPared;
+            inspeccion.LocalizadoVisible = localizadoVisible;
+            inspeccion.LibreDeObstaculos = libreDeObstaculos;
+            inspeccion.Senalizado        = senalizado;
+            inspeccion.InspeccionadoPor  = inspeccionadoPor.Trim();
+            if (!string.IsNullOrWhiteSpace(firmaBase64))
+                inspeccion.FirmaBase64 = firmaBase64;
+            inspeccion.FueEditado = true;
+
+            // Usar Request.Form con los mismos nombres que usa el Crear
+            var elementos = ObtenerElementos(inspeccion.Grupo?.area ?? "");
+            var items = inspeccion.Items.OrderBy(i => i.IdItem).ToList();
+            for (int i = 0; i < items.Count; i++)
+            {
+                string? valSe = Request.Form[$"seencuentra_{i}"].FirstOrDefault();
+                int.TryParse(Request.Form[$"cantidad_{i}"].FirstOrDefault(), out int cant);
+                DateOnly.TryParse(Request.Form[$"fvenc_{i}"].FirstOrDefault(), out DateOnly fVenc);
+                string? obs = Request.Form[$"obs_{i}"].FirstOrDefault();
+
+                items[i].SeEncuentra      = valSe == "si";
+                items[i].Cantidad         = cant;
+                if (fVenc != default) items[i].FechaVencimiento = fVenc;
+                items[i].Observaciones    = string.IsNullOrWhiteSpace(obs) ? null : obs.Trim();
+            }
+
+            await _context.SaveChangesAsync();
+
+            await _auditoriaService.RegistrarAsync("Editar", "InspeccionBotiquinGrupo", id,
+                $"Editó inspección botiquín grupo #{id} — {inspeccion.Grupo?.area}");
+
+            TempData["Success"] = "Inspección actualizada. Ya no podrá editarse nuevamente.";
+            return RedirectToAction(nameof(Ver), new { id });
+        }
     }
 }

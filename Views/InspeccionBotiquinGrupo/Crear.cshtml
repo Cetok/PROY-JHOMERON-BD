@@ -1,8 +1,12 @@
+@model PROYJHOME2026.Models.InspeccionBotiquinGrupo?
 @{
     ViewData["Title"]      = "Inspección de Botiquín — Grupo";
     ViewData["Breadcrumb"] = "Grupos / Inspección Botiquín";
     var grupo     = ViewBag.Grupo     as PROYJHOME2026.Models.Grupo;
     var elementos = ViewBag.Elementos as List<string> ?? new();
+    bool esEdicion = Model != null;
+    var itemsEx    = esEdicion ? Model!.Items.OrderBy(i => i.IdItem).ToList()
+                               : new List<PROYJHOME2026.Models.InspeccionBotiquinGrupoItem>();
 }
 
 <div class="page-header">
@@ -19,9 +23,10 @@
     </div>
 </div>
 
-<form asp-action="Crear" method="post" id="formBotiquinGrupo">
+@{ var _formAction = esEdicion ? Url.Action("Editar", new { id = Model!.IdInspeccion }) : Url.Action("Crear"); }
+<form method="post" id="formBotiquinGrupo" action="@_formAction">
     @Html.AntiForgeryToken()
-    <input type="hidden" name="idGrupo" value="@grupo?.idGrupo" />
+    <input type="hidden" name="idGrupo" value="@(esEdicion ? Model!.IdGrupo : grupo?.idGrupo)" />
 
     <div class="insp-container">
 
@@ -38,11 +43,13 @@
                 </div>
                 <div>
                     <label class="form-label">Piso</label>
-                    <input type="text" name="piso" class="form-control" maxlength="50" placeholder="Ej: 1° piso" />
+                    <input type="text" name="piso" class="form-control" maxlength="50" placeholder="Ej: 1° piso" @{ string _piso = esEdicion ? (Model!.Piso ?? "") : ""; }
+                    value="@_piso" />
                 </div>
                 <div>
                     <label class="form-label">N° Botiquín <span class="req">*</span></label>
-                    <input type="text" name="numeroBotiquin" class="form-control" required maxlength="50" placeholder="Ej: BOT-01" />
+                    <input type="text" name="numeroBotiquin" class="form-control" required maxlength="50" placeholder="Ej: BOT-01" @{ string _nbot = esEdicion ? Model!.NumeroBotiquin : ""; }
+                    value="@_nbot" />
                 </div>
                 <div>
                     <div class="det-label">Área</div>
@@ -67,11 +74,27 @@
                             <span class="insp-check-label">@label</span>
                             <div class="toggle-group">
                                 <label class="toggle-check toggle-si">
-                                    <input type="radio" name="@nombre" value="true" required />
+                                    @{
+                                        bool siChecked = esEdicion && (
+                                            (nombre == "instaladoEnPared"  && Model!.InstaladoEnPared)  ||
+                                            (nombre == "localizadoVisible" && Model!.LocalizadoVisible) ||
+                                            (nombre == "libreDeObstaculos" && Model!.LibreDeObstaculos) ||
+                                            (nombre == "senalizado"         && Model!.Senalizado));
+                                    }
+                                    @{ string? _chkSi = siChecked ? "checked" : null; }
+                                    <input type="radio" name="@nombre" value="true" required checked="@_chkSi" />
                                     <span>SI</span>
                                 </label>
                                 <label class="toggle-check toggle-no">
-                                    <input type="radio" name="@nombre" value="false" />
+                                    @{
+                                        bool noChecked = esEdicion && (
+                                            (nombre == "instaladoEnPared"  && !Model!.InstaladoEnPared)  ||
+                                            (nombre == "localizadoVisible" && !Model!.LocalizadoVisible) ||
+                                            (nombre == "libreDeObstaculos" && !Model!.LibreDeObstaculos) ||
+                                            (nombre == "senalizado"         && !Model!.Senalizado));
+                                    }
+                                    @{ string? _chkNo = noChecked ? "checked" : null; }
+                                    <input type="radio" name="@nombre" value="false" checked="@_chkNo" />
                                     <span>NO</span>
                                 </label>
                             </div>
@@ -100,55 +123,90 @@
             </div>
 
             @for (int i = 0; i < elementos.Count; i++)
-            {
-                <!-- Desktop row -->
-                <div class="insp-tabla-row">
-                    <div class="insp-elem-nombre">@elementos[i]</div>
-                    <div class="insp-cell-center">
-                        <label class="toggle-check toggle-si">
-                            <input type="radio" name="seencuentra_@i" value="si" required />
-                            <span>SI</span>
-                        </label>
-                        <label class="toggle-check toggle-no">
-                            <input type="radio" name="seencuentra_@i" value="no" />
-                            <span>NO</span>
-                        </label>
-                    </div>
-                    <div><input type="number" name="cantidad_@i" class="form-control insp-input-sm" required min="0" max="9999" /></div>
-                    <div><input type="date" name="fvenc_@i" class="form-control insp-input-sm" required /></div>
-                    <div><input type="text" name="obs_@i" class="form-control insp-input-sm" maxlength="500" placeholder="Opcional..." /></div>
-                </div>
+                {
+                    string? _siEx   = (esEdicion && i < itemsEx.Count && itemsEx[i].SeEncuentra)  ? "checked" : null;
+                    string? _noEx   = (esEdicion && i < itemsEx.Count && !itemsEx[i].SeEncuentra) ? "checked" : null;
+                    string  _cant   = (esEdicion && i < itemsEx.Count) ? itemsEx[i].Cantidad.ToString() : "";
+                    string  _fvenc  = (esEdicion && i < itemsEx.Count) ? itemsEx[i].FechaVencimiento.ToString("yyyy-MM-dd") : "";
+                    string  _obs    = (esEdicion && i < itemsEx.Count) ? (itemsEx[i].Observaciones ?? "") : "";
+                    string  _elem   = elementos[i];
 
-                <!-- Mobile card -->
-                <div class="insp-mobile-card">
-                    <div class="insp-mobile-nombre">@elementos[i]</div>
-                    <div class="insp-mobile-row">
-                        <span class="insp-mobile-lbl">¿Se encuentra?</span>
-                        <div class="toggle-group">
+                    <div class="insp-tabla-row">
+                        <div class="insp-elem-nombre">@_elem</div>
+
+                        <div class="insp-cell-center">
                             <label class="toggle-check toggle-si">
-                                <input type="radio" name="seencuentra_@i" value="si" required />
+                                <input type="radio" name="seencuentra_@i" value="si" required @_siEx />
                                 <span>SI</span>
                             </label>
+
                             <label class="toggle-check toggle-no">
-                                <input type="radio" name="seencuentra_@i" value="no" />
+                                <input type="radio" name="seencuentra_@i" value="no" @_noEx />
                                 <span>NO</span>
                             </label>
                         </div>
+
+                        <div>
+                            <input type="number" name="cantidad_@i"
+                                class="form-control insp-input-sm"
+                                required min="0" max="9999"
+                                value="@_cant" />
+                        </div>
+
+                        <div>
+                            <input type="date" name="fvenc_@i"
+                                class="form-control insp-input-sm"
+                                required value="@_fvenc" />
+                        </div>
+
+                        <div>
+                            <input type="text" name="obs_@i"
+                                class="form-control insp-input-sm"
+                                maxlength="500"
+                                value="@_obs" />
+                        </div>
                     </div>
-                    <div class="insp-mobile-row">
-                        <span class="insp-mobile-lbl">Cantidad</span>
-                        <input type="number" name="cantidad_@i" class="form-control insp-input-mobile" required min="0" max="9999" />
+
+                    <!-- MOBILE -->
+                    <div class="insp-mobile-card">
+                        <div class="insp-mobile-nombre">@_elem</div>
+
+                        <div class="insp-mobile-row">
+                            <span class="insp-mobile-lbl">¿Se encuentra?</span>
+                            <div class="toggle-group">
+
+                                <label class="toggle-check toggle-si">
+                                    <input type="radio" name="seencuentra_mobile_@i" value="si" @_siEx readonly />
+                                    <span>SI</span>
+                                </label>
+
+                                <label class="toggle-check toggle-no">
+                                    <input type="radio" name="seencuentra_mobile_@i" value="no" @_noEx readonly />
+                                    <span>NO</span>
+                                </label>
+
+                            </div>
+                        </div>
+
+                        <div class="insp-mobile-row">
+                            <span class="insp-mobile-lbl">Cantidad</span>
+                            <input type="number" class="form-control insp-input-mobile"
+                                readonly value="@_cant" />
+                        </div>
+
+                        <div class="insp-mobile-row">
+                            <span class="insp-mobile-lbl">Fecha venc.</span>
+                            <input type="date" class="form-control insp-input-mobile"
+                                readonly value="@_fvenc" />
+                        </div>
+
+                        <div class="insp-mobile-row">
+                            <span class="insp-mobile-lbl">Observaciones</span>
+                            <input type="text" class="form-control insp-input-mobile"
+                                readonly value="@_obs" />
+                        </div>
                     </div>
-                    <div class="insp-mobile-row">
-                        <span class="insp-mobile-lbl">Fecha venc.</span>
-                        <input type="date" name="fvenc_@i" class="form-control insp-input-mobile" required />
-                    </div>
-                    <div class="insp-mobile-row">
-                        <span class="insp-mobile-lbl">Observaciones</span>
-                        <input type="text" name="obs_@i" class="form-control insp-input-mobile" maxlength="500" placeholder="Opcional..." />
-                    </div>
-                </div>
-            }
+                }
             </div><!-- /insp-tabla-scroll -->
         </div>
 
@@ -161,7 +219,8 @@
             <div class="insp-firma-grid">
                 <div>
                     <label class="form-label">Nombre completo <span class="req">*</span></label>
-                    <input type="text" name="inspeccionadoPor" class="form-control" required maxlength="200" placeholder="Nombre del encargado" />
+                    <input type="text" name="inspeccionadoPor" class="form-control" required maxlength="200" placeholder="Nombre del encargado" @{ string _inspPor = esEdicion ? Model!.InspeccionadoPor : ""; }
+                    value="@_inspPor" />
                 </div>
                 <div>
                     <label class="form-label">Firma y Sello <span class="req">*</span></label>
@@ -292,6 +351,18 @@ const canvas      = document.getElementById('firmaCanvas');
 const ctx         = canvas.getContext('2d');
 const placeholder = document.getElementById('firmaPlaceholder');
 let dibujando = false, tieneFirma = false;
+
+// Precargar firma existente en modo edición
+const firmaExistente = '@(esEdicion ? Model!.FirmaBase64 : "")';
+if (firmaExistente && firmaExistente.startsWith('data:image')) {
+    const img = new Image();
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        tieneFirma = true;
+        if (placeholder) placeholder.style.display = 'none';
+    };
+    img.src = firmaExistente;
+}
 ctx.strokeStyle = '#1a3a6b'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
 function getPos(e) {

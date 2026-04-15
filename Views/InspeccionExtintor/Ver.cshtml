@@ -91,32 +91,42 @@
                 </div>
             }
 
-            <!-- Observaciones marcadas -->
-            @if (tieneObs)
-            {
-                <div style="display:flex; flex-direction:column; gap:5px;">
-                    @foreach (var num in marcadas.OrderBy(n => n))
-                    {
-                        <div style="display:flex; align-items:flex-start; gap:8px; padding:6px 10px; background:rgba(220,38,38,0.05); border-radius:var(--r-sm); border:1px solid rgba(220,38,38,0.15); font-size:0.8rem;">
-                            <span style="font-weight:800; color:#dc2626; flex-shrink:0;">@num.</span>
-                            <span style="color:var(--gris-800);">
-                                @if (num == 18)
-                                {
-                                    <span>Otros: <strong>@fila.Observacion18</strong></span>
-                                }
-                                else if (obsDict.TryGetValue(num, out var texto))
-                                {
-                                    @texto
-                                }
-                            </span>
-                        </div>
-                    }
+            <!-- Lista completa de 18 puntos -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:5px; margin-top:8px;">
+                @foreach (var obs in obsDict)
+                {
+                    bool esMarcado = marcadas.Contains(obs.Key);
+                    <div style="display:flex; align-items:flex-start; gap:7px; padding:6px 10px;
+                                border-radius:var(--r-sm); font-size:0.78rem;
+                                background:var(--gris-50); border:1px solid var(--gris-100);">
+                        <span style="font-weight:800; flex-shrink:0; color:@(esMarcado ? "#dc2626" : "var(--verde)");">
+                            @(esMarcado ? "✗" : "✓")
+                        </span>
+                        <span>
+                            <strong style="color:var(--gris-700);">@obs.Key.</strong>
+                            <span style="color:var(--gris-700);">@obs.Value</span>
+                        </span>
+                    </div>
+                }
+                @{ bool obs18marcado = marcadas.Contains(18); }
+                <div style="display:flex; align-items:flex-start; gap:7px; padding:6px 10px;
+                            border-radius:var(--r-sm); font-size:0.78rem;
+                            background:var(--gris-50); border:1px solid var(--gris-100);">
+                    <span style="font-weight:800; flex-shrink:0; color:@(obs18marcado ? "#dc2626" : "var(--verde)");">
+                        @(obs18marcado ? "✗" : "✓")
+                    </span>
+                    <span>
+                        <strong style="color:var(--gris-700);">18.</strong>
+                        <span style="color:var(--gris-700);">
+                            Otros (Indicar)
+                            @if (obs18marcado && !string.IsNullOrEmpty(fila.Observacion18))
+                            {
+                                <strong> — @fila.Observacion18</strong>
+                            }
+                        </span>
+                    </span>
                 </div>
-            }
-            else
-            {
-                <div style="font-size:0.82rem; color:var(--verde); font-weight:600;">✓ Sin observaciones — extintor en condiciones OK</div>
-            }
+            </div>
         </div>
     }
 

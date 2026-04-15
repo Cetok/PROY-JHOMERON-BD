@@ -40,6 +40,9 @@ namespace PROYJHOME2026.Models
 
         public DateTime FechaRegistro { get; set; } = DateTime.Now;
 
+        /// <summary>True si ya fue editado una vez.</summary>
+        public bool FueEditado { get; set; } = false;
+
         // ── Navegación ───────────────────────────────────────────
         [ForeignKey("IdCarro")]
         public Carro Carro { get; set; } = null!;

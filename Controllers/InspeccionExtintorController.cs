@@ -200,6 +200,103 @@ namespace PROYJHOME2026.Controllers
             return View(inspeccion);
         }
 
+        // ── EDITAR GET ───────────────────────────────────────────
+        public async Task<IActionResult> Editar(int id)
+        {
+            var inspeccion = await _context.InspeccionExtintores
+                .Include(i => i.Filas).ThenInclude(f => f.Grupo)
+                .Include(i => i.Asesorio)
+                .FirstOrDefaultAsync(i => i.IdInspeccion == id);
+
+            if (inspeccion == null) return NotFound();
+
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var idActual  = HttpContext.Session.GetString("UsuarioId")  ?? "";
+            if (rolActual != "Admin" && inspeccion.IdUsuario?.ToString() != idActual)
+            {
+                TempData["Error"] = "No tienes permiso para editar esta inspección.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            if (inspeccion.FueEditado)
+            {
+                TempData["Warning"] = "Esta inspección ya fue editada y no puede modificarse nuevamente.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            var gruposConExtintor = await _context.GrupoAsesorios
+                .Include(ga => ga.Grupo)
+                .Where(ga => ga.IdAsesorio == inspeccion.IdAsesorio && ga.TipoExtintor != null)
+                .OrderBy(ga => ga.Grupo.area)
+                .ToListAsync();
+
+            ViewBag.Accesorio         = inspeccion.Asesorio;
+            ViewBag.GruposConExtintor = gruposConExtintor;
+            ViewBag.Observaciones     = Observaciones;
+            return View("Crear", inspeccion);
+        }
+
+        // ── EDITAR POST ──────────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(int id, string inspeccionadoPor, string firmaBase64)
+        {
+            var inspeccion = await _context.InspeccionExtintores
+                .Include(i => i.Filas)
+                .Include(i => i.Asesorio)
+                .FirstOrDefaultAsync(i => i.IdInspeccion == id);
+
+            if (inspeccion == null) return NotFound();
+
+            var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var idActual  = HttpContext.Session.GetString("UsuarioId")  ?? "";
+            if (rolActual != "Admin" && inspeccion.IdUsuario?.ToString() != idActual)
+            {
+                TempData["Error"] = "No tienes permiso para editar esta inspección.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            if (inspeccion.FueEditado)
+            {
+                TempData["Warning"] = "Esta inspección ya fue editada y no puede modificarse nuevamente.";
+                return RedirectToAction(nameof(Ver), new { id });
+            }
+
+            inspeccion.InspeccionadoPor = inspeccionadoPor.Trim();
+            if (!string.IsNullOrWhiteSpace(firmaBase64))
+                inspeccion.FirmaBase64 = firmaBase64;
+            inspeccion.FueEditado = true;
+
+            // Actualizar filas usando Request.Form igual que el Crear
+            for (int i = 0; i < inspeccion.Filas.Count; i++)
+            {
+                var fila = inspeccion.Filas.OrderBy(f => f.IdFila).ElementAtOrDefault(i);
+                if (fila == null) continue;
+
+                var marcadas = new List<int>();
+                for (int n = 1; n <= 17; n++)
+                {
+                    var val = Request.Form[$"obs_{i}_{n}"].FirstOrDefault();
+                    if (val == "on" || val == "true") marcadas.Add(n);
+                }
+                bool marca18   = Request.Form[$"obs_{i}_18"].FirstOrDefault() == "on"
+                              || Request.Form[$"obs_{i}_18"].FirstOrDefault() == "true";
+                string? texto18 = Request.Form[$"obs18text_{i}"].FirstOrDefault()?.Trim();
+
+                fila.ObservacionesMarcadas = marcadas.Any() ? string.Join(",", marcadas) : null;
+                fila.Observacion18         = marca18 ? texto18 : null;
+                fila.Comentario            = Request.Form[$"comentario_{i}"].FirstOrDefault()?.Trim();
+            }
+
+            await _context.SaveChangesAsync();
+
+            await _auditoriaService.RegistrarAsync("Editar", "InspeccionExtintor", id,
+                $"Editó inspección extintor #{id}");
+
+            TempData["Success"] = "Inspección de extintor actualizada. Ya no podrá editarse nuevamente.";
+            return RedirectToAction(nameof(Ver), new { id });
+        }
+
         // ── Helper para recargar vista con datos ─────────────────
         private async Task<IActionResult> RecargarVista(int idAsesorio, Asesorio accesorio)
         {
