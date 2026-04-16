@@ -13,7 +13,13 @@
         <h1 class="page-header__title">Asignación #@Model.IdAsignacion</h1>
         <p class="page-header__subtitle">
             @(Model.Empleado?.nombre ?? "—") @(Model.Empleado?.paterno ?? "") →
-            @(Model.Equipo?.marca ?? "—") @(Model.Equipo?.modelo ?? "")
+            @{
+                var tipoSub = Model.Equipo?.TipoEquipo?.tipo ?? "";
+                var nombreSub = tipoSub.ToUpper().Contains("PC COMPLETO") && !string.IsNullOrEmpty(Model.Equipo?.NombrePc)
+                    ? Model.Equipo!.NombrePc
+                    : (Model.Equipo?.marca ?? "—") + (string.IsNullOrEmpty(Model.Equipo?.modelo) ? "" : " " + Model.Equipo!.modelo);
+            }
+            @nombreSub
         </p>
     </div>
     <div class="page-header__actions">
@@ -64,7 +70,13 @@
     <div class="card">
         <p class="det-section-title">Equipo asignado</p>
         <div style="font-weight:700; font-size:0.95rem; color:var(--gris-900);">
-            @(Model.Equipo?.marca ?? "—") @(Model.Equipo?.modelo ?? "")
+            @{
+                var tipoEq = Model.Equipo?.TipoEquipo?.tipo ?? "";
+                var nombreEq = tipoEq == "PC Completo" && !string.IsNullOrEmpty(Model.Equipo?.NombrePc)
+                    ? Model.Equipo!.NombrePc
+                    : (Model.Equipo?.marca ?? "—") + (string.IsNullOrEmpty(Model.Equipo?.modelo) ? "" : " " + Model.Equipo!.modelo);
+            }
+            @nombreEq
         </div>
         @if (Model.Equipo?.TipoEquipo != null)
         {

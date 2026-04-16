@@ -217,9 +217,9 @@ namespace PROYJHOME2026.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, string numeroBotiquin,
-            string inspeccionadoPor, string firmaBase64,
-            List<bool> seEncuentra, List<int> cantidad, List<string?> fechaVenc,
-            List<string?> observaciones)
+            bool ubicadoEnSuLugar, bool localizadoVisible,
+            bool libreDeObstaculos, bool senalizado,
+            string inspeccionadoPor, string firmaBase64)
         {
             var inspeccion = await _context.InspeccionBotiquinTransportes
                 .Include(i => i.Items)
@@ -242,20 +242,29 @@ namespace PROYJHOME2026.Controllers
                 return RedirectToAction(nameof(Ver), new { id });
             }
 
-            inspeccion.NumeroBotiquin  = numeroBotiquin.Trim();
-            inspeccion.InspeccionadoPor = inspeccionadoPor.Trim();
+            inspeccion.NumeroBotiquin    = numeroBotiquin.Trim();
+            inspeccion.UbicadoEnSuLugar  = ubicadoEnSuLugar;
+            inspeccion.LocalizadoVisible = localizadoVisible;
+            inspeccion.LibreDeObstaculos = libreDeObstaculos;
+            inspeccion.Senalizado        = senalizado;
+            inspeccion.InspeccionadoPor  = inspeccionadoPor.Trim();
             if (!string.IsNullOrWhiteSpace(firmaBase64))
                 inspeccion.FirmaBase64 = firmaBase64;
             inspeccion.FueEditado = true;
 
+            // Usar Request.Form con los mismos nombres que el Crear
             var items = inspeccion.Items.OrderBy(i => i.IdItem).ToList();
             for (int i = 0; i < items.Count; i++)
             {
-                items[i].SeEncuentra = i < seEncuentra.Count && seEncuentra[i];
-                items[i].Cantidad    = i < cantidad.Count ? cantidad[i] : 0;
-                if (i < fechaVenc.Count && DateOnly.TryParse(fechaVenc[i], out var fv))
-                    items[i].FechaVencimiento = fv;
-                items[i].Observaciones = i < observaciones.Count ? observaciones[i]?.Trim() : null;
+                string? valSe = Request.Form[$"seencuentra_{i}"].FirstOrDefault();
+                int.TryParse(Request.Form[$"cantidad_{i}"].FirstOrDefault(), out int cant);
+                DateOnly.TryParse(Request.Form[$"fvenc_{i}"].FirstOrDefault(), out DateOnly fVenc);
+                string? obs = Request.Form[$"obs_{i}"].FirstOrDefault();
+
+                items[i].SeEncuentra   = valSe == "si";
+                items[i].Cantidad      = cant;
+                if (fVenc != default) items[i].FechaVencimiento = fVenc;
+                items[i].Observaciones = string.IsNullOrWhiteSpace(obs) ? null : obs.Trim();
             }
 
             await _context.SaveChangesAsync();

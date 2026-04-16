@@ -374,7 +374,10 @@ namespace PROYJHOME2026.Controllers
                     e.idTipoEquipo,
                     TipoNombre   = e.TipoEquipo != null ? e.TipoEquipo.tipo : "",
                     Descripcion  = (e.TipoEquipo != null ? e.TipoEquipo.tipo + " — " : "") +
-                                   e.marca + " " + e.modelo +
+                                   (e.TipoEquipo != null && e.TipoEquipo.tipo != null &&
+                                    e.TipoEquipo.tipo.ToUpper().Contains("PC COMPLETO") && e.NombrePc != null
+                                       ? e.NombrePc
+                                       : e.marca + " " + e.modelo) +
                                    (e.numero_serie != null ? " [" + e.numero_serie + "]" : "")
                 })
                 .ToListAsync();

@@ -264,15 +264,25 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("CarroAsesorios");
             ModelState.Remove("CarroModalidades");
             ModelState.Remove("MantenimientosCarros");
+            ModelState.Remove("HabilitacionesVehiculares");
+            ModelState.Remove("LunasPolarizadas");
             ModelState.Remove("Estado");
+            ModelState.Remove("FechaCarro");
 
             carro.Estado = "Activo";
 
+            // Procesar año de modelo desde el campo numérico del form
+            var anioStr = Request.Form["AnioFechaCarro"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(anioStr) && int.TryParse(anioStr, out int anio) && anio >= 1950 && anio <= 2100)
+                carro.FechaCarro = new DateTime(anio, 1, 1);
+            else
+                carro.FechaCarro = null;
+
             // Convertir a mayúsculas
-            carro.Placa        = carro.Placa?.ToUpper().Trim();
-            carro.Marca        = carro.Marca?.ToUpper().Trim();
-            carro.Modelo       = carro.Modelo?.ToUpper().Trim();
-            carro.NumeroMotor  = carro.NumeroMotor?.ToUpper().Trim();
+            carro.Placa       = carro.Placa?.ToUpper().Trim();
+            carro.Marca       = carro.Marca?.ToUpper().Trim();
+            carro.Modelo      = carro.Modelo?.ToUpper().Trim();
+            carro.NumeroMotor = carro.NumeroMotor?.ToUpper().Trim();
 
             if (ModelState.IsValid)
             {
@@ -317,13 +327,23 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("CarroAsesorios");
             ModelState.Remove("CarroModalidades");
             ModelState.Remove("MantenimientosCarros");
+            ModelState.Remove("HabilitacionesVehiculares");
+            ModelState.Remove("LunasPolarizadas");
             ModelState.Remove("Estado");
+            ModelState.Remove("FechaCarro");
+
+            // Procesar año de modelo desde el campo numérico del form
+            var anioStr = Request.Form["AnioFechaCarro"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(anioStr) && int.TryParse(anioStr, out int anio) && anio >= 1950 && anio <= 2100)
+                carro.FechaCarro = new DateTime(anio, 1, 1);
+            else
+                carro.FechaCarro = null;
 
             // Convertir a mayúsculas
-            carro.Placa        = carro.Placa?.ToUpper().Trim();
-            carro.Marca        = carro.Marca?.ToUpper().Trim();
-            carro.Modelo       = carro.Modelo?.ToUpper().Trim();
-            carro.NumeroMotor  = carro.NumeroMotor?.ToUpper().Trim();
+            carro.Placa       = carro.Placa?.ToUpper().Trim();
+            carro.Marca       = carro.Marca?.ToUpper().Trim();
+            carro.Modelo      = carro.Modelo?.ToUpper().Trim();
+            carro.NumeroMotor = carro.NumeroMotor?.ToUpper().Trim();
 
             if (ModelState.IsValid)
             {

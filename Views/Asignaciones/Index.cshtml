@@ -104,7 +104,13 @@
                                 }
                             </td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">
-                                @(a.Equipo?.marca ?? "—") @(a.Equipo?.modelo ?? "")
+                                @{
+                                    var tipoEquipo = a.Equipo?.TipoEquipo?.tipo ?? "";
+                                    var nombreEquipo = tipoEquipo.ToUpper().Contains("PC COMPLETO") && !string.IsNullOrEmpty(a.Equipo?.NombrePc)
+                                        ? a.Equipo!.NombrePc
+                                        : (a.Equipo?.marca ?? "—") + (string.IsNullOrEmpty(a.Equipo?.modelo) ? "" : " " + a.Equipo!.modelo);
+                                }
+                                @nombreEquipo
                                 @if (!string.IsNullOrEmpty(a.Equipo?.numero_serie))
                                 {
                                     <div style="font-size:0.72rem; font-family:monospace; color:var(--gris-400);">@a.Equipo.numero_serie</div>

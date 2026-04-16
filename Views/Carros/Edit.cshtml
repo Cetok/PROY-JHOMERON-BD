@@ -93,6 +93,7 @@
                         <label class="form-label">Fórmula rodante</label>
                         <select asp-for="FormulaRodante" class="form-control">
                             <option value="">— Seleccionar —</option>
+                            <option value="2x2">2x2</option>
                             <option value="4x2">4x2</option>
                             <option value="4x4">4x4</option>
                             <option value="6x2">6x2</option>
@@ -118,7 +119,6 @@
                                class="form-control" placeholder="Ej: 2019"
                                min="1950" max="2100"
                                value="@(Model?.FechaCarro.HasValue == true ? Model.FechaCarro.Value.Year.ToString() : "")" />
-                        <input asp-for="FechaCarro" type="hidden" id="FechaCarro" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Fecha de título</label>
@@ -141,13 +141,4 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <script>
-        // Convierte el año ingresado a una fecha (01/01/YYYY) antes de enviar
-        document.querySelector('form').addEventListener('submit', function () {
-            var anio = document.getElementById('AnioFechaCarro').value;
-            if (anio) {
-                document.getElementById('FechaCarro').value = anio + '-01-01';
-            }
-        });
-    </script>
 }
