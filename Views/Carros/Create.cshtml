@@ -83,6 +83,26 @@
                                placeholder="Ej: 1000.00" />
                         <span asp-validation-for="CargaUtil" class="form-error"></span>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Color</label>
+                        <input asp-for="Color" class="form-control"
+                               placeholder="Ej: Blanco, Rojo, Azul..." maxlength="50" />
+                        <span asp-validation-for="Color" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fórmula rodante</label>
+                        <select asp-for="FormulaRodante" class="form-control">
+                            <option value="">— Seleccionar —</option>
+                            <option value="4x2">4x2</option>
+                            <option value="4x4">4x4</option>
+                            <option value="6x2">6x2</option>
+                            <option value="6x4">6x4</option>
+                            <option value="6x6">6x6</option>
+                            <option value="8x4">8x4</option>
+                            <option value="8x8">8x8</option>
+                        </select>
+                        <span asp-validation-for="FormulaRodante" class="form-error"></span>
+                    </div>
                 </div>
             </div>
 
@@ -93,7 +113,7 @@
                 </p>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">Año del vehículo</label>
+                        <label class="form-label">Año de modelo</label>
                         <input type="number" name="AnioFechaCarro" id="AnioFechaCarro"
                                class="form-control" placeholder="Ej: 2019"
                                min="1950" max="2100"
@@ -101,9 +121,9 @@
                         <input asp-for="FechaCarro" type="hidden" id="FechaCarro" />
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Fecha de compra</label>
-                        <input asp-for="FechaCompra" type="date" class="form-control" />
-                        <span asp-validation-for="FechaCompra" class="form-error"></span>
+                        <label class="form-label">Fecha de título</label>
+                        <input asp-for="FechaTitulo" type="date" class="form-control" />
+                        <span asp-validation-for="FechaTitulo" class="form-error"></span>
                     </div>
                 </div>
             </div>

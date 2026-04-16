@@ -1,0 +1,117 @@
+@model PROYJHOME2026.Models.LunaPolarizada
+@{
+    ViewData["Title"]      = "Registrar Luna Polarizada";
+    ViewData["Breadcrumb"] = "Flota Vehicular / Luna Polarizada";
+    var carro         = ViewBag.Carro         as PROYJHOME2026.Models.Carro;
+    bool tieneAnterior = (bool)(ViewBag.TieneAnterior ?? false);
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Flota Vehicular</div>
+        <h1 class="page-header__title">Luna Polarizada</h1>
+        <p class="page-header__subtitle">@carro?.Placa — @carro?.Marca @carro?.Modelo</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver al vehículo
+        </a>
+    </div>
+</div>
+
+<div style="max-width:580px;">
+    <div class="card">
+        <form asp-action="CrearLuna" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="IdCarro" type="hidden" />
+
+            <!-- Info del vehículo -->
+            <div style="background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-md); padding:14px 18px; margin-bottom:24px; display:flex; align-items:center; gap:14px;">
+                <div style="width:40px; height:40px; border-radius:var(--r-md); background:linear-gradient(135deg,var(--azul-dark),var(--celeste)); display:grid; place-items:center; flex-shrink:0;">
+                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>
+                </div>
+                <div>
+                    <div style="font-weight:700; font-size:0.9rem; color:var(--azul-dark);">@carro?.Marca @carro?.Modelo</div>
+                    <div style="font-family:monospace; font-size:0.82rem; color:var(--azul); font-weight:700;">@carro?.Placa</div>
+                </div>
+            </div>
+
+            @if (tieneAnterior)
+            {
+                <!-- Aviso cuando ya existe un registro previo -->
+                <div style="background:#fff7ed; border:1px solid #f97316; border-radius:var(--r-md); padding:12px 16px; margin-bottom:20px; display:flex; gap:10px; align-items:flex-start;">
+                    <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#f97316;fill:none;stroke-width:2;flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <div style="font-size:0.82rem; color:#92400e;">
+                        <strong>Ya existe un certificado de luna polarizada</strong> para este vehículo. Al registrar uno nuevo, el anterior quedará en el historial como inactivo.<br>
+                        Debes indicar el <strong>motivo</strong> (pérdida, renovación, daño, etc.).
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div style="background:var(--gris-50); border:1px solid var(--gris-200); border-radius:var(--r-md); padding:12px 16px; margin-bottom:20px; font-size:0.8rem; color:var(--gris-600);">
+                    ℹ️ En Perú, el certificado de luna polarizada es <strong>vitalicio</strong>. Solo se emite uno nuevo en caso de pérdida u otras circunstancias excepcionales.
+                </div>
+            }
+
+            <!-- Datos del certificado -->
+            <div style="margin-bottom:24px;">
+                <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
+                    Datos del certificado
+                </p>
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label class="form-label">Fecha de vigencia <span class="req">*</span></label>
+                        <input asp-for="FechaVigencia" type="date" class="form-control" />
+                        <span asp-validation-for="FechaVigencia" class="form-error"></span>
+                        <span style="font-size:0.72rem; color:var(--gris-400); margin-top:3px; display:block;">
+                            Fecha desde la que es válido el certificado.
+                        </span>
+                    </div>
+
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label class="form-label">
+                            Comentario / Motivo
+                            @if (tieneAnterior) { <span class="req">*</span> }
+                        </label>
+                        <textarea asp-for="Comentario" class="form-control" rows="3" maxlength="500"
+                                  placeholder="@(tieneAnterior ? "Ej: Pérdida del certificado anterior, renovación por deterioro..." : "Opcional — observaciones adicionales")"></textarea>
+                        <span asp-validation-for="Comentario" class="form-error"></span>
+                        @if (tieneAnterior)
+                        {
+                            <span style="font-size:0.72rem; color:var(--rojo); margin-top:3px; display:block;">
+                                Requerido: explica por qué se emite un nuevo certificado.
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
+                <button type="submit" class="btn btn--celeste btn--lg">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Registrar luna polarizada
+                </button>
+                <a asp-controller="Carros" asp-action="Details" asp-route-id="@Model.IdCarro" class="btn btn--secondary btn--lg">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @if (tieneAnterior)
+    {
+        <script>
+            // Forzar que el comentario no quede vacío si ya había uno anterior
+            document.querySelector('form').addEventListener('submit', function (e) {
+                const comentario = document.getElementById('@Html.IdFor(m => m.Comentario)').value.trim();
+                if (!comentario) {
+                    alert('Debes indicar el motivo por el que se emite un nuevo certificado de luna polarizada.');
+                    e.preventDefault();
+                }
+            });
+        </script>
+    }
+}

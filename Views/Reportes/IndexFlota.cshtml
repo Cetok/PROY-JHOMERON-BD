@@ -85,7 +85,7 @@
             <div class="table-wrapper" style="border:none; border-radius:0; max-height:420px; overflow-y:auto;">
                 <table>
                     <thead>
-                        <tr><th>Placa</th><th>Marca / Modelo</th><th>Estado</th><th>Categoría</th><th>F.Compra</th><th>Conductor</th></tr>
+                        <tr><th>Placa</th><th>Marca / Modelo</th><th>Estado</th><th>Categoría</th><th>Color</th><th>Fórmula</th><th>F.Título</th><th>Conductor</th></tr>
                     </thead>
                     <tbody id="v-tbody"></tbody>
                 </table>
@@ -241,7 +241,9 @@ async function consultarVehiculos() {
             <td style="font-weight:600;">${c.marca} ${c.modelo}</td>
             <td>${estadoBadge(c.estado)}</td>
             <td style="font-size:0.8rem; color:var(--gris-500);">${c.categoria ?? '—'}</td>
-            <td style="font-size:0.8rem; color:var(--gris-500);">${c.fechaCompra}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${c.color ?? '—'}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${c.formulaRodante ?? '—'}</td>
+            <td style="font-size:0.8rem; color:var(--gris-500);">${c.fechaTitulo}</td>
             <td style="font-size:0.82rem; color:var(--azul);">${c.conductor}</td>
         </tr>`).join('');
 }

@@ -109,6 +109,22 @@ namespace PROYJHOME2026.Controllers
                 .Where(l => l.IdCarro == id)
                 .OrderByDescending(l => l.FechaRegistro)
                 .ToListAsync();
+
+            // Habilitaciones vehiculares
+            ViewBag.Habilitaciones = await _context.HabilitacionesVehiculares
+                .Include(h => h.Modalidad)
+                .Where(h => h.IdCarro == id)
+                .OrderByDescending(h => h.EsVigente)
+                .ThenByDescending(h => h.FechaRegistro)
+                .ToListAsync();
+
+            // Lunas polarizadas
+            ViewBag.Lunas = await _context.LunasPolarizadas
+                .Where(l => l.IdCarro == id)
+                .OrderByDescending(l => l.EsVigente)
+                .ThenByDescending(l => l.FechaRegistro)
+                .ToListAsync();
+
             return View(carro);
         }
 

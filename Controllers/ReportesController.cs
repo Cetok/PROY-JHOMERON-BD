@@ -1024,8 +1024,8 @@ namespace PROYJHOME2026.Controllers
                 .Include(c => c.EmpleadosCarros).ThenInclude(ec => ec.Empleado)
                 .AsQueryable();
  
-            if (fechaDesde.HasValue) query = query.Where(c => c.FechaCompra >= fechaDesde);
-            if (fechaHasta.HasValue) query = query.Where(c => c.FechaCompra <= fechaHasta.Value.AddDays(1));
+            if (fechaDesde.HasValue) query = query.Where(c => c.FechaTitulo >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(c => c.FechaTitulo <= fechaHasta.Value.AddDays(1));
             if (!string.IsNullOrWhiteSpace(estado))
             {
                 var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -1044,7 +1044,9 @@ namespace PROYJHOME2026.Controllers
                     c.Modelo,
                     c.Estado,
                     c.Categoria,
-                    fechaCompra  = c.FechaCompra != null ? c.FechaCompra.Value.ToString("dd/MM/yyyy") : "—",
+                    c.Color,
+                    c.FormulaRodante,
+                    fechaTitulo  = c.FechaTitulo != null ? c.FechaTitulo.Value.ToString("dd/MM/yyyy") : "—",
                     conductor    = c.EmpleadosCarros.Any()
                         ? c.EmpleadosCarros.First().Empleado.nombre + " " + c.EmpleadosCarros.First().Empleado.paterno
                         : "Sin conductor",
@@ -1065,8 +1067,8 @@ namespace PROYJHOME2026.Controllers
                 .Include(c => c.MantenimientosCarros)
                 .AsQueryable();
  
-            if (fechaDesde.HasValue) query = query.Where(c => c.FechaCompra >= fechaDesde);
-            if (fechaHasta.HasValue) query = query.Where(c => c.FechaCompra <= fechaHasta.Value.AddDays(1));
+            if (fechaDesde.HasValue) query = query.Where(c => c.FechaTitulo >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(c => c.FechaTitulo <= fechaHasta.Value.AddDays(1));
             if (!string.IsNullOrWhiteSpace(estado))
             {
                 var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -1079,7 +1081,7 @@ namespace PROYJHOME2026.Controllers
  
             var sb = new StringBuilder();
             sb.AppendLine("sep=;");
-            sb.AppendLine("ID;Placa;Marca;Modelo;Estado;Categoría;F.Compra;Conductor;N° Motor;N° Mantenimientos");
+            sb.AppendLine("ID;Placa;Marca;Modelo;Estado;Categoría;Color;Fórmula Rodante;F.Título;Conductor;N° Motor;N° Mantenimientos");
  
             foreach (var c in carros)
             {
@@ -1095,7 +1097,9 @@ namespace PROYJHOME2026.Controllers
                     $"\"{c.Modelo}\";" +
                     $"\"{c.Estado}\";" +
                     $"\"{c.Categoria ?? "—"}\";" +
-                    $"{(c.FechaCompra.HasValue ? c.FechaCompra.Value.ToString("dd/MM/yyyy") : "—")};" +
+                    $"\"{c.Color ?? "—"}\";" +
+                    $"\"{c.FormulaRodante ?? "—"}\";" +
+                    $"{(c.FechaTitulo.HasValue ? c.FechaTitulo.Value.ToString("dd/MM/yyyy") : "—")};" +
                     $"\"{nombreConductor}\";" +
                     $"\"{c.NumeroMotor ?? "—"}\";" +
                     $"{mantes}");
@@ -1116,8 +1120,8 @@ namespace PROYJHOME2026.Controllers
                 .Include(c => c.MantenimientosCarros)
                 .AsQueryable();
  
-            if (fechaDesde.HasValue) query = query.Where(c => c.FechaCompra >= fechaDesde);
-            if (fechaHasta.HasValue) query = query.Where(c => c.FechaCompra <= fechaHasta.Value.AddDays(1));
+            if (fechaDesde.HasValue) query = query.Where(c => c.FechaTitulo >= fechaDesde);
+            if (fechaHasta.HasValue) query = query.Where(c => c.FechaTitulo <= fechaHasta.Value.AddDays(1));
             if (!string.IsNullOrWhiteSpace(estado))
             {
                 var estados = estado.Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -1164,8 +1168,10 @@ namespace PROYJHOME2026.Controllers
                             c.RelativeColumn(1.5f); // Modelo
                             c.RelativeColumn(1.2f); // Estado
                             c.RelativeColumn(1.2f); // Categoría
-                            c.RelativeColumn(1.2f); // F.Compra
-                            c.RelativeColumn(2.5f); // Conductor
+                            c.RelativeColumn(1.0f); // Color
+                            c.RelativeColumn(1.0f); // Fórmula
+                            c.RelativeColumn(1.2f); // F.Título
+                            c.RelativeColumn(2.0f); // Conductor
                             c.ConstantColumn(35);   // Mantes
                         });
  
@@ -1174,7 +1180,7 @@ namespace PROYJHOME2026.Controllers
  
                         table.Header(h =>
                         {
-                            foreach (var t in new[] { "#", "Placa", "Marca", "Modelo", "Estado", "Categoría", "F.Compra", "Conductor", "Mant." })
+                            foreach (var t in new[] { "#", "Placa", "Marca", "Modelo", "Estado", "Categoría", "Color", "Fórmula", "F.Título", "Conductor", "Mant." })
                                 h.Cell().Element(Cab).Text(t).Bold().FontSize(8).FontColor(Colors.White);
                         });
  
@@ -1202,7 +1208,9 @@ namespace PROYJHOME2026.Controllers
                             table.Cell().Element(C).Text(c.Modelo);
                             table.Cell().Element(C).Text(c.Estado).FontColor(estadoColor);
                             table.Cell().Element(C).Text(c.Categoria ?? "—").FontSize(8);
-                            table.Cell().Element(C).Text(c.FechaCompra.HasValue ? c.FechaCompra.Value.ToString("dd/MM/yyyy") : "—").FontSize(8);
+                            table.Cell().Element(C).Text(c.Color ?? "—").FontSize(8);
+                            table.Cell().Element(C).Text(c.FormulaRodante ?? "—").FontSize(8);
+                            table.Cell().Element(C).Text(c.FechaTitulo.HasValue ? c.FechaTitulo.Value.ToString("dd/MM/yyyy") : "—").FontSize(8);
                             table.Cell().Element(C).Text(nombre).FontColor(Color.FromHex("#2563eb")).FontSize(8);
                             table.Cell().Element(C).AlignCenter()
                                 .Text(mantes == 0 ? "—" : mantes.ToString())
@@ -1639,7 +1647,7 @@ namespace PROYJHOME2026.Controllers
  
                         table.Header(h =>
                         {
-                            foreach (var t in new[] { "#","N° Máq.","Nombre","Marca","Estado","F.Compra","Grupo","Encargado","Est.Op." })
+                            foreach (var t in new[] { "#","N° Máq.","Nombre","Marca","Estado","F.Título","Grupo","Encargado","Est.Op." })
                                 h.Cell().Element(Cab).Text(t).Bold().FontSize(8).FontColor(Colors.White);
                         });
  

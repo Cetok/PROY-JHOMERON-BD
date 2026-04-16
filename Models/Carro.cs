@@ -24,9 +24,19 @@ namespace PROYJHOME2026.Models
         [StringLength(50)]
         public string? NumeroMotor { get; set; }
 
+        /// <summary>Almacena 01/01/YYYY — solo se usa el año como "Año de modelo".</summary>
         public DateTime? FechaCarro { get; set; }
 
-        public DateTime? FechaCompra { get; set; }
+        /// <summary>Fecha del título del vehículo (antes FechaCompra).</summary>
+        public DateTime? FechaTitulo { get; set; }
+
+        /// <summary>Color del vehículo. Ej: Blanco, Rojo, Azul...</summary>
+        [StringLength(50)]
+        public string? Color { get; set; }
+
+        /// <summary>Fórmula rodante. Ej: 4x2, 4x4, 6x4...</summary>
+        [StringLength(20)]
+        public string? FormulaRodante { get; set; }
 
         [Column(TypeName = "decimal(10,2)")]
         public decimal? Peso { get; set; }
@@ -49,5 +59,7 @@ namespace PROYJHOME2026.Models
         public ICollection<CarroAsesorio> CarroAsesorios { get; set; } = new List<CarroAsesorio>();
         public ICollection<CarroModalidad> CarroModalidades { get; set; } = new List<CarroModalidad>();
         public ICollection<MantenimientoCarro> MantenimientosCarros { get; set; } = new List<MantenimientoCarro>();
+        public ICollection<HabilitacionVehicular> HabilitacionesVehiculares { get; set; } = new List<HabilitacionVehicular>();
+        public ICollection<LunaPolarizada> LunasPolarizadas { get; set; } = new List<LunaPolarizada>();
     }
 }

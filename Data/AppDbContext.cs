@@ -43,6 +43,8 @@ namespace PROYJHOME2026.Data
         public DbSet<InspeccionExtintor>      InspeccionExtintores      { get; set; }
         public DbSet<InspeccionExtintorFila>  InspeccionExtintorFilas   { get; set; }
         public DbSet<CarroModalidadLog>       CarroModalidadLogs        { get; set; }
+        public DbSet<HabilitacionVehicular>   HabilitacionesVehiculares { get; set; }
+        public DbSet<LunaPolarizada>          LunasPolarizadas          { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }

@@ -29,6 +29,7 @@ namespace PROYJHOME2026.BackgroundServices
             {
                 await RevisarMantenimientosPendientesAsync();
                 await RevisarModalidadesYSegurosAsync();
+                await RevisarHabilitacionesVehicularesAsync();
                 await Task.Delay(_intervalo, stoppingToken);
             }
         }
@@ -219,6 +220,75 @@ namespace PROYJHOME2026.BackgroundServices
                 _logger.LogInformation("Revisión modalidades/seguros completada — hora {h}:00", horaActual);
             }
             catch (Exception ex) { _logger.LogError(ex, "Error revisando modalidades/seguros"); }
+        }
+
+        // ── Habilitaciones Vehiculares — 3 veces al día ──────────
+        private async Task RevisarHabilitacionesVehicularesAsync()
+        {
+            var horaActual = DateTime.Now.Hour;
+            if (!HorasAlerta.Contains(horaActual)) return;
+
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var hoy = DateTime.Today;
+
+                var destinatarios = await context.Usuarios
+                    .Where(u => u.activo && (u.rol == "Admin" || u.rol == "Transporte"))
+                    .ToListAsync();
+
+                var habilitaciones = await context.HabilitacionesVehiculares
+                    .Include(h => h.Carro)
+                    .Where(h => h.EsVigente)
+                    .ToListAsync();
+
+                foreach (var h in habilitaciones)
+                {
+                    var vence    = h.FechaCulminacion.Date;
+                    var diasRest = (vence - hoy).Days;
+                    string titulo, mensaje, tipo;
+
+                    if (diasRest < 0)
+                    {
+                        titulo  = $"🔴 Hab. Vehicular VENCIDA — {h.Carro?.Placa}";
+                        mensaje = $"La habilitación vehicular [{h.Codigo}] del vehículo {h.Carro?.Placa} venció el {vence:dd/MM/yyyy}. Renuévala a la brevedad.";
+                        tipo    = "CambioEstado";
+                    }
+                    else if (diasRest <= 30)
+                    {
+                        titulo  = $"⚠️ Hab. Vehicular por vencer — {h.Carro?.Placa}";
+                        mensaje = $"La habilitación vehicular [{h.Codigo}] del vehículo {h.Carro?.Placa} vence en {diasRest} día(s) ({vence:dd/MM/yyyy}).";
+                        tipo    = "Mantenimiento";
+                    }
+                    else continue;
+
+                    bool yaNotif = await context.Notificaciones
+                        .AnyAsync(n => n.Titulo == titulo
+                                    && n.FechaCreacion.Date == hoy
+                                    && n.FechaCreacion.Hour == horaActual);
+                    if (yaNotif) continue;
+
+                    foreach (var u in destinatarios)
+                    {
+                        context.Notificaciones.Add(new Notificacion
+                        {
+                            IdUsuario     = u.idUsuario,
+                            Tipo          = tipo,
+                            Titulo        = titulo,
+                            Mensaje       = mensaje,
+                            Url           = $"/Carros/Details/{h.IdCarro}",
+                            Leida         = false,
+                            FechaCreacion = DateTime.Now
+                        });
+                    }
+                }
+
+                await context.SaveChangesAsync();
+                _logger.LogInformation("Revisión habilitaciones vehiculares completada — hora {h}:00", horaActual);
+            }
+            catch (Exception ex) { _logger.LogError(ex, "Error revisando habilitaciones vehiculares"); }
         }
     }
 }
