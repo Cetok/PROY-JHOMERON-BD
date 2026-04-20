@@ -14,35 +14,99 @@
     .sidebar__section-label { color: rgba(255,255,255,0.35) !important; }
     .sidebar__link:hover, .sidebar__link.active { background: rgba(255,255,255,0.1) !important; }
     .sidebar__footer { border-top-color: rgba(255,255,255,0.08) !important; }
-    .notif-wrapper { position:relative; }
-    .notif-badge {
-        position:absolute; top:-4px; right:-4px;
-        min-width:18px; height:18px; border-radius:9px;
-        background:var(--rojo, #dc2626); color:white;
-        font-size:0.65rem; font-weight:700; line-height:18px;
-        text-align:center; padding:0 4px;
-        pointer-events:none; display:none;
-    }
-    .notif-panel {
-        position:absolute; top:calc(100% + 8px); right:0;
-        width:340px; background:white;
-        border:1px solid var(--gris-200); border-radius:var(--r-md);
-        box-shadow:0 8px 32px rgba(0,0,0,0.12);
-        z-index:9999; display:none;
-    }
-    .notif-panel__header {
-        display:flex; justify-content:space-between; align-items:center;
-        padding:12px 16px; border-bottom:1px solid var(--gris-200);
-    }
-    .notif-panel__list { max-height:380px; overflow-y:auto; }
-    .notif-panel__footer { padding:10px 16px; border-top:1px solid var(--gris-200); text-align:center; }
-    .notif-item {
-        display:flex; gap:10px; padding:12px 16px;
-        border-bottom:1px solid var(--gris-100);
-        transition:background 0.15s;
-    }
-    .notif-item:hover { background:var(--gris-50); }
-    .notif-item--no-leida { background:rgba(26,58,107,0.03); }
+    .notif-wrapper  { position: relative; }
+.notif-badge {
+    position: absolute; top: -4px; right: -4px;
+    min-width: 18px; height: 18px; border-radius: 9px;
+    background: #e03d3d; color: white;
+    font-size: 0.62rem; font-weight: 700; line-height: 18px;
+    text-align: center; padding: 0 4px;
+    pointer-events: none; display: none;
+    box-shadow: 0 0 0 2px white;
+}
+.notif-panel {
+    position: absolute; top: calc(100% + 10px); right: 0;
+    width: 370px;
+    background: white;
+    border: 1px solid rgba(26,58,107,0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(26,58,107,0.16);
+    z-index: 9999; display: none;
+    overflow: hidden;
+}
+.notif-panel__header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid #f0f2f8;
+}
+.notif-panel__titulo {
+    font-weight: 700; font-size: 0.9rem; color: #1c2340;
+    display: flex; align-items: center; gap: 8px;
+}
+.notif-panel__titulo-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #e03d3d; display: none;
+}
+.notif-panel__btn-leer {
+    font-size: 0.72rem; color: #3b9be8; background: none;
+    border: none; cursor: pointer; padding: 4px 8px;
+    border-radius: 6px; font-weight: 600;
+    transition: background 0.15s;
+}
+.notif-panel__btn-leer:hover { background: rgba(59,155,232,0.1); }
+.notif-panel__list { max-height: 400px; overflow-y: auto; }
+.notif-panel__empty {
+    text-align: center; padding: 32px 16px;
+    color: #b0b8cc; font-size: 0.82rem;
+}
+.notif-panel__empty-icon {
+    width: 44px; height: 44px; border-radius: 14px;
+    background: #f4f6fa; display: grid; place-items: center;
+    margin: 0 auto 10px;
+}
+.notif-panel__footer {
+    padding: 10px 16px; border-top: 1px solid #f0f2f8;
+    text-align: center;
+}
+.notif-panel__ver-todas {
+    font-size: 0.78rem; color: #3b9be8; font-weight: 600;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+}
+ 
+/* Items del dropdown */
+.ndrop {
+    display: flex; gap: 11px; align-items: flex-start;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f8f9fc;
+    transition: background 0.12s;
+    text-decoration: none; color: inherit;
+}
+.ndrop:last-child { border-bottom: none; }
+.ndrop:hover { background: #f8f9fc; }
+.ndrop--nueva { background: linear-gradient(to right, rgba(13,51,147,0.03), transparent); }
+.ndrop__icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: grid; place-items: center; flex-shrink: 0;
+}
+.ndrop__icon svg { width: 16px; height: 16px; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ndrop__body  { flex: 1; min-width: 0; }
+.ndrop__titulo {
+    font-size: 0.82rem; font-weight: 700; color: #1c2340;
+    line-height: 1.3; margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ndrop--leida .ndrop__titulo { font-weight: 500; color: #7a85a0; }
+.ndrop__msg {
+    font-size: 0.74rem; color: #7a85a0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 3px;
+}
+.ndrop--leida .ndrop__msg { color: #b0b8cc; }
+.ndrop__fecha { font-size: 0.68rem; color: #b0b8cc; }
+.ndrop__dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    flex-shrink: 0; margin-top: 5px;
+}
 
     /* ── Button color overrides ── */
     .btn--primary, button[type="submit"].btn--primary {
@@ -412,20 +476,33 @@
                         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
                         <span class="notif-badge" id="notifBadge">0</span>
                     </button>
-                    <div class="notif-panel" id="notifPanel">
-                        <div class="notif-panel__header">
-                            <span style="font-weight:700; font-size:0.88rem;">Notificaciones</span>
-                            <button onclick="marcarTodasLeidas()" style="font-size:0.72rem; color:var(--celeste); background:none; border:none; cursor:pointer; padding:0;">
-                                Marcar todas leídas
-                            </button>
+                   <div class="notif-panel" id="notifPanel">
+                    <div class="notif-panel__header">
+                        <div class="notif-panel__titulo">
+                            Notificaciones
+                            <span class="notif-panel__titulo-dot" id="notifDot"></span>
                         </div>
-                        <div class="notif-panel__list" id="notifList">
-                            <div style="text-align:center; padding:20px; color:var(--gris-400); font-size:0.82rem;">Cargando...</div>
-                        </div>
-                        <div class="notif-panel__footer">
-                            <a href="/Notificaciones/Index" style="font-size:0.78rem; color:var(--celeste); text-decoration:none;">Ver todas →</a>
+                        <button class="notif-panel__btn-leer" onclick="marcarTodasLeidas()">
+                            Marcar leídas
+                        </button>
+                    </div>
+                    <div class="notif-panel__list" id="notifList">
+                        <div class="notif-panel__empty">
+                            <div class="notif-panel__empty-icon">
+                                <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#b0b8cc;fill:none;stroke-width:1.5;stroke-linecap:round;">
+                                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                </svg>
+                            </div>
+                            Cargando...
                         </div>
                     </div>
+                    <div class="notif-panel__footer">
+                        <a href="/Notificaciones/Index" class="notif-panel__ver-todas">
+                            Ver todas las notificaciones
+                            <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;"><polyline points="9 18 15 12 9 6"/></svg>
+                        </a>
+                    </div>
+                </div>
                 </div>
 
 
@@ -500,50 +577,90 @@
         }
     });
 
-    const coloresNotif = {
-        'Mantenimiento': '#d97706',
-        'Creacion':      '#16a34a',
-        'Edicion':       '#2563eb',
-        'Eliminacion':   '#dc2626',
-        'CambioEstado':  '#7c3aed'
+    // Config visual por tipo de notificación
+const NTIPO = {
+    'Mantenimiento': {
+        color: '#f59e0b',
+        label: 'Mantenimiento',
+        svg: "<path d='M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z'/>"
+    },
+    'Creacion': {
+        color: '#10b981',
+        label: 'Nuevo',
+        svg: "<circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='16'/><line x1='8' y1='12' x2='16' y2='12'/>"
+    },
+    'Edicion': {
+        color: '#3b9be8',
+        label: 'Editado',
+        svg: "<path d='M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z'/>"
+    },
+    'Eliminacion': {
+        color: '#e03d3d',
+        label: 'Eliminado',
+        svg: "<polyline points='3 6 5 6 21 6'/><path d='M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6'/><path d='M10 11v6'/><path d='M14 11v6'/>"
+    },
+    'CambioEstado': {
+        color: '#7c3aed',
+        label: 'Estado',
+        svg: "<polyline points='17 1 21 5 17 9'/><path d='M3 11V9a4 4 0 014-4h14'/><polyline points='7 23 3 19 7 15'/><path d='M21 13v2a4 4 0 01-4 4H3'/>"
+    },
+};
+    const ntipoDefault = {
+        color: '#0d3393',
+        label: 'Sistema',
+        svg: "<path d='M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'/><path d='M13.73 21a2 2 0 01-3.46 0'/>"
     };
-
+    
     async function cargarNotificaciones() {
         try {
             const res  = await fetch('/Notificaciones/ObtenerNoLeidas');
             const data = await res.json();
-
+    
+            // Badge contador
             const badge = document.getElementById('notifBadge');
-            badge.textContent    = data.contador;
-            badge.style.display  = data.contador > 0 ? 'block' : 'none';
-
+            badge.textContent   = data.contador;
+            badge.style.display = data.contador > 0 ? 'block' : 'none';
+    
+            // Punto en el header del panel
+            const dot = document.getElementById('notifDot');
+            if (dot) dot.style.display = data.contador > 0 ? 'block' : 'none';
+    
             const lista = document.getElementById('notifList');
+    
             if (!data.notificaciones || data.notificaciones.length === 0) {
-                lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gris-400);font-size:0.82rem;">Sin notificaciones</div>';
+                lista.innerHTML = `
+                    <div class="notif-panel__empty">
+                        <div class="notif-panel__empty-icon">
+                            <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#b0b8cc;fill:none;stroke-width:1.5;stroke-linecap:round;">
+                                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                            </svg>
+                        </div>
+                        Sin notificaciones
+                    </div>`;
                 return;
             }
-
-            lista.innerHTML = data.notificaciones.map(n => `
-                <div class="notif-item ${!n.leida ? 'notif-item--no-leida' : ''}">
-                    <div style="width:32px;height:32px;border-radius:50%;background:${(coloresNotif[n.tipo] ?? '#1a3a6b')}20;display:grid;place-items:center;flex-shrink:0;">
-                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:${coloresNotif[n.tipo] ?? '#1a3a6b'};fill:none;stroke-width:2;stroke-linecap:round;">
-                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                        </svg>
+    
+            lista.innerHTML = data.notificaciones.map(n => {
+                const cfg  = NTIPO[n.tipo] ?? ntipoDefault;
+                const hex  = cfg.color;
+                const bgI  = hex + '18';
+                const href = n.url ? `href="${n.url}"` : '';
+                return `
+                <a ${href} class="ndrop ${n.leida ? 'ndrop--leida' : 'ndrop--nueva'}" style="cursor:${n.url ? 'pointer' : 'default'}">
+                    <div class="ndrop__icon" style="background:${bgI};">
+                        <svg viewBox="0 0 24 24" style="stroke:${hex};">${cfg.svg}</svg>
                     </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-weight:${n.leida ? '500' : '700'};font-size:0.82rem;color:var(--gris-900);">
-                            ${n.titulo}
-                            ${!n.leida ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#1a3a6b;margin-left:4px;vertical-align:middle;"></span>' : ''}
-                        </div>
-                        ${n.mensaje ? `<div style="font-size:0.76rem;color:var(--gris-500);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n.mensaje}</div>` : ''}
-                        <div style="font-size:0.7rem;color:var(--gris-400);margin-top:2px;">${n.fechaCreacion}</div>
-                        ${n.url ? `<a href="${n.url}" style="font-size:0.73rem;color:var(--celeste);text-decoration:none;">Ver →</a>` : ''}
+                    <div class="ndrop__body">
+                        <div class="ndrop__titulo">${n.titulo}</div>
+                        ${n.mensaje ? `<div class="ndrop__msg">${n.mensaje}</div>` : ''}
+                        <div class="ndrop__fecha">${n.fechaCreacion}</div>
                     </div>
-                </div>
-            `).join('');
-        } catch(e) {
-            console.error('Error notificaciones:', e);
-        }
+                    ${!n.leida ? `<div class="ndrop__dot" style="background:${hex};box-shadow:0 0 0 3px ${bgI};"></div>` : ''}
+                </a>`;
+            }).join('');
+    
+        } catch(e) { console.error('Error notificaciones:', e); }
     }
 
     async function marcarTodasLeidas() {

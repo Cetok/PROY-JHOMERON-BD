@@ -19,17 +19,25 @@ builder.Services.AddSession(options =>
     options.IdleTimeout         = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly     = true;
     options.Cookie.IsEssential  = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;//cambie esto
-    options.Cookie.SameSite     = SameSiteMode.Lax;//cambie esto
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite     = SameSiteMode.Lax;
 });
 
 // ── HttpContextAccessor (necesario para AuditoriaService) ───
 builder.Services.AddHttpContextAccessor();
 
+// ── HttpClient para CallMeBot (WhatsApp) ─────────────────────
+builder.Services.AddHttpClient("callmebot", client =>
+{
+    client.BaseAddress = new Uri("https://api.callmebot.com/");
+    client.Timeout     = TimeSpan.FromSeconds(15);
+});
+
 // ── Servicios propios ────────────────────────────────────────
 builder.Services.AddScoped<AuditoriaService>();
 builder.Services.AddScoped<NotificacionService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<WhatsAppService>();
 
 // ── Servicio de background (revisa mantenimientos pendientes)
 builder.Services.AddHostedService<MantenimientoBackgroundService>();
@@ -68,17 +76,15 @@ app.Use(async (context, next) =>
 app.MapControllerRoute(
     name:    "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
-//agregue lo de abajo
+
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider
-                  .GetRequiredService<AppDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
 //"Server=miapp-db.cdieqi08ih0k.sa-east-1.rds.amazonaws.com,1433;Database=NombreDeTuBD;User Id=admin;Password=TuPassword;TrustServerCertificate=True;"
 //"Server=.;Database=PROYJHOME2026;Integrated Security=true;TrustServerCertificate=true;"
 //Server=192.168.2.5;Database=SgsJhomeron;User Id=sa;Password=admin;TrustServerCertificate=true;
-// ── Seed ─────────────────────────────────────────────────────
 await DbSeeder.SeedAdminAsync(app.Services);
 
 app.Run();

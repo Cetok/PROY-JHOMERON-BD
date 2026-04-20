@@ -11,8 +11,11 @@ namespace PROYJHOME2026.BackgroundServices
         private readonly ILogger<MantenimientoBackgroundService> _logger;
         private readonly TimeSpan _intervalo = TimeSpan.FromHours(1);
 
-        // Horas en que se envían las alertas de modalidad/seguro (mañana, tarde, noche)
+        // Horas en que se envían las alertas (mañana, tarde, noche)
         private static readonly int[] HorasAlerta = { 8, 13, 20 };
+
+        // Días de anticipación para alertas WhatsApp
+        private const int DiasUmbralWsp = 10;
 
         public MantenimientoBackgroundService(
             IServiceScopeFactory scopeFactory,
@@ -34,7 +37,9 @@ namespace PROYJHOME2026.BackgroundServices
             }
         }
 
-        // ── Mantenimientos ────────────────────────────────────────
+        // ══════════════════════════════════════════════════════════
+        // MANTENIMIENTOS — notifica hoy/mañana + WhatsApp ≤10 días
+        // ══════════════════════════════════════════════════════════
         private async Task RevisarMantenimientosPendientesAsync()
         {
             try
@@ -43,10 +48,12 @@ namespace PROYJHOME2026.BackgroundServices
                 var context      = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var notifService = scope.ServiceProvider.GetRequiredService<NotificacionService>();
                 var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+                var wspService   = scope.ServiceProvider.GetRequiredService<WhatsAppService>();
 
                 var hoy    = DateTime.Today;
                 var manana = hoy.AddDays(1);
 
+                // ── Notificación interna: hoy o mañana ──────────
                 var pendientes = await context.MantenimientosCarros
                     .Include(m => m.Carro)
                     .Include(m => m.TipoMantenimiento)
@@ -94,11 +101,46 @@ namespace PROYJHOME2026.BackgroundServices
                         }
                     }
                 }
+
+                // ── WhatsApp: mantenimientos en los próximos 10 días (solo a las 8h, 13h, 20h) ──
+                var horaActualMante = DateTime.Now.Hour;
+                if (HorasAlerta.Contains(horaActualMante))
+                {
+                var proximos10 = await context.MantenimientosCarros
+                    .Include(m => m.Carro)
+                    .Include(m => m.TipoMantenimiento)
+                    .Where(m => m.Estado == "Pendiente"
+                             && m.FechaProgramada.Date >= hoy
+                             && m.FechaProgramada.Date <= hoy.AddDays(DiasUmbralWsp))
+                    .ToListAsync();
+
+                foreach (var m in proximos10)
+                {
+                    var dias        = (m.FechaProgramada.Date - hoy).Days;
+                    var claveMsgWsp = $"mante_{m.IdMante}_{dias}dias_h{horaActualMante}";
+
+                    string txtWsp;
+                    if (dias == 0)
+                        txtWsp = $"🔧 *MANTENIMIENTO HOY*\n" +
+                                 $"Vehículo: {m.Carro?.Placa}\n" +
+                                 $"Tipo: {m.TipoMantenimiento?.Nombre}\n" +
+                                 $"Fecha programada: {m.FechaProgramada:dd/MM/yyyy}";
+                    else
+                        txtWsp = $"🔧 *Mantenimiento en {dias} día(s)*\n" +
+                                 $"Vehículo: {m.Carro?.Placa}\n" +
+                                 $"Tipo: {m.TipoMantenimiento?.Nombre}\n" +
+                                 $"Fecha programada: {m.FechaProgramada:dd/MM/yyyy}";
+
+                    await wspService.EnviarATodosAsync(claveMsgWsp, txtWsp);
+                }
+                } // fin if HorasAlerta
             }
             catch (Exception ex) { _logger.LogError(ex, "Error revisando mantenimientos"); }
         }
 
-        // ── Modalidades y Seguros — 3 veces al día ───────────────
+        // ══════════════════════════════════════════════════════════
+        // MODALIDADES Y SEGUROS — 3 veces al día + WhatsApp ≤10 días
+        // ══════════════════════════════════════════════════════════
         private async Task RevisarModalidadesYSegurosAsync()
         {
             var horaActual = DateTime.Now.Hour;
@@ -108,12 +150,10 @@ namespace PROYJHOME2026.BackgroundServices
             {
                 using var scope = _scopeFactory.CreateScope();
                 var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var wspService  = scope.ServiceProvider.GetRequiredService<WhatsAppService>();
 
-                var hoy          = DateTime.Today;
-                var claveHoy     = hoy.ToString("yyyyMMdd");
-                var umbralProximo = hoy.AddDays(30); // alertar si vence en 30 días
+                var hoy = DateTime.Today;
 
-                // Obtener IDs de usuarios Admin y Transporte
                 var destinatarios = await context.Usuarios
                     .Where(u => u.activo && (u.rol == "Admin" || u.rol == "Transporte"))
                     .ToListAsync();
@@ -145,26 +185,50 @@ namespace PROYJHOME2026.BackgroundServices
                     }
                     else continue;
 
-                    // Verificar que no se haya notificado en esta hora de hoy
-                    var claveTitulo = $"{titulo}|{claveHoy}|H{horaActual}";
                     bool yaNotif = await context.Notificaciones
                         .AnyAsync(n => n.Titulo == titulo
                                     && n.FechaCreacion.Date == hoy
                                     && n.FechaCreacion.Hour == horaActual);
-                    if (yaNotif) continue;
-
-                    foreach (var u in destinatarios)
+                    if (!yaNotif)
                     {
-                        context.Notificaciones.Add(new Notificacion
+                        foreach (var u in destinatarios)
                         {
-                            IdUsuario     = u.idUsuario,
-                            Tipo          = tipo,
-                            Titulo        = titulo,
-                            Mensaje       = mensaje,
-                            Url           = $"/Carros/Details/{cm.IdCarro}",
-                            Leida         = false,
-                            FechaCreacion = DateTime.Now
-                        });
+                            context.Notificaciones.Add(new Notificacion
+                            {
+                                IdUsuario     = u.idUsuario,
+                                Tipo          = tipo,
+                                Titulo        = titulo,
+                                Mensaje       = mensaje,
+                                Url           = $"/Carros/Details/{cm.IdCarro}",
+                                Leida         = false,
+                                FechaCreacion = DateTime.Now
+                            });
+                        }
+                    }
+
+                    // WhatsApp si vence en 10 días o menos (incluyendo vencidos)
+                    if (diasRest <= DiasUmbralWsp)
+                    {
+                        string txtWsp;
+                        if (diasRest < 0)
+                            txtWsp = $"🔴 *Modalidad VENCIDA*\n" +
+                                     $"Vehículo: {cm.Carro?.Placa}\n" +
+                                     $"Tipo: {cm.Modalidad?.TipoModalidad}\n" +
+                                     $"Venció el: {vence:dd/MM/yyyy}\n" +
+                                     $"Por favor renovar a la brevedad.";
+                        else if (diasRest == 0)
+                            txtWsp = $"🚨 *Modalidad vence HOY*\n" +
+                                     $"Vehículo: {cm.Carro?.Placa}\n" +
+                                     $"Tipo: {cm.Modalidad?.TipoModalidad}\n" +
+                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
+                        else
+                            txtWsp = $"⚠️ *Modalidad por vencer en {diasRest} día(s)*\n" +
+                                     $"Vehículo: {cm.Carro?.Placa}\n" +
+                                     $"Tipo: {cm.Modalidad?.TipoModalidad}\n" +
+                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
+
+                        var clave = $"modalidad_{cm.IdCarro}_{cm.IdModalidad}_{diasRest}dias_h{horaActual}";
+                        await wspService.EnviarATodosAsync(clave, txtWsp);
                     }
                 }
 
@@ -199,20 +263,46 @@ namespace PROYJHOME2026.BackgroundServices
                         .AnyAsync(n => n.Titulo == titulo
                                     && n.FechaCreacion.Date == hoy
                                     && n.FechaCreacion.Hour == horaActual);
-                    if (yaNotif) continue;
-
-                    foreach (var u in destinatarios)
+                    if (!yaNotif)
                     {
-                        context.Notificaciones.Add(new Notificacion
+                        foreach (var u in destinatarios)
                         {
-                            IdUsuario     = u.idUsuario,
-                            Tipo          = tipo,
-                            Titulo        = titulo,
-                            Mensaje       = mensaje,
-                            Url           = $"/Carros/Details/{cs.IdCarro}",
-                            Leida         = false,
-                            FechaCreacion = DateTime.Now
-                        });
+                            context.Notificaciones.Add(new Notificacion
+                            {
+                                IdUsuario     = u.idUsuario,
+                                Tipo          = tipo,
+                                Titulo        = titulo,
+                                Mensaje       = mensaje,
+                                Url           = $"/Carros/Details/{cs.IdCarro}",
+                                Leida         = false,
+                                FechaCreacion = DateTime.Now
+                            });
+                        }
+                    }
+
+                    // WhatsApp ≤10 días
+                    if (diasRest <= DiasUmbralWsp)
+                    {
+                        string txtWsp;
+                        if (diasRest < 0)
+                            txtWsp = $"🔴 *Seguro VENCIDO*\n" +
+                                     $"Vehículo: {cs.Carro?.Placa}\n" +
+                                     $"Tipo: {cs.Seguro?.TipoSeguro}\n" +
+                                     $"Venció el: {vence:dd/MM/yyyy}\n" +
+                                     $"Por favor renovar a la brevedad.";
+                        else if (diasRest == 0)
+                            txtWsp = $"🚨 *Seguro vence HOY*\n" +
+                                     $"Vehículo: {cs.Carro?.Placa}\n" +
+                                     $"Tipo: {cs.Seguro?.TipoSeguro}\n" +
+                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
+                        else
+                            txtWsp = $"⚠️ *Seguro por vencer en {diasRest} día(s)*\n" +
+                                     $"Vehículo: {cs.Carro?.Placa}\n" +
+                                     $"Tipo: {cs.Seguro?.TipoSeguro}\n" +
+                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
+
+                        var clave = $"seguro_{cs.IdCarro}_{cs.IdSeguro}_{diasRest}dias_h{horaActual}";
+                        await wspService.EnviarATodosAsync(clave, txtWsp);
                     }
                 }
 
@@ -222,7 +312,9 @@ namespace PROYJHOME2026.BackgroundServices
             catch (Exception ex) { _logger.LogError(ex, "Error revisando modalidades/seguros"); }
         }
 
-        // ── Habilitaciones Vehiculares — 3 veces al día ──────────
+        // ══════════════════════════════════════════════════════════
+        // HABILITACIONES VEHICULARES — 3 veces al día + WhatsApp ≤10 días
+        // ══════════════════════════════════════════════════════════
         private async Task RevisarHabilitacionesVehicularesAsync()
         {
             var horaActual = DateTime.Now.Hour;
@@ -232,6 +324,7 @@ namespace PROYJHOME2026.BackgroundServices
             {
                 using var scope = _scopeFactory.CreateScope();
                 var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var wspService  = scope.ServiceProvider.GetRequiredService<WhatsAppService>();
 
                 var hoy = DateTime.Today;
 
@@ -268,20 +361,46 @@ namespace PROYJHOME2026.BackgroundServices
                         .AnyAsync(n => n.Titulo == titulo
                                     && n.FechaCreacion.Date == hoy
                                     && n.FechaCreacion.Hour == horaActual);
-                    if (yaNotif) continue;
-
-                    foreach (var u in destinatarios)
+                    if (!yaNotif)
                     {
-                        context.Notificaciones.Add(new Notificacion
+                        foreach (var u in destinatarios)
                         {
-                            IdUsuario     = u.idUsuario,
-                            Tipo          = tipo,
-                            Titulo        = titulo,
-                            Mensaje       = mensaje,
-                            Url           = $"/Carros/Details/{h.IdCarro}",
-                            Leida         = false,
-                            FechaCreacion = DateTime.Now
-                        });
+                            context.Notificaciones.Add(new Notificacion
+                            {
+                                IdUsuario     = u.idUsuario,
+                                Tipo          = tipo,
+                                Titulo        = titulo,
+                                Mensaje       = mensaje,
+                                Url           = $"/Carros/Details/{h.IdCarro}",
+                                Leida         = false,
+                                FechaCreacion = DateTime.Now
+                            });
+                        }
+                    }
+
+                    // WhatsApp ≤10 días
+                    if (diasRest <= DiasUmbralWsp)
+                    {
+                        string txtWsp;
+                        if (diasRest < 0)
+                            txtWsp = $"🔴 *Revisión Técnica VENCIDA*\n" +
+                                     $"Vehículo: {h.Carro?.Placa}\n" +
+                                     $"Código: {h.Codigo}\n" +
+                                     $"Venció el: {vence:dd/MM/yyyy}\n" +
+                                     $"Por favor renovar a la brevedad.";
+                        else if (diasRest == 0)
+                            txtWsp = $"🚨 *Revisión Técnica vence HOY*\n" +
+                                     $"Vehículo: {h.Carro?.Placa}\n" +
+                                     $"Código: {h.Codigo}\n" +
+                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
+                        else
+                            txtWsp = $"⚠️ *Revisión Técnica por vencer en {diasRest} día(s)*\n" +
+                                     $"Vehículo: {h.Carro?.Placa}\n" +
+                                     $"Código: {h.Codigo}\n" +
+                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
+
+                        var clave = $"habveh_{h.IdHabilitacion}_{diasRest}dias_h{horaActual}";
+                        await wspService.EnviarATodosAsync(clave, txtWsp);
                     }
                 }
 
