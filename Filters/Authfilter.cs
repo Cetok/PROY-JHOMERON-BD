@@ -34,6 +34,7 @@ namespace PROYJHOME2026.Filters
                 "CarroConductorLog", "CarroAsesorios", "CarroModalidades",
                 "CarroSeguros", "Seguros", "Asesorios", "Modalidades",
                 "TipoMantenimientos",
+                "HabilitacionesVehiculares", "CertificadosCarro",
                 "CheckListTransporte", "InspeccionBotiquinTransporte",
                 "InspeccionBotiquinGrupo", "InspeccionExtintor",
                 "Reportes.IndexFlota", "Reportes.VehiculosData",
@@ -144,6 +145,10 @@ namespace PROYJHOME2026.Filters
             // Carros: solo ver (Index + Details)
             if (ctrl.Equals("Carros", StringComparison.OrdinalIgnoreCase))
                 return AccionesSoloVer.Contains(accion);
+
+            // Habilitaciones Vehiculares y Certificados: acceso completo para SSOMA
+            if (ctrl.Equals("HabilitacionesVehiculares", StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("CertificadosCarro", StringComparison.OrdinalIgnoreCase)) return true;
 
             // Grupos: Index + Details (sin crear/editar), puede hacer inspecciones desde Details
             if (ctrl.Equals("Grupos", StringComparison.OrdinalIgnoreCase))

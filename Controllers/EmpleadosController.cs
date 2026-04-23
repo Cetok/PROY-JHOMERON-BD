@@ -215,6 +215,15 @@ namespace PROYJHOME2026.Controllers
             if (id != vm.Empleado.idEmpleado) return NotFound();
 
             ModelState.Remove("Grupos");
+            ModelState.Remove("Empleado.estado");
+
+            // Recuperar estado actual de BD para no pisarlo al editar
+            var estadoActual = await _context.Empleados
+                .AsNoTracking()
+                .Where(e => e.idEmpleado == id)
+                .Select(e => e.estado)
+                .FirstOrDefaultAsync();
+            vm.Empleado.estado = estadoActual ?? "Activo";
 
             if (ModelState.IsValid)
             {
