@@ -13,17 +13,20 @@ namespace PROYJHOME2026.Controllers
         private readonly NotificacionService _notifService;
         private readonly AuditoriaService    _auditoriaService;
         private readonly EmailService        _emailService;
+        private readonly TwilioService       _twilioService;
 
         public MantenimientoCarrosController(
             AppDbContext        context,
             NotificacionService notifService,
             AuditoriaService    auditoriaService,
-            EmailService        emailService)
+            EmailService        emailService,
+            TwilioService       twilioService)
         {
             _context          = context;
             _notifService     = notifService;
             _auditoriaService = auditoriaService;
             _emailService     = emailService;
+            _twilioService    = twilioService;
         }
 
         // ── INDEX ────────────────────────────────────────────────
@@ -115,6 +118,23 @@ namespace PROYJHOME2026.Controllers
                 _context.Add(vm);
                 await _context.SaveChangesAsync();
 
+                // WhatsApp instantaneo a Ayde y Silvana al registrar mantenimiento
+                try
+                {
+                    var carroWsp = await _context.Carros.FindAsync(vm.IdCarro);
+                    var tipoWsp  = await _context.TiposMantenimiento.FindAsync(vm.IdTipoMante);
+                    var dias     = (vm.FechaProgramada.Date - DateTime.Today).Days;
+                    var sufijo   = dias == 0 ? " — HOY" : "";
+                    var detDias  = dias < 0 ? " (fecha pasada)" : dias > 0 ? $" (en {dias} dia(s))" : "";
+                    var txtWsp   = $"\u2705 *Mantenimiento registrado{sufijo}*\nVehiculo: {carroWsp?.Placa}\nTipo: {tipoWsp?.Nombre}\nFecha programada: {vm.FechaProgramada:dd/MM/yyyy}{detDias}";
+                    await _twilioService.EnviarATodosAsync($"mante_nuevo_{vm.IdMante}", txtWsp);
+                }
+                catch (Exception ex)
+                {
+                    // No bloquear el flujo si falla WhatsApp
+                    _ = ex;
+                }
+
                 // Notificación de creación
                  await _notifService.CrearAsync(
                     tipo:    "Creacion",
@@ -204,6 +224,14 @@ namespace PROYJHOME2026.Controllers
                 descripcion: $"Cambió mantenimiento #{id} de Pendiente → En proceso"
             );
 
+            // WhatsApp instantaneo — inicio de proceso
+            try
+            {
+                var txtWsp = $"\uD83D\uDD27 *Mantenimiento EN PROCESO*\nVehiculo: {m.Carro?.Placa}\nTipo: {m.TipoMantenimiento?.Nombre}\nInicio: {DateTime.Now:dd/MM/yyyy HH:mm}";
+                await _twilioService.EnviarATodosAsync($"mante_proceso_{id}", txtWsp);
+            }
+            catch (Exception ex) { _ = ex; }
+
             TempData["Success"] = "Mantenimiento marcado como En proceso.";
             return RedirectToAction(nameof(Details), new { id });
         }
@@ -260,6 +288,17 @@ namespace PROYJHOME2026.Controllers
                 idEntidad:   id,
                 descripcion: $"Culminó mantenimiento #{id} — {m.TipoMantenimiento?.Nombre} ({m.Carro?.Placa}){descComentario}"
             );
+
+            // WhatsApp instantaneo — culminacion con comentario
+            try
+            {
+                var comentarioWsp = !string.IsNullOrWhiteSpace(comentarioCulminacion)
+                    ? $"\nComentario: {comentarioCulminacion}"
+                    : "";
+                var txtWsp = $"\uD83C\uDFC1 *Mantenimiento CULMINADO*\nVehiculo: {m.Carro?.Placa}\nTipo: {m.TipoMantenimiento?.Nombre}\nCulminado: {DateTime.Now:dd/MM/yyyy HH:mm}{comentarioWsp}";
+                await _twilioService.EnviarATodosAsync($"mante_culminado_{id}", txtWsp);
+            }
+            catch (Exception ex) { _ = ex; }
 
             TempData["Success"] = "Mantenimiento culminado. El vehículo volvió a Activo.";
             return RedirectToAction(nameof(Details), new { id });
