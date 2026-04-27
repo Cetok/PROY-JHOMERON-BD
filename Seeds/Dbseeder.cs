@@ -13,18 +13,18 @@ namespace PROYJHOME2026.Seeds
             await context.Database.MigrateAsync();
 
             // ── Lista de usuarios del sistema ─────────────────────────────
-            // Para cambiar la contraseña de un usuario: edita el campo "pass"
-            // Al reiniciar el servidor se actualiza automáticamente en la BD
+            // Para cambiar contraseña o correo: edita aquí y reinicia el servidor
+            // Se actualiza automáticamente en la BD al arrancar
             var usuarios = new (string username, string pass, string rol, string nombre, string correo)[]
             {
                 ("admin",   "jhomeron",      "Admin",      "Administrador del Sistema", "admin@sistema.com"),
                 ("oliver",  "s0p0rt3-6",    "SoporteTI",  "Oliver Amaricua",           "oliver@sistema.com"),
-                ("silvana", "jhomeron321$",  "Transporte", "Silvana",                   "silvana@sistema.com"),
+                ("silvana", "jhomeron321$",  "Transporte", "Silvana",                   "jefeventas@jhomeron.com"),
                 ("eusebio", "electric0-0",  "Produccion", "Eusebio",                   "eusebio@sistema.com"),
                 ("ssoma",   "segu0-0",      "SSOMA",      "SSOMA",                     "ssoma@sistema.com"),
                 ("danitza", "sistem4-7",    "Admin",      "Danitza",                   "danitza@sistema.com"),
                 ("yanet",   "logist1-0",    "Logistica",  "Yanet",                     "yanet@sistema.com"),
-                ("ayde",    "legal0-0",     "Transporte", "Ayde",                      "ayde@sistema.com"),
+                ("ayde",    "legal0-0",     "Transporte", "Ayde",                      "arealegal@jhomeron.com"),
             };
 
             foreach (var (username, pass, rol, nombre, correo) in usuarios)
@@ -48,13 +48,14 @@ namespace PROYJHOME2026.Seeds
                 }
                 else
                 {
-                    // Usuario existente — verificar si la contraseña cambió
-                    // Si el hash actual NO coincide con el pass en código, actualizar
+                    // Usuario existente — actualizar contraseña si cambió
                     bool passwordCambio = !BCrypt.Net.BCrypt.Verify(pass, usuarioExistente.passwordHash);
                     if (passwordCambio)
-                    {
                         usuarioExistente.passwordHash = BCrypt.Net.BCrypt.HashPassword(pass, workFactor: 12);
-                    }
+
+                    // Actualizar correo si cambió
+                    if (usuarioExistente.correo != correo)
+                        usuarioExistente.correo = correo;
                 }
             }
 

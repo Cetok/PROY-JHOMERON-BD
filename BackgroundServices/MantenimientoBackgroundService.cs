@@ -15,7 +15,7 @@ namespace PROYJHOME2026.BackgroundServices
         private static readonly int[] HorasAlerta = { 8, 13, 20 };
 
         // Días de anticipación para alertas WhatsApp
-        private const int DiasUmbralWsp = 10;
+        private const int DiasUmbralWsp = 30;
 
         public MantenimientoBackgroundService(
             IServiceScopeFactory scopeFactory,
@@ -48,7 +48,7 @@ namespace PROYJHOME2026.BackgroundServices
                 var context      = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var notifService = scope.ServiceProvider.GetRequiredService<NotificacionService>();
                 var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
-                var wspService   = scope.ServiceProvider.GetRequiredService<WhatsAppService>();
+                var twilioService   = scope.ServiceProvider.GetRequiredService<TwilioService>();
 
                 var hoy    = DateTime.Today;
                 var manana = hoy.AddDays(1);
@@ -131,7 +131,7 @@ namespace PROYJHOME2026.BackgroundServices
                                  $"Tipo: {m.TipoMantenimiento?.Nombre}\n" +
                                  $"Fecha programada: {m.FechaProgramada:dd/MM/yyyy}";
 
-                    await wspService.EnviarATodosAsync(claveMsgWsp, txtWsp);
+                    await twilioService.EnviarATodosAsync(claveMsgWsp, txtWsp);
                 }
                 } // fin if HorasAlerta
             }
@@ -150,7 +150,7 @@ namespace PROYJHOME2026.BackgroundServices
             {
                 using var scope = _scopeFactory.CreateScope();
                 var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var wspService  = scope.ServiceProvider.GetRequiredService<WhatsAppService>();
+                var twilioService  = scope.ServiceProvider.GetRequiredService<TwilioService>();
 
                 var hoy = DateTime.Today;
 
@@ -228,7 +228,7 @@ namespace PROYJHOME2026.BackgroundServices
                                      $"Fecha vencimiento: {vence:dd/MM/yyyy}";
 
                         var clave = $"modalidad_{cm.IdCarro}_{cm.IdModalidad}_{diasRest}dias_h{horaActual}";
-                        await wspService.EnviarATodosAsync(clave, txtWsp);
+                        await twilioService.EnviarATodosAsync(clave, txtWsp);
                     }
                 }
 
@@ -302,7 +302,7 @@ namespace PROYJHOME2026.BackgroundServices
                                      $"Fecha vencimiento: {vence:dd/MM/yyyy}";
 
                         var clave = $"seguro_{cs.IdCarro}_{cs.IdSeguro}_{diasRest}dias_h{horaActual}";
-                        await wspService.EnviarATodosAsync(clave, txtWsp);
+                        await twilioService.EnviarATodosAsync(clave, txtWsp);
                     }
                 }
 
@@ -324,7 +324,7 @@ namespace PROYJHOME2026.BackgroundServices
             {
                 using var scope = _scopeFactory.CreateScope();
                 var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var wspService  = scope.ServiceProvider.GetRequiredService<WhatsAppService>();
+                var twilioService  = scope.ServiceProvider.GetRequiredService<TwilioService>();
 
                 var hoy = DateTime.Today;
 
@@ -400,7 +400,7 @@ namespace PROYJHOME2026.BackgroundServices
                                      $"Fecha vencimiento: {vence:dd/MM/yyyy}";
 
                         var clave = $"habveh_{h.IdHabilitacion}_{diasRest}dias_h{horaActual}";
-                        await wspService.EnviarATodosAsync(clave, txtWsp);
+                        await twilioService.EnviarATodosAsync(clave, txtWsp);
                     }
                 }
 

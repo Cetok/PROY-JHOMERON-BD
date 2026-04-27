@@ -26,20 +26,13 @@ builder.Services.AddSession(options =>
 // ── HttpContextAccessor (necesario para AuditoriaService) ───
 builder.Services.AddHttpContextAccessor();
 
-// ── HttpClient para CallMeBot (WhatsApp) ─────────────────────
-builder.Services.AddHttpClient("callmebot", client =>
-{
-    client.BaseAddress = new Uri("https://api.callmebot.com/");
-    client.Timeout     = TimeSpan.FromSeconds(15);
-});
-
 // ── Servicios propios ────────────────────────────────────────
 builder.Services.AddScoped<AuditoriaService>();
 builder.Services.AddScoped<NotificacionService>();
 builder.Services.AddScoped<EmailService>();
-builder.Services.AddScoped<WhatsAppService>();
+builder.Services.AddScoped<TwilioService>();
 
-// ── Servicio de background (revisa mantenimientos pendientes)
+// ── Servicio de background (revisa vencimientos cada hora)
 builder.Services.AddHostedService<MantenimientoBackgroundService>();
 
 // ── MVC con filtro global de autenticación ───────────────────
