@@ -9,6 +9,7 @@ namespace PROYJHOME2026.Data
 
         // ── Tablas principales ──────────────────────────────────
         public DbSet<Empleado> Empleados { get; set; }
+        public DbSet<CuentaBancaria> CuentasBancarias { get; set; }
         public DbSet<Equipo> Equipos { get; set; }
         public DbSet<TipoEquipo> TiposEquipo { get; set; }
         public DbSet<Grupo> Grupos { get; set; }

@@ -90,6 +90,10 @@
                     <div class="det-label">Dirección</div>
                     <div class="det-value">@(Model.direccion ?? "—")</div>
                 </div>
+                <div class="det-field" style="grid-column:1/-1;">
+                    <div class="det-label">Cargo / Puesto</div>
+                    <div class="det-value">@(Model.Cargo ?? "—")</div>
+                </div>
             </div>
         </div>
 
@@ -334,6 +338,116 @@ else if (historial != null)
     </div>
 }
 
+</div>
+
+<!-- ══ CUENTAS BANCARIAS ══════════════════════════════════════ -->
+<div class="card" style="margin-top:16px;">
+    <div class="card__header">
+        <div>
+            <div class="card__title">Cuentas bancarias</div>
+            <div class="card__subtitle">Datos de depósito del empleado</div>
+        </div>
+    </div>
+    <div style="padding:0 20px 20px;">
+
+        @if (ViewBag.CuentasBancarias != null && ((List<PROYJHOME2026.Models.CuentaBancaria>)ViewBag.CuentasBancarias).Any())
+        {
+            <div class="table-wrapper" style="border:none; margin:0;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Banco</th>
+                            <th>Tipo</th>
+                            <th>N° Cuenta</th>
+                            <th>CCI</th>
+                            <th>Registrado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var cb in (List<PROYJHOME2026.Models.CuentaBancaria>)ViewBag.CuentasBancarias)
+                    {
+                        <tr>
+                            <td style="font-weight:600; color:var(--azul-dark);">@cb.TipoBanco</td>
+                            <td style="font-size:0.82rem; color:var(--gris-500);">@(cb.TipoCuenta ?? "—")</td>
+                            <td style="font-family:monospace; font-size:0.85rem;">@cb.NumeroCuenta</td>
+                            <td style="font-family:monospace; font-size:0.82rem; color:var(--gris-400);">@(cb.NumeroCCI ?? "—")</td>
+                            <td style="font-size:0.75rem; color:var(--gris-400);">@cb.FechaRegistro.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <a asp-controller="CuentasBancarias" asp-action="Editar"
+                                   asp-route-id="@cb.IdCuenta"
+                                   class="btn btn--sm btn--celeste">Editar</a>
+                                <form asp-controller="CuentasBancarias" asp-action="Eliminar" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@cb.IdCuenta" />
+                                    <button type="submit" class="btn btn--sm btn--danger"
+                                            onclick="return confirm('¿Eliminar esta cuenta bancaria?')">
+                                        Eliminar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p style="font-size:0.82rem; color:var(--gris-400); padding:10px 0;">Sin cuentas bancarias registradas.</p>
+        }
+
+        <!-- Formulario agregar cuenta -->
+        <details style="margin-top:14px;">
+            <summary style="cursor:pointer; font-size:0.84rem; font-weight:600; color:var(--celeste); user-select:none;">
+                + Agregar cuenta bancaria
+            </summary>
+            <form asp-controller="CuentasBancarias" asp-action="Crear" method="post"
+                  style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="idEmpleado" value="@Model.idEmpleado" />
+                <div>
+                    <label class="form-label">Banco <span class="req">*</span></label>
+                    <select name="tipoBanco" class="form-control" required>
+                        <option value="">— Selecciona —</option>
+                        <option>BCP</option>
+                        <option>Interbank</option>
+                        <option>BBVA</option>
+                        <option>Scotiabank</option>
+                        <option>BanBif</option>
+                        <option>Pichincha</option>
+                        <option>Nación</option>
+                        <option>Mibanco</option>
+                        <option>Banbif</option>
+                        <option>Otro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Tipo de cuenta</label>
+                    <select name="tipoCuenta" class="form-control">
+                        <option value="">— Selecciona —</option>
+                        <option>Ahorro</option>
+                        <option>Corriente</option>
+                        <option>CTS</option>
+                        <option>Sueldo</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Número de cuenta <span class="req">*</span></label>
+                    <input type="text" name="numeroCuenta" class="form-control"
+                           placeholder="Ej: 19410XXXXXXXX" required />
+                </div>
+                <div>
+                    <label class="form-label">CCI (opcional)</label>
+                    <input type="text" name="numeroCCI" class="form-control"
+                           placeholder="20 dígitos" />
+                </div>
+                <div style="grid-column:1/-1; display:flex; justify-content:flex-end;">
+                    <button type="submit" class="btn btn--primary btn--sm">Guardar cuenta</button>
+                </div>
+            </form>
+        </details>
+    </div>
 </div>
 
 @section Styles {

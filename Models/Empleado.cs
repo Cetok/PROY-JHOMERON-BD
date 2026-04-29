@@ -17,5 +17,9 @@ namespace PROYJHOME2026.Models
         public string? correo { get; set; }
         public string? direccion { get; set; }
         public string? estado { get; set; }
+
+        /// <summary>Cargo o puesto del empleado. Ej: Vendedor, Almacenero, Contador</summary>
+        [StringLength(100)]
+        public string? Cargo { get; set; }
     }
 }

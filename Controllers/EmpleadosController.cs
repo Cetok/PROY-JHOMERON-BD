@@ -96,6 +96,10 @@ namespace PROYJHOME2026.Controllers
             ViewBag.Grupos    = grupos;
             ViewBag.Seguros   = seguros;
             ViewBag.EstadoLog = estadoLog;
+            ViewBag.CuentasBancarias = await _context.CuentasBancarias
+                .Where(c => c.IdEmpleado == id)
+                .OrderByDescending(c => c.FechaRegistro)
+                .ToListAsync();
             ViewBag.HistorialCambios = await _context.AuditoriaLogs
             .Where(l => l.Entidad == "Empleado" && l.IdEntidad == id)
             .OrderByDescending(l => l.FechaHora)

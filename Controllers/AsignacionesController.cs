@@ -1,4 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
@@ -406,6 +409,219 @@ namespace PROYJHOME2026.Controllers
                 .OrderBy(g => g.area)
                 .ToListAsync();
             ViewBag.GruposList = new SelectList(grupos, "idGrupo", "area", grupoSel);
+        }
+
+        // ── PDF CARGO DE EQUIPO ───────────────────────────────────
+        public async Task<IActionResult> CargoPdf(int id)
+        {
+            var asignacion = await _context.Asignaciones
+                .Include(a => a.Empleado)
+                .Include(a => a.Equipo).ThenInclude(e => e.TipoEquipo)
+                .FirstOrDefaultAsync(a => a.IdAsignacion == id);
+
+            if (asignacion == null) return NotFound();
+
+            var username = HttpContext.Session.GetString("Username") ?? "admin";
+            var firmante = username.ToLower() switch {
+                "oliver"  => "Oliver Amaricua",
+                "admin"   => "Juan Torvisco",
+                "danitza" => "Danitza LLanos",
+                _          => "Juan Torvisco"
+            };
+
+            var equipo         = asignacion.Equipo;
+            var tipo           = equipo.TipoEquipo?.tipo?.ToUpper() ?? "";
+            var empleado       = asignacion.Empleado;
+            var nombreEmpleado = $"{empleado?.nombre} {empleado?.paterno} {empleado?.materno}".Trim();
+
+            string asunto = tipo switch {
+                var t when t.Contains("LAPTOP")      => "Entrega de laptop",
+                var t when t.Contains("PC COMPLETO") => "Entrega de PC completo",
+                var t when t.Contains("CELULAR")     => "Entrega de celular",
+                var t when t.Contains("MONITOR")     => "Entrega de monitor",
+                var t when t.Contains("MOUSE")       => "Entrega de mouse",
+                _                                    => $"Entrega de {tipo.ToLower()}"
+            };
+
+            var logoPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "logo_jhome.png");
+            byte[]? logoBytes = System.IO.File.Exists(logoPath)
+                ? await System.IO.File.ReadAllBytesAsync(logoPath) : null;
+
+            var nombreEquipo = tipo.Contains("PC COMPLETO") && !string.IsNullOrWhiteSpace(equipo.NombrePc)
+                ? equipo.NombrePc
+                : $"{equipo.marca} {equipo.modelo}".Trim();
+
+            var pdf = Document.Create(doc =>
+            {
+                doc.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.MarginTop(40); page.MarginBottom(30); page.MarginHorizontal(50);
+                    page.DefaultTextStyle(t => t.FontSize(11).FontFamily("Arial"));
+
+                    // HEADER
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Row(row =>
+                        {
+                            if (logoBytes != null)
+                                row.ConstantItem(140).Image(logoBytes).FitWidth();
+                            else
+                                row.ConstantItem(140).Text("JHOMERON").Bold().FontSize(20).FontColor(Color.FromHex("1A3A6B"));
+                            row.RelativeItem();
+                        });
+                        col.Item().PaddingTop(18).PaddingBottom(6)
+                            .BorderTop(1).BorderBottom(1).BorderColor(Color.FromHex("1A3A6B"))
+                            .AlignCenter()
+                            .Text("Cargo de Equipo").Bold().FontSize(13).FontColor(Color.FromHex("1A3A6B"));
+                    });
+
+                    // CONTENIDO
+                    page.Content().PaddingTop(24).Column(col =>
+                    {
+                        void Memo(string label, string valor) =>
+                            col.Item().PaddingBottom(6).Row(row =>
+                            {
+                                row.ConstantItem(80).Text(label).Bold().FontSize(11);
+                                row.RelativeItem().Text(valor).FontSize(11);
+                            });
+
+                        Memo("De:",     "Dpto. Soporte Técnico");
+                        Memo("Para:",   nombreEmpleado);
+                        Memo("Fecha:",  asignacion.FechaAsignacion.ToString("dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-PE")));
+                        Memo("Asunto:", asunto);
+
+                        col.Item().PaddingTop(18).PaddingBottom(10)
+                            .Text("Por medio de la presente se hace entrega de los siguientes equipos, los cuales quedan bajo su responsabilidad.")
+                            .FontSize(11);
+
+                        // Nombre principal
+                        col.Item().PaddingLeft(12).PaddingBottom(6)
+                            .Text($"{tipo}: {nombreEquipo}   SN: {equipo.numero_serie ?? "—"}")
+                            .Bold().FontSize(11);
+
+                        void Esp(string label, string? valor)
+                        {
+                            if (!string.IsNullOrWhiteSpace(valor))
+                                col.Item().PaddingLeft(20).PaddingBottom(3).Row(row =>
+                                {
+                                    row.ConstantItem(7).Text("•").FontSize(11);
+                                    row.ConstantItem(160).Text(label + ":").Bold().FontSize(11);
+                                    row.RelativeItem().Text(valor).FontSize(11);
+                                });
+                        }
+
+                        void SeccionTitulo(string t) =>
+                            col.Item().PaddingLeft(12).PaddingTop(10).PaddingBottom(4)
+                                .Text(t).Bold().FontSize(11).FontColor(Color.FromHex("1A3A6B"));
+
+                        if (tipo.Contains("PC COMPLETO"))
+                        {
+                            if (!string.IsNullOrWhiteSpace(equipo.PcCpuMarca) || !string.IsNullOrWhiteSpace(equipo.PcCpuProcesador))
+                            {
+                                SeccionTitulo("CPU");
+                                Esp("Marca",         equipo.PcCpuMarca);
+                                Esp("Modelo",        equipo.PcCpuModelo);
+                                Esp("N° serie",      equipo.PcCpuSerie);
+                                Esp("Procesador",    equipo.PcCpuProcesador);
+                                Esp("Tarjeta madre", equipo.PcCpuTarjetaMadre);
+                                Esp("RAM",           equipo.PcCpuRam);
+                                Esp("Disco",         equipo.PcCpuDisco);
+                                Esp("Fuente",        equipo.PcCpuFuenteEnergia);
+                                Esp("Gráficos",      equipo.PcCpuGraficosIntegrados == true ? "Integrados" : equipo.PcCpuTarjetaGrafica);
+                                Esp("S.O.",          equipo.PcCpuSistemaOperativo);
+                                Esp("Versión SO",    equipo.PcCpuVersionSO);
+                            }
+                            if (!string.IsNullOrWhiteSpace(equipo.PcMonitorMarca))
+                            {
+                                SeccionTitulo("Monitor");
+                                Esp("Marca",   equipo.PcMonitorMarca);
+                                Esp("Modelo",  equipo.PcMonitorModelo);
+                                Esp("N° serie",equipo.PcMonitorSerie);
+                            }
+                            if (!string.IsNullOrWhiteSpace(equipo.PcMouseMarca))
+                            {
+                                SeccionTitulo("Mouse");
+                                Esp("Marca",   equipo.PcMouseMarca);
+                                Esp("Modelo",  equipo.PcMouseModelo);
+                                Esp("N° serie",equipo.PcMouseSerie);
+                                Esp("Tipo",    equipo.PcMouseEsInalambrico == true ? "Inalámbrico" : "Con cable");
+                            }
+                            if (!string.IsNullOrWhiteSpace(equipo.PcTecladoMarca))
+                            {
+                                SeccionTitulo("Teclado");
+                                Esp("Marca",   equipo.PcTecladoMarca);
+                                Esp("Modelo",  equipo.PcTecladoModelo);
+                                Esp("N° serie",equipo.PcTecladoSerie);
+                            }
+                            if (!string.IsNullOrWhiteSpace(equipo.PcMousepadMarca))
+                            {
+                                SeccionTitulo("Mousepad");
+                                Esp("Marca", equipo.PcMousepadMarca);
+                            }
+                        }
+                        else if (tipo.Contains("LAPTOP"))
+                        {
+                            Esp("Procesador",    equipo.Procesador);
+                            Esp("Tarjeta madre", equipo.TarjetaMadre);
+                            Esp("RAM",           equipo.Ram);
+                            Esp("Disco",         equipo.Disco);
+                            Esp("Fuente",        equipo.FuenteEnergia);
+                            Esp("Gráficos",      equipo.GraficosIntegrados == true ? "Integrados" : equipo.TarjetaGrafica);
+                            Esp("S.O.",          equipo.sistema_operativo);
+                            Esp("Versión SO",    equipo.version);
+                        }
+                        else if (tipo.Contains("CELULAR"))
+                        {
+                            Esp("IMEI",  equipo.IMEI);
+                            Esp("S.O.",  equipo.sistema_operativo);
+                            Esp("Versión", equipo.version);
+                        }
+                        else
+                        {
+                            Esp("Marca",    equipo.marca);
+                            Esp("Modelo",   equipo.modelo);
+                            Esp("N° serie", equipo.numero_serie);
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(equipo.Observaciones))
+                            col.Item().PaddingTop(12).Text($"Nota: {equipo.Observaciones}").FontSize(11).Italic();
+
+                        // FIRMAS
+                        col.Item().PaddingTop(50).Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().PaddingBottom(40).Text("");
+                                c.Item().BorderTop(1).BorderColor(Colors.Black).Text("").FontSize(2);
+                                c.Item().PaddingTop(4).Text("Dpto. Soporte Técnico").Bold().FontSize(11);
+                                c.Item().Text(firmante).FontSize(11);
+                            });
+                            row.ConstantItem(80);
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().PaddingBottom(40).Text("");
+                                c.Item().BorderTop(1).BorderColor(Colors.Black).Text("").FontSize(2);
+                                c.Item().PaddingTop(4).Text("Recibe Conforme").Bold().FontSize(11);
+                                c.Item().Text(nombreEmpleado).FontSize(11);
+                            });
+                        });
+                    });
+
+                    // PIE DE PÁGINA
+                    page.Footer().Column(col =>
+                    {
+                        col.Item().LineHorizontal(0.5f).LineColor(Color.FromHex("1A3A6B"));
+                        col.Item().PaddingTop(5).AlignCenter().Text("INDUSTRIAS JHOMERON S.A.C.").Bold().FontSize(9).FontColor(Color.FromHex("1A3A6B"));
+                        col.Item().AlignCenter().Text("Calle Santa Ana Mza. F Lt. 44 / Fnd. Chacra Cerro - Chillón / Comas - Lima - Perú").FontSize(8).FontColor(Color.FromHex("555F7A"));
+                        col.Item().AlignCenter().Text("Telfs.: 500-8202 / 500-8203 / 500-8204 / 500-8205 / 500-8206 / 500-8207 / 536-4212").FontSize(8).FontColor(Color.FromHex("555F7A"));
+                    });
+                });
+            });
+
+            var bytes    = pdf.GeneratePdf();
+            var fileName = $"CargoEquipo_{nombreEmpleado.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
+            return File(bytes, "application/pdf", fileName);
         }
     }
 }
