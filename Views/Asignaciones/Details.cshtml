@@ -256,6 +256,13 @@
                 <div class="det-value" style="font-family:monospace; color:var(--azul); font-weight:700;">@Model.NumeroCargo</div>
             </div>
         }
+        @if (!string.IsNullOrEmpty(Model.Observacion))
+        {
+            <div class="det-field" style="grid-column:1/-1;">
+                <div class="det-label">Observaciones</div>
+                <div class="det-value" style="white-space:pre-line; font-size:0.85rem;">@Model.Observacion</div>
+            </div>
+        }
     </div>
 </div>
 

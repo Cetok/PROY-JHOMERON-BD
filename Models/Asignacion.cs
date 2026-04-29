@@ -31,6 +31,10 @@ namespace PROYJHOME2026.Models
 
         public string EstadoAsignacion { get; set; } = "Activo";
 
+        /// <summary>Observaciones de la asignación: accesorios, estado, etc.</summary>
+        [StringLength(1000)]
+        public string? Observacion { get; set; }
+
         // ── Navegación ───────────────────────────────────────────
         [ForeignKey("IdEmpleado")]
         public Empleado Empleado { get; set; } = null!;

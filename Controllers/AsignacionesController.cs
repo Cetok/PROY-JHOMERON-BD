@@ -271,6 +271,7 @@ namespace PROYJHOME2026.Controllers
                     existing.FechaAsignacion = asignacion.FechaAsignacion;
                     existing.CorreoEquipo    = asignacion.CorreoEquipo;
                     existing.NumeroCargo     = asignacion.NumeroCargo;
+                    existing.Observacion     = asignacion.Observacion;
                     existing.EstadoAsignacion = asignacion.EstadoAsignacion;
 
                     await _context.SaveChangesAsync();
@@ -295,6 +296,8 @@ namespace PROYJHOME2026.Controllers
                             cambiosAsig.Add($"Correo equipo: '{asigAnterior.CorreoEquipo ?? "—"}' → '{asignacion.CorreoEquipo ?? "—"}'");
                         if (asigAnterior.NumeroCargo != asignacion.NumeroCargo)
                             cambiosAsig.Add($"N° Cargo: '{asigAnterior.NumeroCargo ?? "—"}' → '{asignacion.NumeroCargo ?? "—"}'");
+                        if (asigAnterior.Observacion != asignacion.Observacion)
+                            cambiosAsig.Add($"Observación: '{asigAnterior.Observacion ?? "—"}' → '{asignacion.Observacion ?? "—"}'");
                     }
  
                     var datosAsigAnt = cambiosAsig.Any() ? string.Join(" | ", cambiosAsig) : "Sin cambios detectados";
@@ -456,16 +459,32 @@ namespace PROYJHOME2026.Controllers
             if (rolPdf.Equals("SoporteTI", StringComparison.OrdinalIgnoreCase) && tipoPdf.Contains("CELULAR"))
                 return RedirectToAction("Denegado", "Auth");
 
-            var username = HttpContext.Session.GetString("Username") ?? "admin";
+            var username       = HttpContext.Session.GetString("UsuarioUsername") ?? "admin";
+            var usuarioNombre  = HttpContext.Session.GetString("UsuarioNombre") ?? "Juan Torvisco";
             var firmante = username.ToLower() switch {
                 "oliver"  => "Oliver Amaricua",
                 "admin"   => "Juan Torvisco",
-                "danitza" => "Danitza LLanos",
-                _          => "Juan Torvisco"
+                "danitza" => "Juan Torvisco",
+                "yanet"   => usuarioNombre,
+                _          => usuarioNombre
             };
 
+            var logoPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "logo_jhome.png");
+            byte[]? logoBytes = System.IO.File.Exists(logoPath)
+                ? await System.IO.File.ReadAllBytesAsync(logoPath) : null;
+
+            // Celular con rol Yanet/Admin/Danitza → formato especial
+            var rolPdf2   = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var tipoPdf2  = asignacion.Equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
+            bool esCelPdf = tipoPdf2.Contains("CELULAR");
+            bool usaFormatoCelular = esCelPdf && (
+                rolPdf2.Equals("Logistica", StringComparison.OrdinalIgnoreCase) ||
+                rolPdf2.Equals("Admin",     StringComparison.OrdinalIgnoreCase));
+            if (usaFormatoCelular)
+                return await CargoPdfCelularAsync(asignacion, firmante, logoBytes);
+
             var equipo         = asignacion.Equipo;
-            var tipo           = equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
+            var tipo           = equipo.TipoEquipo?.tipo?.ToUpper() ?? "";
             var empleado       = asignacion.Empleado;
             var nombreEmpleado = $"{empleado?.nombre} {empleado?.paterno} {empleado?.materno}".Trim();
 
@@ -478,13 +497,9 @@ namespace PROYJHOME2026.Controllers
                 _                                    => $"Entrega de {tipo.ToLower()}"
             };
 
-            var logoPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "logo_jhome.png");
-            byte[]? logoBytes = System.IO.File.Exists(logoPath)
-                ? await System.IO.File.ReadAllBytesAsync(logoPath) : null;
-
-            var nombreEquipo = tipo.Contains("PC COMPLETO") && !string.IsNullOrWhiteSpace(equipo?.NombrePc)
+            var nombreEquipo = tipo.Contains("PC COMPLETO") && !string.IsNullOrWhiteSpace(equipo.NombrePc)
                 ? equipo.NombrePc
-                : $"{equipo?.marca} {equipo?.modelo}".Trim();
+                : $"{equipo.marca} {equipo.modelo}".Trim();
 
             var pdf = Document.Create(doc =>
             {
@@ -532,7 +547,7 @@ namespace PROYJHOME2026.Controllers
 
                         // Nombre principal
                         col.Item().PaddingLeft(12).PaddingBottom(6)
-                            .Text($"{tipo}: {nombreEquipo}   SN: {equipo?.numero_serie ?? "—"}")
+                            .Text($"{tipo}: {nombreEquipo}   SN: {equipo.numero_serie ?? "—"}")
                             .Bold().FontSize(11);
 
                         void Esp(string label, string? valor)
@@ -650,7 +665,7 @@ namespace PROYJHOME2026.Controllers
                     page.Footer().Column(col =>
                     {
                         col.Item().LineHorizontal(0.5f).LineColor(Color.FromHex("1A3A6B"));
-                        col.Item().PaddingTop(5).AlignCenter().Text("INDUSTRIAS JHOMERON S.A.C.").Bold().FontSize(9).FontColor(Color.FromHex("1A3A6B"));
+                        col.Item().PaddingTop(5).AlignCenter().Text("INDUSTRIAS JHOMERON S.A.").Bold().FontSize(9).FontColor(Color.FromHex("1A3A6B"));
                         col.Item().AlignCenter().Text("Calle Santa Ana Mza. F Lt. 44 / Fnd. Chacra Cerro - Chillón / Comas - Lima - Perú").FontSize(8).FontColor(Color.FromHex("555F7A"));
                         col.Item().AlignCenter().Text("Telfs.: 500-8202 / 500-8203 / 500-8204 / 500-8205 / 500-8206 / 500-8207 / 536-4212").FontSize(8).FontColor(Color.FromHex("555F7A"));
                     });
@@ -659,6 +674,172 @@ namespace PROYJHOME2026.Controllers
 
             var bytes    = pdf.GeneratePdf();
             var fileName = $"CargoEquipo_{nombreEmpleado.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
+            return File(bytes, "application/pdf", fileName);
+        }
+        // ── PDF CELULAR — formato especial Jhomeron ──────────────
+        private async Task<IActionResult> CargoPdfCelularAsync(
+            PROYJHOME2026.Models.Asignacion asignacion,
+            string firmante, byte[]? logoBytes)
+        {
+            var equipo        = asignacion.Equipo;
+            var empleado      = asignacion.Empleado;
+            var nombreEmp     = $"{empleado?.nombre} {empleado?.paterno} {empleado?.materno}".Trim().ToUpper();
+            var dniEmp        = empleado?.dni ?? "—";
+            var marca         = equipo?.marca?.ToUpper() ?? "";
+            var modelo        = equipo?.modelo?.ToUpper() ?? "";
+            var serie         = equipo?.numero_serie ?? "—";
+            var imei          = equipo?.IMEI ?? "—";
+            var so            = equipo?.sistema_operativo?.ToUpper() ?? "—";
+            var version       = equipo?.version ?? "—";
+            var observacion   = asignacion.Observacion ?? "";
+            var fechaAsig     = asignacion.FechaAsignacion;
+            var fechaTexto    = $"Comas, {fechaAsig.Day} de {fechaAsig.ToString("MMMM", new System.Globalization.CultureInfo("es-PE"))} del {fechaAsig.Year}";
+
+            var pdf = Document.Create(doc =>
+            {
+                doc.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.MarginTop(35); page.MarginBottom(30); page.MarginHorizontal(50);
+                    page.DefaultTextStyle(t => t.FontSize(11).FontFamily("Arial"));
+
+                    // HEADER — logo
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Row(row =>
+                        {
+                            if (logoBytes != null)
+                                row.ConstantItem(140).Image(logoBytes).FitWidth();
+                            else
+                                row.ConstantItem(140).Text("JHOMERON").Bold().FontSize(20).FontColor(Color.FromHex("1A3A6B"));
+                            row.RelativeItem();
+                        });
+                    });
+
+                    // CONTENIDO
+                    page.Content().PaddingTop(20).Column(col =>
+                    {
+                        // Título principal
+                        col.Item().PaddingBottom(2).Text("ENTREGA DE EQUIPO CELULAR AL PERSONAL - INDUSTRIAS JHOMERON S.A.")
+                            .Bold().FontSize(12).FontColor(Colors.Black);
+                        col.Item().PaddingBottom(14).LineHorizontal(0.5f).LineColor(Colors.Black);
+
+                        // Datos empleado
+                        col.Item().PaddingBottom(12).Column(inner =>
+                        {
+                            inner.Item().PaddingBottom(6).Text("Se hace entrega a:").FontSize(11);
+                            inner.Item().PaddingLeft(20).Row(row =>
+                            {
+                                row.AutoItem().Text(nombreEmp).Bold().FontSize(11);
+                                row.AutoItem().Text($"  identificado (a) con  ").FontSize(11);
+                                row.AutoItem().Text($" DNI N° {dniEmp}").Bold().FontSize(11);
+                            });
+                        });
+
+                        // Lo siguiente
+                        col.Item().PaddingBottom(8).Text("Lo siguiente:").FontSize(11);
+
+                        // Equipo — nombre en negrita
+                        col.Item().PaddingBottom(4).Text($"UN (01) EQUIPO {marca} {modelo},")
+                            .Bold().FontSize(11);
+                        col.Item().PaddingBottom(4).Text("con las siguientes características y accesorios:")
+                            .FontSize(11);
+
+                        // Especificaciones
+                        col.Item().PaddingLeft(20).PaddingBottom(4).Row(row =>
+                        {
+                            row.AutoItem().Text($"{marca} {modelo}").Bold().FontSize(11);
+                            row.AutoItem().Text($"  SN: {serie}  IMEI: {imei}").Bold().FontSize(11);
+                        });
+
+                        if (!string.IsNullOrWhiteSpace(so))
+                        {
+                            col.Item().PaddingLeft(20).PaddingBottom(2).Row(row =>
+                            {
+                                row.ConstantItem(6).Text("").FontSize(11);
+                                row.AutoItem().Text("S.O.: ").Bold().FontSize(11);
+                                row.AutoItem().Text(so).FontSize(11);
+                                if (!string.IsNullOrWhiteSpace(version))
+                                {
+                                    row.AutoItem().Text("  Versión: ").Bold().FontSize(11);
+                                    row.AutoItem().Text(version).FontSize(11);
+                                }
+                            });
+                        }
+
+                        // Observaciones (accesorios numerados)
+                        if (!string.IsNullOrWhiteSpace(observacion))
+                        {
+                            col.Item().PaddingTop(6).PaddingLeft(20).Column(obs =>
+                            {
+                                var lineas = observacion.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var linea in lineas)
+                                    obs.Item().Text(linea.Trim()).FontSize(11);
+                            });
+                        }
+
+                        // Párrafo de responsabilidad
+                        col.Item().PaddingTop(20).PaddingBottom(10).Text(
+                            "El equipo entregado queda BAJO ENTERA RESPONSABILIDAD del personal a quien se le hace el cargo, " +
+                            "debiendo cuidarlo y conservarlo en óptimas condiciones para el mejor desempeño de la función encomendada.")
+                            .FontSize(11);
+
+                        col.Item().PaddingBottom(10).Text(
+                            "En casos de pérdida o robo, la empresa se encargará de reponer el equipo de la misma marca y modelo " +
+                            "y se descontará de su sueldo al trabajador el importe que corresponda por dicha compra, sin lugar a reclamo.")
+                            .FontSize(11);
+
+                        col.Item().PaddingBottom(20).Text(
+                            "Lo que se comunica para conocimiento y fines pertinentes.")
+                            .FontSize(11);
+
+                        // Fecha
+                        col.Item().PaddingBottom(30).Text(fechaTexto).FontSize(11);
+
+                        // Firma del empleado + cuadro huella
+                        col.Item().Row(row =>
+                        {
+                            // Izquierda — firma empleado
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().PaddingBottom(50).Text("").FontSize(11);
+                                c.Item().BorderTop(1).BorderColor(Colors.Black).Text("").FontSize(2);
+                                c.Item().PaddingTop(4).Text($"{nombreEmp}").Bold().FontSize(11);
+                                c.Item().Text($"DNI N° {dniEmp}").FontSize(11);
+                                c.Item().Text("RECIBI CONFORME").FontSize(11);
+                            });
+
+                            row.ConstantItem(40);
+
+                            // Derecha — cuadro huella
+                            row.ConstantItem(120).Column(c =>
+                            {
+                                c.Item().Border(1).BorderColor(Colors.Black)
+                                    .Width(110).Height(90)
+                                    .AlignCenter().AlignMiddle()
+                                    .Text("").FontSize(9).FontColor(Color.FromHex("AAAAAA"));
+                            });
+                        });
+                    });
+
+                    // PIE DE PÁGINA
+                    page.Footer().Column(col =>
+                    {
+                        col.Item().LineHorizontal(0.5f).LineColor(Color.FromHex("1A3A6B"));
+                        col.Item().PaddingTop(4).Row(row =>
+                        {
+                            row.RelativeItem().Text("INDUSTRIAS JHOMERON S.A.").Bold().FontSize(9).FontColor(Color.FromHex("1A3A6B"));
+                        });
+                        col.Item().Text("Calle Santa Ana Mza. F Lt. 44 / Fnd. Chacra Cerro - Chillón / Comas - Lima - Perú")
+                            .FontSize(8).FontColor(Color.FromHex("555F7A"));
+                        col.Item().Text("Telfs.: 500-8202 / 500-8203 / 500-8204 / 500-8205 / 500-8206 / 500-8207 / 536-4212")
+                            .FontSize(8).FontColor(Color.FromHex("555F7A"));
+                    });
+                });
+            });
+
+            var bytes    = pdf.GeneratePdf();
+            var fileName = $"EntregaCelular_{nombreEmp.Replace(" ", "_")}_{fechaAsig:yyyyMMdd}.pdf";
             return File(bytes, "application/pdf", fileName);
         }
     }

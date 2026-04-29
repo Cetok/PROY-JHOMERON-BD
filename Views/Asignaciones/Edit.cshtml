@@ -97,6 +97,13 @@
                         <input asp-for="CorreoEquipo" type="email" class="form-control" />
                         <span asp-validation-for="CorreoEquipo" class="form-error"></span>
                     </div>
+                    <div class="form-group form-group--full">
+                        <label class="form-label">Observaciones <span style="color:var(--gris-400); font-weight:400;">(accesorios, estado, etc.)</span></label>
+                        <textarea asp-for="Observacion" class="form-control" rows="4"
+                                  placeholder="Ej: 1) Cargador&#10;2) Mica protectora&#10;3) Case negro"
+                                  maxlength="1000" style="resize:vertical;"></textarea>
+                        <span asp-validation-for="Observacion" class="form-error"></span>
+                    </div>
                 </div>
             </div>
 
