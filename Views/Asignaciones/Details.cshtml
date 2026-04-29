@@ -1,4 +1,5 @@
 @model PROYJHOME2026.Models.Asignacion
+@using Microsoft.AspNetCore.Html
 @{
     ViewData["Title"]      = "Detalle Asignación";
     ViewData["Breadcrumb"] = "Asignaciones / Detalle";
@@ -51,7 +52,7 @@
     </div>
 }
 
-<!-- DATOS PRINCIPALES -->
+<!-- DATOS PRINCIPALES: Empleado + Equipo resumen -->
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
 
     <!-- Empleado -->
@@ -68,22 +69,31 @@
                 <div style="font-size:0.78rem; color:var(--gris-500); margin-top:2px;">
                     DNI: @(Model.Empleado?.dni ?? "—")
                 </div>
+                @if (!string.IsNullOrWhiteSpace(Model.Empleado?.Cargo))
+                {
+                    <div style="margin-top:6px;">
+                        <span style="font-size:0.72rem; font-weight:700; background:var(--azul-dark); color:#fff; padding:2px 10px; border-radius:20px; letter-spacing:0.04em;">
+                            @Model.Empleado.Cargo
+                        </span>
+                    </div>
+                }
             </div>
         </div>
     </div>
 
-    <!-- Equipo -->
+    <!-- Equipo — solo resumen -->
     <div class="card">
         <p class="det-section-title">Equipo asignado</p>
-        <div style="font-weight:700; font-size:0.95rem; color:var(--gris-900);">
-            @{
-                var tipoEq = Model.Equipo?.TipoEquipo?.tipo ?? "";
-                var nombreEq = tipoEq == "PC Completo" && !string.IsNullOrEmpty(Model.Equipo?.NombrePc)
-                    ? Model.Equipo!.NombrePc
-                    : (Model.Equipo?.marca ?? "—") + (string.IsNullOrEmpty(Model.Equipo?.modelo) ? "" : " " + Model.Equipo!.modelo);
-            }
-            @nombreEq
-        </div>
+        @{
+            var tipoEq  = (Model.Equipo?.TipoEquipo?.tipo ?? "").ToUpper();
+            var esPc    = tipoEq.Contains("PC COMPLETO");
+            var esLapt  = tipoEq.Contains("LAPTOP");
+            var esCel   = tipoEq.Contains("CELULAR");
+            var nombreEq = esPc && !string.IsNullOrEmpty(Model.Equipo?.NombrePc)
+                ? Model.Equipo!.NombrePc
+                : (Model.Equipo?.marca ?? "—") + (string.IsNullOrEmpty(Model.Equipo?.modelo) ? "" : " " + Model.Equipo!.modelo);
+        }
+        <div style="font-weight:700; font-size:0.95rem; color:var(--gris-900);">@nombreEq</div>
         @if (Model.Equipo?.TipoEquipo != null)
         {
             <span class="badge badge--azul" style="margin-top:6px; display:inline-block; font-size:0.72rem;">@Model.Equipo.TipoEquipo.tipo</span>
@@ -91,8 +101,121 @@
         <div style="font-size:0.78rem; color:var(--gris-500); margin-top:6px; font-family:monospace;">
             Serie: @(Model.Equipo?.numero_serie ?? "—")
         </div>
+
+        @* Celular: specs simples van dentro de la misma card *@
+        @if (esCel)
+        {
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--gris-200); display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                @Det(Model.Equipo!.IMEI,             "IMEI")
+                @Det(Model.Equipo.sistema_operativo, "S.O.")
+                @Det(Model.Equipo.version,           "Versión")
+            </div>
+        }
+        @* Laptop: specs dentro de la misma card *@
+        else if (esLapt)
+        {
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--gris-200); display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                @Det(Model.Equipo!.Procesador,   "Procesador")
+                @Det(Model.Equipo.TarjetaMadre,  "Tarjeta madre")
+                @Det(Model.Equipo.Ram,           "RAM")
+                @Det(Model.Equipo.Disco,         "Disco")
+                @Det(Model.Equipo.FuenteEnergia, "Fuente")
+                @Det(Model.Equipo.GraficosIntegrados == true ? "Integrados" : Model.Equipo.TarjetaGrafica, "Gráficos")
+                @Det(Model.Equipo.sistema_operativo, "S.O.")
+                @Det(Model.Equipo.version,           "Versión SO")
+            </div>
+        }
+        @* PC Completo: solo muestra aviso, los componentes van abajo *@
+        else if (esPc)
+        {
+            <div style="margin-top:12px; font-size:0.78rem; color:var(--celeste); font-weight:600;">
+                ↓ Ver componentes detallados abajo
+            </div>
+        }
     </div>
 </div>
+
+@* PC COMPLETO — componentes en card propia debajo *@
+@if (esPc)
+{
+    <div class="card" style="margin-bottom:16px;">
+        <p class="det-section-title">Componentes del equipo</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+            @* CPU *@
+            @if (!string.IsNullOrWhiteSpace(Model.Equipo!.PcCpuMarca) || !string.IsNullOrWhiteSpace(Model.Equipo.PcCpuProcesador))
+            {
+                <div>
+                    <div style="font-size:0.72rem; font-weight:700; color:var(--azul-dark); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid var(--azul-dark);">CPU</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        @Det(Model.Equipo.PcCpuMarca,            "Marca")
+                        @Det(Model.Equipo.PcCpuModelo,           "Modelo")
+                        @Det(Model.Equipo.PcCpuSerie,            "N° Serie")
+                        @Det(Model.Equipo.PcCpuProcesador,       "Procesador")
+                        @Det(Model.Equipo.PcCpuTarjetaMadre,     "Tarjeta Madre")
+                        @Det(Model.Equipo.PcCpuRam,              "RAM")
+                        @Det(Model.Equipo.PcCpuDisco,            "Disco")
+                        @Det(Model.Equipo.PcCpuFuenteEnergia,    "Fuente")
+                        @Det(Model.Equipo.PcCpuGraficosIntegrados == true ? "Integrados" : Model.Equipo.PcCpuTarjetaGrafica, "Gráficos")
+                        @Det(Model.Equipo.PcCpuSistemaOperativo, "S.O.")
+                        @Det(Model.Equipo.PcCpuVersionSO,        "Versión SO")
+                    </div>
+                </div>
+            }
+
+            @* Monitor *@
+            @if (!string.IsNullOrWhiteSpace(Model.Equipo!.PcMonitorMarca))
+            {
+                <div>
+                    <div style="font-size:0.72rem; font-weight:700; color:#7c3aed; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #7c3aed;">Monitor</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        @Det(Model.Equipo.PcMonitorMarca,  "Marca")
+                        @Det(Model.Equipo.PcMonitorModelo, "Modelo")
+                        @Det(Model.Equipo.PcMonitorSerie,  "N° Serie")
+                    </div>
+                </div>
+            }
+
+            @* Mouse *@
+            @if (!string.IsNullOrWhiteSpace(Model.Equipo!.PcMouseMarca))
+            {
+                <div>
+                    <div style="font-size:0.72rem; font-weight:700; color:#10b981; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #10b981;">Mouse</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        @Det(Model.Equipo.PcMouseMarca,  "Marca")
+                        @Det(Model.Equipo.PcMouseModelo, "Modelo")
+                        @Det(Model.Equipo.PcMouseSerie,  "N° Serie")
+                        @Det(Model.Equipo.PcMouseEsInalambrico == true ? "Inalámbrico" : "Con cable", "Tipo")
+                    </div>
+                </div>
+            }
+
+            @* Teclado *@
+            @if (!string.IsNullOrWhiteSpace(Model.Equipo!.PcTecladoMarca))
+            {
+                <div>
+                    <div style="font-size:0.72rem; font-weight:700; color:#f59e0b; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #f59e0b;">Teclado</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        @Det(Model.Equipo.PcTecladoMarca,  "Marca")
+                        @Det(Model.Equipo.PcTecladoModelo, "Modelo")
+                        @Det(Model.Equipo.PcTecladoSerie,  "N° Serie")
+                    </div>
+                </div>
+            }
+
+            @* Mousepad *@
+            @if (!string.IsNullOrWhiteSpace(Model.Equipo!.PcMousepadMarca))
+            {
+                <div>
+                    <div style="font-size:0.72rem; font-weight:700; color:#6b7280; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #6b7280;">Mousepad</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        @Det(Model.Equipo.PcMousepadMarca, "Marca")
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
 
 <!-- DETALLES DE LA ASIGNACIÓN -->
 <div class="card" style="margin-bottom:16px;">
@@ -136,7 +259,7 @@
     </div>
 </div>
 
-<!-- HISTORIAL DE EVENTOS (de la asignación) -->
+<!-- HISTORIAL DE EVENTOS -->
 <div class="card" style="padding:0; overflow:hidden; margin-bottom:16px;">
     <div style="padding:14px 20px; border-bottom:1px solid var(--gris-200); display:flex; align-items:center; justify-content:space-between;">
         <div>
@@ -172,9 +295,7 @@
                         bool esCierre = new[] { "Devuelto", "Perdida", "Rotura", "Baja" }
                             .Contains(h.Motivo?.TipoMotivo ?? "");
                         <tr>
-                            <td style="font-size:0.82rem; white-space:nowrap; color:var(--gris-500);">
-                                @h.Fecha.ToString("dd/MM/yyyy")
-                            </td>
+                            <td style="font-size:0.82rem; white-space:nowrap; color:var(--gris-500);">@h.Fecha.ToString("dd/MM/yyyy")</td>
                             <td>
                                 <span class="badge @(esCierre ? "badge--rojo" : "badge--celeste")" style="font-size:0.7rem;">
                                     @(h.Motivo?.TipoMotivo ?? "—")
@@ -278,4 +399,13 @@
 .det-section-title { font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); padding-bottom:8px; border-bottom:1px solid var(--gris-200); margin-bottom:14px; }
 .mini-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,var(--azul-mid),var(--celeste)); display:grid; place-items:center; font-weight:700; font-size:0.75rem; color:white; flex-shrink:0; }
 </style>
+}
+
+@functions {
+    IHtmlContent Det(string? valor, string label)
+    {
+        if (string.IsNullOrWhiteSpace(valor)) return HtmlString.Empty;
+        var html = $"<div><div style=\"font-size:0.68rem;color:var(--gris-400);text-transform:uppercase;letter-spacing:0.06em;\">{label}</div><div style=\"font-size:0.82rem;font-weight:600;color:var(--gris-800);\">{valor}</div></div>";
+        return new HtmlString(html);
+    }
 }

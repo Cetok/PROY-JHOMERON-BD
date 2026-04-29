@@ -16,7 +16,7 @@ namespace PROYJHOME2026.Filters
                 "Grupos.Index", "Grupos.Details",
                 "Equipos", "TipoEquipos",
                 // Chips NO incluido — Oliver no tiene acceso
-                "Asignaciones", "Historiales", "Motivos",
+                "Asignaciones", "Asignaciones.CargoPdf", "Historiales", "Motivos",
                 "Reportes.Index", "Reportes.Dashboard", "Reportes.DashboardData",
                 "Reportes.EquiposData", "Reportes.EquiposCsv", "Reportes.EquiposPdf",
                 "Reportes.AsignacionesData", "Reportes.AsignacionesCsv", "Reportes.AsignacionesPdf",
@@ -110,7 +110,7 @@ namespace PROYJHOME2026.Filters
                 "Transporte" => TienePermiso(ctrl, accion, PermisosTransporte),
                 "Produccion" => TienePermiso(ctrl, accion, PermisosProduccion),
                 "SSOMA"      => TienePermisoSSoma(ctrl, accion),
-                "Logistica"  => TienePermiso(ctrl, accion, PermisosLogistica),
+                "Logistica"  => TienePermisoLogistica(ctrl, accion),
                 _            => false
             };
 
@@ -165,6 +165,30 @@ namespace PROYJHOME2026.Filters
             if (ctrl.Equals("CarroAsesorios", StringComparison.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("GrupoAsesorios", StringComparison.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("Notificaciones", StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
+        // ── Logistica (Yanet) — solo gestiona Celulares ─────────────────────
+        private static bool TienePermisoLogistica(string ctrl, string accion)
+        {
+            var soloVer = new[] { "Index", "Details" };
+            if (ctrl.Equals("Empleados",   StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Grupos",      StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("TipoEquipos", StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Chips",           StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Historiales",     StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Motivos",         StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Notificaciones",  StringComparison.OrdinalIgnoreCase)) return true;
+            // Equipos: acceso completo (el controller bloquea tipos no-Celular para Yanet)
+            if (ctrl.Equals("Equipos",        StringComparison.OrdinalIgnoreCase)) return true;
+            // Asignaciones: acceso completo incluido PDF (el controller valida tipo Celular)
+            if (ctrl.Equals("Asignaciones",   StringComparison.OrdinalIgnoreCase)) return true;
+            // Reportes TI
+            if (ctrl.Equals("Reportes", StringComparison.OrdinalIgnoreCase) &&
+                new[] { "Index","Dashboard","DashboardData","EquiposData","EquiposCsv","EquiposPdf",
+                        "AsignacionesData","AsignacionesCsv","AsignacionesPdf",
+                        "HistorialData","HistorialCsv","HistorialPdf" }
+                .Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
             return false;
         }
 

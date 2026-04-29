@@ -120,6 +120,31 @@ namespace PROYJHOME2026.Controllers
 
             if (ModelState.IsValid)
             {
+                // ── Validar restricciones por rol ──────────────────
+                var rol    = HttpContext.Session.GetString("UsuarioRol") ?? "";
+                var equipo = await _context.Equipos
+                    .Include(e => e.TipoEquipo)
+                    .FirstOrDefaultAsync(e => e.idEquipo == asignacion.IdEquipo);
+                var tipoEquipo = equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
+
+                // Yanet (Logistica) solo puede asignar Celulares
+                if (rol.Equals("Logistica", StringComparison.OrdinalIgnoreCase) &&
+                    !tipoEquipo.Contains("CELULAR"))
+                {
+                    ModelState.AddModelError("IdEquipo", "Solo puedes asignar equipos de tipo Celular.");
+                    await CargarListas(asignacion.IdEmpleado, asignacion.IdEquipo, asignacion.IdChip, asignacion.IdGrupo);
+                    return View(asignacion);
+                }
+
+                // Oliver (SoporteTI) no puede asignar Celulares
+                if (rol.Equals("SoporteTI", StringComparison.OrdinalIgnoreCase) &&
+                    tipoEquipo.Contains("CELULAR"))
+                {
+                    ModelState.AddModelError("IdEquipo", "No tienes permiso para asignar equipos de tipo Celular.");
+                    await CargarListas(asignacion.IdEmpleado, asignacion.IdEquipo, asignacion.IdChip, asignacion.IdGrupo);
+                    return View(asignacion);
+                }
+
                 bool equipoOcupado = await _context.Asignaciones
                     .AnyAsync(a => a.IdEquipo == asignacion.IdEquipo && a.EstadoAsignacion == "Activo");
 
@@ -145,9 +170,9 @@ namespace PROYJHOME2026.Controllers
                 _context.Add(asignacion);
 
                 // ✅ Cambiar estado del equipo a "Asignado"
-                var equipo = await _context.Equipos.FindAsync(asignacion.IdEquipo);
-                if (equipo != null)
-                    equipo.estado_equipo = "Asignado";
+                var equipoEstado = await _context.Equipos.FindAsync(asignacion.IdEquipo);
+                if (equipoEstado != null)
+                    equipoEstado.estado_equipo = "Asignado";
 
                 await _context.SaveChangesAsync();
 
@@ -354,6 +379,7 @@ namespace PROYJHOME2026.Controllers
                 .Select(e => new {
                     e.idEmpleado,
                     NombreCompleto = e.nombre + " " + e.paterno + " " + e.materno
+                        + (e.Cargo != null && e.Cargo != "" ? " — " + e.Cargo : "")
                 })
                 .ToListAsync();
             ViewBag.EmpleadosList = new SelectList(empleados, "idEmpleado", "NombreCompleto", empleadoSel);
@@ -421,6 +447,15 @@ namespace PROYJHOME2026.Controllers
 
             if (asignacion == null) return NotFound();
 
+            // Yanet solo puede imprimir cargos de Celulares
+            var rolPdf    = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var tipoPdf   = asignacion.Equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
+            if (rolPdf.Equals("Logistica", StringComparison.OrdinalIgnoreCase) && !tipoPdf.Contains("CELULAR"))
+                return RedirectToAction("Denegado", "Auth");
+            // Oliver no puede imprimir cargos de Celulares
+            if (rolPdf.Equals("SoporteTI", StringComparison.OrdinalIgnoreCase) && tipoPdf.Contains("CELULAR"))
+                return RedirectToAction("Denegado", "Auth");
+
             var username = HttpContext.Session.GetString("Username") ?? "admin";
             var firmante = username.ToLower() switch {
                 "oliver"  => "Oliver Amaricua",
@@ -430,7 +465,7 @@ namespace PROYJHOME2026.Controllers
             };
 
             var equipo         = asignacion.Equipo;
-            var tipo           = equipo.TipoEquipo?.tipo?.ToUpper() ?? "";
+            var tipo           = equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
             var empleado       = asignacion.Empleado;
             var nombreEmpleado = $"{empleado?.nombre} {empleado?.paterno} {empleado?.materno}".Trim();
 
@@ -447,9 +482,9 @@ namespace PROYJHOME2026.Controllers
             byte[]? logoBytes = System.IO.File.Exists(logoPath)
                 ? await System.IO.File.ReadAllBytesAsync(logoPath) : null;
 
-            var nombreEquipo = tipo.Contains("PC COMPLETO") && !string.IsNullOrWhiteSpace(equipo.NombrePc)
+            var nombreEquipo = tipo.Contains("PC COMPLETO") && !string.IsNullOrWhiteSpace(equipo?.NombrePc)
                 ? equipo.NombrePc
-                : $"{equipo.marca} {equipo.modelo}".Trim();
+                : $"{equipo?.marca} {equipo?.modelo}".Trim();
 
             var pdf = Document.Create(doc =>
             {
@@ -497,7 +532,7 @@ namespace PROYJHOME2026.Controllers
 
                         // Nombre principal
                         col.Item().PaddingLeft(12).PaddingBottom(6)
-                            .Text($"{tipo}: {nombreEquipo}   SN: {equipo.numero_serie ?? "—"}")
+                            .Text($"{tipo}: {nombreEquipo}   SN: {equipo?.numero_serie ?? "—"}")
                             .Bold().FontSize(11);
 
                         void Esp(string label, string? valor)
@@ -587,28 +622,31 @@ namespace PROYJHOME2026.Controllers
                         if (!string.IsNullOrWhiteSpace(equipo.Observaciones))
                             col.Item().PaddingTop(12).Text($"Nota: {equipo.Observaciones}").FontSize(11).Italic();
 
-                        // FIRMAS
-                        col.Item().PaddingTop(50).Row(row =>
+                        // FIRMAS — solo aparecen al final del contenido (última página)
+                        col.Item().ExtendVertical().AlignBottom().Column(firmasCol =>
                         {
-                            row.RelativeItem().Column(c =>
+                            firmasCol.Item().PaddingTop(10).Row(row =>
                             {
-                                c.Item().PaddingBottom(40).Text("");
-                                c.Item().BorderTop(1).BorderColor(Colors.Black).Text("").FontSize(2);
-                                c.Item().PaddingTop(4).Text("Dpto. Soporte Técnico").Bold().FontSize(11);
-                                c.Item().Text(firmante).FontSize(11);
-                            });
-                            row.ConstantItem(80);
-                            row.RelativeItem().Column(c =>
-                            {
-                                c.Item().PaddingBottom(40).Text("");
-                                c.Item().BorderTop(1).BorderColor(Colors.Black).Text("").FontSize(2);
-                                c.Item().PaddingTop(4).Text("Recibe Conforme").Bold().FontSize(11);
-                                c.Item().Text(nombreEmpleado).FontSize(11);
+                                row.RelativeItem().Column(c =>
+                                {
+                                    c.Item().PaddingBottom(36).Text("");
+                                    c.Item().BorderTop(1).BorderColor(Colors.Black).Text("").FontSize(2);
+                                    c.Item().PaddingTop(4).Text("Dpto. Soporte Técnico").Bold().FontSize(11);
+                                    c.Item().Text(firmante).FontSize(11);
+                                });
+                                row.ConstantItem(80);
+                                row.RelativeItem().Column(c =>
+                                {
+                                    c.Item().PaddingBottom(36).Text("");
+                                    c.Item().BorderTop(1).BorderColor(Colors.Black).Text("").FontSize(2);
+                                    c.Item().PaddingTop(4).Text("Recibe Conforme").Bold().FontSize(11);
+                                    c.Item().Text(nombreEmpleado).FontSize(11);
+                                });
                             });
                         });
                     });
 
-                    // PIE DE PÁGINA
+                    // PIE DE PÁGINA — solo datos empresa (se repite en cada hoja)
                     page.Footer().Column(col =>
                     {
                         col.Item().LineHorizontal(0.5f).LineColor(Color.FromHex("1A3A6B"));

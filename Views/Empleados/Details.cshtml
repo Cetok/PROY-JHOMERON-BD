@@ -377,14 +377,6 @@ else if (historial != null)
                                 <a asp-controller="CuentasBancarias" asp-action="Editar"
                                    asp-route-id="@cb.IdCuenta"
                                    class="btn btn--sm btn--celeste">Editar</a>
-                                <form asp-controller="CuentasBancarias" asp-action="Eliminar" method="post" style="display:inline;">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@cb.IdCuenta" />
-                                    <button type="submit" class="btn btn--sm btn--danger"
-                                            onclick="return confirm('¿Eliminar esta cuenta bancaria?')">
-                                        Eliminar
-                                    </button>
-                                </form>
                             </td>
                         </tr>
                     }
