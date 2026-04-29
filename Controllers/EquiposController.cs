@@ -32,11 +32,14 @@ namespace PROYJHOME2026.Controllers
             int porPagina = 10;
             var query = _context.Equipos.Include(e => e.TipoEquipo).AsQueryable();
 
-            // Oliver (SoporteTI) no ve celulares
+            // Filtro por rol: Oliver no ve celulares, Yane solo ve celulares
             var rolActual = HttpContext.Session.GetString("UsuarioRol") ?? "";
             if (rolActual == "SoporteTI")
                 query = query.Where(e => e.TipoEquipo == null ||
                     !e.TipoEquipo.tipo.ToUpper().Contains("CELULAR"));
+            else if (rolActual == "Logistica")
+                query = query.Where(e => e.TipoEquipo != null &&
+                    e.TipoEquipo.tipo.ToUpper().Contains("CELULAR"));
  
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(e =>

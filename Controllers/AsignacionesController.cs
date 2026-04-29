@@ -35,11 +35,18 @@ namespace PROYJHOME2026.Controllers
                 .Include(a => a.Grupo)
                 .AsQueryable();
  
-// LUEGO agrega el filtro por tipoId DESPUÉS del filtro de estado (agrega esta línea):
+            // Filtro por rol
+            var rolIdx = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            if (rolIdx == "SoporteTI")
+                query = query.Where(a => a.Equipo.TipoEquipo == null ||
+                    !a.Equipo.TipoEquipo.tipo.ToUpper().Contains("CELULAR"));
+            else if (rolIdx == "Logistica")
+                query = query.Where(a => a.Equipo.TipoEquipo != null &&
+                    a.Equipo.TipoEquipo.tipo.ToUpper().Contains("CELULAR"));
+
             if (tipoId.HasValue)
                 query = query.Where(a => a.Equipo.idTipoEquipo == tipoId);
- 
-// Y en los ViewBag al final agrega:
+
             ViewBag.TipoId       = tipoId;
             ViewBag.Tipos        = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
 
@@ -462,14 +469,14 @@ namespace PROYJHOME2026.Controllers
             var username       = HttpContext.Session.GetString("UsuarioUsername") ?? "admin";
             var usuarioNombre  = HttpContext.Session.GetString("UsuarioNombre") ?? "Juan Torvisco";
             var firmante = username.ToLower() switch {
-                "oliver"  => "Oliver Amaricua",
+                "oliver"  => "Oliver Orlando Amaricua Olivo",
                 "admin"   => "Juan Torvisco",
                 "danitza" => "Juan Torvisco",
                 "yanet"   => usuarioNombre,
                 _          => usuarioNombre
             };
 
-            var logoPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "logo_jhome.png");
+            var logoPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "logo.png");
             byte[]? logoBytes = System.IO.File.Exists(logoPath)
                 ? await System.IO.File.ReadAllBytesAsync(logoPath) : null;
 
@@ -720,9 +727,8 @@ namespace PROYJHOME2026.Controllers
                     page.Content().PaddingTop(20).Column(col =>
                     {
                         // Título principal
-                        col.Item().PaddingBottom(2).Text("ENTREGA DE EQUIPO CELULAR AL PERSONAL - INDUSTRIAS JHOMERON S.A.")
-                            .Bold().FontSize(12).FontColor(Colors.Black);
-                        col.Item().PaddingBottom(14).LineHorizontal(0.5f).LineColor(Colors.Black);
+                        col.Item().PaddingBottom(16).Text("ENTREGA DE EQUIPO CELULAR AL PERSONAL - INDUSTRIAS JHOMERON S.A.")
+                            .Bold().FontSize(13).FontColor(Colors.Black).Underline();
 
                         // Datos empleado
                         col.Item().PaddingBottom(12).Column(inner =>
@@ -732,7 +738,7 @@ namespace PROYJHOME2026.Controllers
                             {
                                 row.AutoItem().Text(nombreEmp).Bold().FontSize(11);
                                 row.AutoItem().Text($"  identificado (a) con  ").FontSize(11);
-                                row.AutoItem().Text($" DNI N° {dniEmp}").Bold().FontSize(11);
+                                row.AutoItem().Text($"DNI N° {dniEmp}").Bold().FontSize(11);
                             });
                         });
 
@@ -804,7 +810,7 @@ namespace PROYJHOME2026.Controllers
                             {
                                 c.Item().PaddingBottom(50).Text("").FontSize(11);
                                 c.Item().BorderTop(1).BorderColor(Colors.Black).Text("").FontSize(2);
-                                c.Item().PaddingTop(4).Text($"{nombreEmp}").Bold().FontSize(11);
+                                c.Item().PaddingTop(4).Text($"Sr./Sra. {nombreEmp}").Bold().FontSize(11);
                                 c.Item().Text($"DNI N° {dniEmp}").FontSize(11);
                                 c.Item().Text("RECIBI CONFORME").FontSize(11);
                             });
@@ -817,7 +823,7 @@ namespace PROYJHOME2026.Controllers
                                 c.Item().Border(1).BorderColor(Colors.Black)
                                     .Width(110).Height(90)
                                     .AlignCenter().AlignMiddle()
-                                    .Text("").FontSize(9).FontColor(Color.FromHex("AAAAAA"));
+                                    .Text("Huella").FontSize(9).FontColor(Color.FromHex("AAAAAA"));
                             });
                         });
                     });
