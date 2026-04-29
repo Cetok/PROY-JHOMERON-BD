@@ -179,10 +179,12 @@
             }
 
             <!-- RECURSOS HUMANOS -->
-            @if (esAdmin || esSoporteTI || esTransporte || esYanet)
+            @if (esAdmin || esSoporteTI || esTransporte)
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Recursos Humanos</p>
+                    @if (!esYanet)
+                    {
                     <div class="sidebar__item">
                         <a class="sidebar__link @(ctrl == "Empleados" ? "active" : "")"
                            asp-controller="Empleados" asp-action="Index">
@@ -190,6 +192,7 @@
                             Empleados
                         </a>
                     </div>
+                    }
                     @if (esAdmin)
                     {
                         <div class="sidebar__item">

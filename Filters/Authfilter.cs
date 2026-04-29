@@ -172,7 +172,7 @@ namespace PROYJHOME2026.Filters
         private static bool TienePermisoLogistica(string ctrl, string accion)
         {
             var soloVer = new[] { "Index", "Details" };
-            if (ctrl.Equals("Empleados",   StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
+            // Logistica NO tiene acceso a Empleados
             if (ctrl.Equals("Grupos",      StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("TipoEquipos", StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("Chips",           StringComparison.OrdinalIgnoreCase)) return true;
