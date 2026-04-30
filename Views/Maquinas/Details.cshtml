@@ -63,6 +63,10 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div class="det-field"><div class="det-label">Grupo / Área</div><div class="det-value" style="font-weight:700; color:var(--azul-dark);">@(Model.AsignacionActual.Grupo?.area ?? "—")</div></div>
                     <div class="det-field"><div class="det-label">Estado operativo</div><div class="det-value"><span class="badge @bcOp">@Model.AsignacionActual.EstadoOperativo</span></div></div>
+                    @if (!string.IsNullOrEmpty(Model.AsignacionActual.AreaEspecifica))
+                    {
+                        <div class="det-field" style="grid-column:1/-1;"><div class="det-label">Área específica</div><div class="det-value" style="color:var(--gris-800);">@Model.AsignacionActual.AreaEspecifica</div></div>
+                    }
                     <div class="det-field" style="grid-column:1/-1;"><div class="det-label">Encargado</div><div class="det-value" style="color:var(--azul);">@(Model.AsignacionActual.Encargado?.nombre + " " + Model.AsignacionActual.Encargado?.paterno)</div></div>
                     <div class="det-field"><div class="det-label">Fecha asignación</div><div class="det-value">@Model.AsignacionActual.FechaAsignacion.ToString("dd/MM/yyyy")</div></div>
                     @if (!string.IsNullOrEmpty(Model.AsignacionActual.Observaciones))

@@ -78,6 +78,7 @@
                     <tr>
                         <th>Máquina</th>
                         <th>Grupo / Área</th>
+                        <th>Área Específica</th>
                         <th>Encargado</th>
                         <th>Estado Operativo</th>
                         <th>Fecha Asignación</th>
@@ -94,6 +95,7 @@
                                 <div style="font-size:0.78rem; color:var(--gris-500);">@a.Maquina?.NombreMaquina</div>
                             </td>
                             <td style="font-weight:600;">@(a.Grupo?.area ?? "—")</td>
+                            <td style="font-size:0.82rem; color:var(--gris-600);">@(a.AreaEspecifica ?? "—")</td>
                             <td style="font-size:0.82rem; color:var(--azul);">@(a.Encargado?.nombre + " " + a.Encargado?.paterno)</td>
                             <td><span class="badge @bcOp">@a.EstadoOperativo</span></td>
                             <td style="font-size:0.82rem; color:var(--gris-500);">@a.FechaAsignacion.ToString("dd/MM/yyyy")</td>

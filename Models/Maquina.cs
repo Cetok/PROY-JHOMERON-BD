@@ -72,6 +72,10 @@ namespace PROYJHOME2026.Models
         [StringLength(1000)]
         public string? Observaciones { get; set; }
 
+        /// <summary>Área específica donde opera la máquina. Ej: Área de Mezcla, Llenado, etc.</summary>
+        [StringLength(200)]
+        public string? AreaEspecifica { get; set; }
+
         public bool EsActiva { get; set; } = true;
 
         // Navegación
