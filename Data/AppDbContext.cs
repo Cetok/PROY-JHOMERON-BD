@@ -26,6 +26,7 @@ namespace PROYJHOME2026.Data
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Maquina> Maquinas { get; set; }
         public DbSet<MaquinaAsignacion> MaquinaAsignaciones { get; set; }
+        public DbSet<MaquinaAsignacionEncargado> MaquinaAsignacionEncargados { get; set; }
         public DbSet<MaquinaLog> MaquinaLogs { get; set; }
 
         // ── Nuevas tablas ───────────────────────────────────────
@@ -183,26 +184,34 @@ namespace PROYJHOME2026.Data
                 .HasForeignKey(f => f.IdGrupo).OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<MaquinaAsignacion>()
-                .HasOne(a => a.Maquina).WithMany()
-                .HasForeignKey(a => a.IdMaquina).OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<MaquinaAsignacion>()
                 .HasOne(a => a.Grupo).WithMany()
                 .HasForeignKey(a => a.IdGrupo).OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<MaquinaAsignacion>()
                 .HasOne(a => a.Encargado).WithMany()
-                .HasForeignKey(a => a.IdEmpleadoEncargado).OnDelete(DeleteBehavior.Restrict);
+                .HasForeignKey(a => a.IdEmpleadoEncargado).IsRequired(false).OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<MaquinaLog>()
                 .HasOne(l => l.Maquina).WithMany(m => m.Logs)
                 .HasForeignKey(l => l.IdMaquina).OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Maquina>()
-                .HasOne(m => m.AsignacionActual)
+                .HasMany(m => m.Asignaciones)
                 .WithOne(a => a.Maquina)
-                .HasForeignKey<MaquinaAsignacion>(a => a.IdMaquina)
+                .HasForeignKey(a => a.IdMaquina)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MaquinaAsignacionEncargado>()
+                .HasOne(e => e.Asignacion).WithMany(a => a.Encargados)
+                .HasForeignKey(e => e.IdAsignacion).OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MaquinaAsignacionEncargado>()
+                .HasOne(e => e.Empleado).WithMany()
+                .HasForeignKey(e => e.IdEmpleado).OnDelete(DeleteBehavior.Restrict);
+
+            // Un empleado no puede estar dos veces en la misma asignación
+            modelBuilder.Entity<MaquinaAsignacionEncargado>()
+                .HasIndex(e => new { e.IdAsignacion, e.IdEmpleado }).IsUnique();
         }
     }
 }

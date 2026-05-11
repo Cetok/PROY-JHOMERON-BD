@@ -96,7 +96,13 @@
                             </td>
                             <td style="font-weight:600;">@(a.Grupo?.area ?? "—")</td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">@(a.AreaEspecifica ?? "—")</td>
-                            <td style="font-size:0.82rem; color:var(--azul);">@(a.Encargado?.nombre + " " + a.Encargado?.paterno)</td>
+                            <td style="font-size:0.82rem; color:var(--azul);">
+                                @if (a.Encargados.Any())
+                                {
+                                    @string.Join(", ", a.Encargados.Select(e => e.Empleado?.nombre + " " + e.Empleado?.paterno))
+                                }
+                                else { <span style="color:var(--gris-400);">—</span> }
+                            </td>
                             <td><span class="badge @bcOp">@a.EstadoOperativo</span></td>
                             <td style="font-size:0.82rem; color:var(--gris-500);">@a.FechaAsignacion.ToString("dd/MM/yyyy")</td>
                             <td>

@@ -1505,8 +1505,8 @@ namespace PROYJHOME2026.Controllers
             string? estado, string? buscar)
         {
             var query = _context.Maquinas
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Grupo : null)
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Encargado : null)
+                .Include(m => m.Asignaciones).ThenInclude(a => a.Grupo)
+                .Include(m => m.Asignaciones).ThenInclude(a => a.Encargados).ThenInclude(e => e.Empleado)
                 .AsQueryable();
  
             if (fechaDesde.HasValue) query = query.Where(m => m.FechaCompra >= fechaDesde);
@@ -1530,10 +1530,11 @@ namespace PROYJHOME2026.Controllers
                     m.Marca,
                     m.Estado,
                     fechaCompra= m.FechaCompra.HasValue ? m.FechaCompra.Value.ToString("dd/MM/yyyy") : "—",
-                    grupo      = m.AsignacionActual != null && m.AsignacionActual.Grupo != null ? m.AsignacionActual.Grupo.area : "Sin asignar",
-                    encargado  = m.AsignacionActual != null && m.AsignacionActual.Encargado != null
-                        ? m.AsignacionActual.Encargado.nombre + " " + m.AsignacionActual.Encargado.paterno : "—",
-                    estadoOp   = m.AsignacionActual != null ? m.AsignacionActual.EstadoOperativo : "—",
+                    grupo      = m.Asignaciones.Where(a => a.EsActiva).Select(a => a.Grupo != null ? a.Grupo.area : "").FirstOrDefault() ?? "Sin asignar",
+                    encargado  = string.Join(", ", m.Asignaciones.Where(a => a.EsActiva)
+                                    .SelectMany(a => a.Encargados)
+                                    .Select(e => e.Empleado != null ? e.Empleado.nombre + " " + e.Empleado.paterno : "")),
+                    estadoOp   = m.Asignaciones.Where(a => a.EsActiva).Select(a => a.EstadoOperativo).FirstOrDefault() ?? "—",
                     m.Observaciones,
                 }).ToListAsync();
  
@@ -1546,8 +1547,8 @@ namespace PROYJHOME2026.Controllers
             DateTime? fechaDesde, DateTime? fechaHasta, string? estado, string? buscar)
         {
             var query = _context.Maquinas
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Grupo : null)
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Encargado : null)
+                .Include(m => m.Asignaciones).ThenInclude(a => a.Grupo)
+                .Include(m => m.Asignaciones).ThenInclude(a => a.Encargados).ThenInclude(e => e.Empleado)
                 .AsQueryable();
  
             if (fechaDesde.HasValue) query = query.Where(m => m.FechaCompra >= fechaDesde);
@@ -1561,18 +1562,21 @@ namespace PROYJHOME2026.Controllers
             var maquinas = await query.OrderByDescending(m => m.IdMaquina).ToListAsync();
             var sb = new StringBuilder();
             sb.AppendLine("sep=;");
-            sb.AppendLine("N° Máquina;Nombre;Marca;Estado;F.Compra;Grupo Asignado;Encargado;Estado Operativo;Observaciones");
+            sb.AppendLine("N° Máquina;Nombre;Marca;Estado;F.Compra;Grupo Asignado;Encargados;Estado Operativo;Observaciones");
  
             foreach (var m in maquinas)
             {
                 var asig = m.AsignacionActual;
+                var encargados = asig != null
+                    ? string.Join(" / ", asig.Encargados.Select(e => e.Empleado != null ? e.Empleado.nombre + " " + e.Empleado.paterno : ""))
+                    : "—";
                 sb.AppendLine($"\"{m.NumeroMaquina}\";" +
                     $"\"{m.NombreMaquina}\";" +
                     $"\"{m.Marca ?? "—"}\";" +
                     $"\"{m.Estado}\";" +
                     $"{(m.FechaCompra.HasValue ? m.FechaCompra.Value.ToString("dd/MM/yyyy") : "—")};" +
                     $"\"{asig?.Grupo?.area ?? "Sin asignar"}\";" +
-                    $"\"{(asig?.Encargado != null ? asig.Encargado.nombre + " " + asig.Encargado.paterno : "—")}\";" +
+                    $"\"{encargados}\";" +
                     $"\"{asig?.EstadoOperativo ?? "—"}\";" +
                     $"\"{m.Observaciones ?? "—"}\"");
             }
@@ -1587,8 +1591,8 @@ namespace PROYJHOME2026.Controllers
             DateTime? fechaDesde, DateTime? fechaHasta, string? estado, string? buscar)
         {
             var query = _context.Maquinas
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Grupo : null)
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Encargado : null)
+                .Include(m => m.Asignaciones).ThenInclude(a => a.Grupo)
+                .Include(m => m.Asignaciones).ThenInclude(a => a.Encargados).ThenInclude(e => e.Empleado)
                 .AsQueryable();
  
             if (fechaDesde.HasValue) query = query.Where(m => m.FechaCompra >= fechaDesde);
@@ -1672,7 +1676,9 @@ namespace PROYJHOME2026.Controllers
                             table.Cell().Element(C).Text(m.Estado).FontColor(estadoColor);
                             table.Cell().Element(C).Text(m.FechaCompra.HasValue ? m.FechaCompra.Value.ToString("dd/MM/yy") : "—").FontSize(8);
                             table.Cell().Element(C).Text(asig?.Grupo?.area ?? "Sin asignar").FontSize(8);
-                            table.Cell().Element(C).Text(asig?.Encargado != null ? $"{asig.Encargado.nombre} {asig.Encargado.paterno}" : "—").FontSize(8).FontColor(Color.FromHex("#2563eb"));
+                            table.Cell().Element(C).Text(asig != null && asig.Encargados.Any()
+                                ? string.Join(", ", asig.Encargados.Select(e => e.Empleado != null ? $"{e.Empleado.nombre} {e.Empleado.paterno}" : ""))
+                                : "—").FontSize(8).FontColor(Color.FromHex("#2563eb"));
                             table.Cell().Element(C).Text(asig?.EstadoOperativo ?? "—").FontSize(8)
                                 .FontColor(asig?.EstadoOperativo == "Operativo" ? Color.FromHex("#16a34a") : Color.FromHex("#dc2626"));
                         }

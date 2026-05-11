@@ -96,8 +96,8 @@
                         else if (m.Estado == "Inoperativo")   bc = "badge--rojo";
                         else                                   bc = "badge--gris";
 
-                        string encargado = m.AsignacionActual?.Encargado != null
-                            ? m.AsignacionActual.Encargado.nombre + " " + m.AsignacionActual.Encargado.paterno
+                        string encargado = m.AsignacionActual?.Encargados != null && m.AsignacionActual.Encargados.Any()
+                            ? string.Join(", ", m.AsignacionActual.Encargados.Select(e => e.Empleado?.nombre + " " + e.Empleado?.paterno))
                             : "—";
                         string grupo = m.AsignacionActual?.Grupo?.area ?? "Sin asignar";
 

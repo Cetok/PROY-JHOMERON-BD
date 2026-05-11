@@ -67,7 +67,24 @@
                     {
                         <div class="det-field" style="grid-column:1/-1;"><div class="det-label">Área específica</div><div class="det-value" style="color:var(--gris-800);">@Model.AsignacionActual.AreaEspecifica</div></div>
                     }
-                    <div class="det-field" style="grid-column:1/-1;"><div class="det-label">Encargado</div><div class="det-value" style="color:var(--azul);">@(Model.AsignacionActual.Encargado?.nombre + " " + Model.AsignacionActual.Encargado?.paterno)</div></div>
+                    <div class="det-field" style="grid-column:1/-1;">
+                        <div class="det-label">Encargados</div>
+                        <div class="det-value" style="color:var(--azul);">
+                            @if (Model.AsignacionActual.Encargados.Any())
+                            {
+                                <ul style="margin:0;padding:0;list-style:none;">
+                                    @foreach (var enc in Model.AsignacionActual.Encargados)
+                                    {
+                                        <li>@(enc.Empleado?.nombre + " " + enc.Empleado?.paterno)</li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <span style="color:var(--gris-400);">—</span>
+                            }
+                        </div>
+                    </div>
                     <div class="det-field"><div class="det-label">Fecha asignación</div><div class="det-value">@Model.AsignacionActual.FechaAsignacion.ToString("dd/MM/yyyy")</div></div>
                     @if (!string.IsNullOrEmpty(Model.AsignacionActual.Observaciones))
                     {

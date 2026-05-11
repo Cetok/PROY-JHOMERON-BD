@@ -25,8 +25,8 @@ namespace PROYJHOME2026.Controllers
         {
             int porPagina = 10;
             var query = _context.Maquinas
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Grupo : null)
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Encargado : null)
+                .Include(m => m.Asignaciones.Where(a => a.EsActiva)).ThenInclude(a => a.Grupo)
+                .Include(m => m.Asignaciones.Where(a => a.EsActiva)).ThenInclude(a => a.Encargados).ThenInclude(e => e.Empleado)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(buscar))
@@ -54,8 +54,8 @@ namespace PROYJHOME2026.Controllers
         public async Task<IActionResult> Details(int id)
         {
             var maquina = await _context.Maquinas
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Grupo : null)
-                .Include(m => m.AsignacionActual).ThenInclude(a => a != null ? a.Encargado : null)
+                .Include(m => m.Asignaciones).ThenInclude(a => a.Grupo)
+                .Include(m => m.Asignaciones).ThenInclude(a => a.Encargados).ThenInclude(e => e.Empleado)
                 .Include(m => m.Logs.OrderByDescending(l => l.FechaHora))
                 .FirstOrDefaultAsync(m => m.IdMaquina == id);
 
@@ -226,18 +226,18 @@ namespace PROYJHOME2026.Controllers
         public async Task<IActionResult> CambiarEstado(int idMaquina, string nuevoEstado, string? observaciones)
         {
             var maquina = await _context.Maquinas
-                .Include(m => m.AsignacionActual)
+                .Include(m => m.Asignaciones)
                 .FirstOrDefaultAsync(m => m.IdMaquina == idMaquina);
             if (maquina == null) return NotFound();
 
             var estadoAnterior = maquina.Estado;
             maquina.Estado = nuevoEstado;
 
-            // Si pasa a inoperativo, marcar asignación como inactiva
+            // Si pasa a inoperativo, marcar asignación activa como inactiva
             if (nuevoEstado == "Inoperativo" && maquina.AsignacionActual != null)
                 maquina.AsignacionActual.EstadoOperativo = "Inactivo";
 
-            // Si vuelve a activo, reactivar asignación
+            // Si vuelve a activo, reactivar asignación activa
             if (nuevoEstado == "Activo" && maquina.AsignacionActual != null)
                 maquina.AsignacionActual.EstadoOperativo = "Operativo";
 

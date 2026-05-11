@@ -2,6 +2,8 @@
 @{
     ViewData["Title"]      = "Editar Asignación";
     ViewData["Breadcrumb"] = "Producción / Asignaciones / Editar";
+    var empleados          = ViewBag.EmpleadosList as IEnumerable<dynamic> ?? new List<dynamic>();
+    var encActuales        = (ViewBag.EncargadosActuales as List<int>) ?? new List<int>();
 }
 
 <div class="page-header">
@@ -18,7 +20,7 @@
     </div>
 </div>
 
-<div style="max-width:640px;">
+<div style="max-width:680px;">
     <div class="card">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
@@ -37,13 +39,6 @@
                         <span asp-validation-for="IdGrupo" class="form-error"></span>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Encargado <span class="req">*</span></label>
-                        <select asp-for="IdEmpleadoEncargado" asp-items="ViewBag.EmpleadosList" class="form-control">
-                            <option value="">— Seleccionar empleado —</option>
-                        </select>
-                        <span asp-validation-for="IdEmpleadoEncargado" class="form-error"></span>
-                    </div>
-                    <div class="form-group">
                         <label class="form-label">Fecha de asignación <span class="req">*</span></label>
                         <input asp-for="FechaAsignacion" type="date" class="form-control" />
                     </div>
@@ -58,7 +53,6 @@
                         <label class="form-label">Área específica <span style="color:var(--gris-400);font-weight:400;">(opcional)</span></label>
                         <input asp-for="AreaEspecifica" type="text" class="form-control"
                                placeholder="Ej: Área de Mezcla, Llenado, Envasado..." maxlength="200" />
-                        <span asp-validation-for="AreaEspecifica" class="form-error"></span>
                     </div>
                     <div class="form-group form-group--full">
                         <label class="form-label">Observaciones</label>
@@ -66,6 +60,47 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ENCARGADOS -->
+            <div style="margin-bottom:24px;">
+                <p class="form-section-title">Encargados <span style="color:var(--gris-400);font-weight:400;font-size:0.7rem;">(mínimo 1, máximo 5)</span></p>
+
+                <div id="encargados-container">
+                    @{
+                        var listaParaRenderizar = encActuales.Count > 0 ? encActuales : new List<int> { 0 };
+                    }
+                    @foreach (var idEnc in listaParaRenderizar)
+                    {
+                        <div class="enc-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                            <select name="idsEncargados" class="form-control" style="flex:1;">
+                                <option value="">— Seleccionar empleado —</option>
+                                @foreach (var e in empleados)
+                                {
+                                    if ((int)e.idEmpleado == idEnc)
+                                    {
+                                        <option value="@e.idEmpleado" selected>@e.Nombre</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@e.idEmpleado">@e.Nombre</option>
+                                    }
+                                }
+                            </select>
+                            <button type="button" class="btn btn--ghost btn--icon btn-remove-enc" title="Quitar">
+                                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--rojo);fill:none;stroke-width:2;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                <button type="button" id="btn-add-enc" class="btn btn--secondary btn--sm" style="margin-top:4px;">
+                    <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Agregar otro encargado
+                </button>
+                <div id="enc-contador" style="font-size:0.75rem;color:var(--gris-400);margin-top:6px;"></div>
+            </div>
+
+            <div asp-validation-summary="All" class="form-error" style="margin-bottom:12px;"></div>
 
             <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
                 <button type="submit" class="btn btn--primary btn--lg">
@@ -83,4 +118,64 @@
 .form-section-title { font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200); }
 </style>
 }
-@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }
+
+@section Scripts {
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script>
+(function(){
+    var MAX = 5;
+    var container = document.getElementById('encargados-container');
+    var btnAdd    = document.getElementById('btn-add-enc');
+    var contador  = document.getElementById('enc-contador');
+    var opcionesHTML = container.querySelector('select').innerHTML;
+
+    function actualizarUI(){
+        var filas = container.querySelectorAll('.enc-row');
+        var n = filas.length;
+        contador.textContent = n + ' encargado' + (n !== 1 ? 's' : '') + ' seleccionado' + (n !== 1 ? 's' : '');
+        btnAdd.style.display = n >= MAX ? 'none' : '';
+        filas.forEach(function(fila){
+            var btn = fila.querySelector('.btn-remove-enc');
+            btn.style.display = n > 1 ? '' : 'none';
+        });
+    }
+
+    btnAdd.addEventListener('click', function(){
+        var filas = container.querySelectorAll('.enc-row');
+        if (filas.length >= MAX) return;
+
+        var div = document.createElement('div');
+        div.className = 'enc-row';
+        div.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+
+        var sel = document.createElement('select');
+        sel.name = 'idsEncargados';
+        sel.className = 'form-control';
+        sel.style.flex = '1';
+        sel.innerHTML = opcionesHTML;
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn--ghost btn--icon btn-remove-enc';
+        btn.title = 'Quitar';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--rojo);fill:none;stroke-width:2;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        btn.addEventListener('click', function(){ div.remove(); actualizarUI(); });
+
+        div.appendChild(sel);
+        div.appendChild(btn);
+        container.appendChild(div);
+        actualizarUI();
+    });
+
+    container.addEventListener('click', function(e){
+        var btn = e.target.closest('.btn-remove-enc');
+        if (btn){
+            var filas = container.querySelectorAll('.enc-row');
+            if (filas.length > 1){ btn.closest('.enc-row').remove(); actualizarUI(); }
+        }
+    });
+
+    actualizarUI();
+})();
+</script>
+}

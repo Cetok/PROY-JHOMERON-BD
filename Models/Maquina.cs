@@ -40,8 +40,12 @@ namespace PROYJHOME2026.Models
         public int? IdUsuarioCreador { get; set; }
 
         // Navegación
-        public MaquinaAsignacion? AsignacionActual { get; set; }
+        public ICollection<MaquinaAsignacion> Asignaciones { get; set; } = new List<MaquinaAsignacion>();
         public ICollection<MaquinaLog> Logs { get; set; } = new List<MaquinaLog>();
+
+        // Helper: devuelve la asignación activa actual (puede ser null)
+        [NotMapped]
+        public MaquinaAsignacion? AsignacionActual => Asignaciones.FirstOrDefault(a => a.EsActiva);
     }
 
     // ── Asignación de Máquina ─────────────────────────────────
@@ -57,9 +61,8 @@ namespace PROYJHOME2026.Models
         [Required]
         public int IdGrupo { get; set; }
 
-        /// <summary>Empleado encargado de la máquina en ese grupo.</summary>
-        [Required]
-        public int IdEmpleadoEncargado { get; set; }
+        /// <summary>Empleado encargado principal (se mantiene por compatibilidad, puede ser null si hay múltiples).</summary>
+        public int? IdEmpleadoEncargado { get; set; }
 
         [Required]
         public DateTime FechaAsignacion { get; set; }
@@ -86,7 +89,33 @@ namespace PROYJHOME2026.Models
         public Grupo Grupo { get; set; } = null!;
 
         [ForeignKey("IdEmpleadoEncargado")]
-        public Empleado Encargado { get; set; } = null!;
+        public Empleado? Encargado { get; set; }
+
+        /// <summary>Lista de encargados (máx. 5) asignados a esta máquina.</summary>
+        public ICollection<MaquinaAsignacionEncargado> Encargados { get; set; } = new List<MaquinaAsignacionEncargado>();
+    }
+
+    // ── Encargados de una Asignación (máx. 5) ────────────────
+    [Table("MaquinaAsignacionEncargados")]
+    public class MaquinaAsignacionEncargado
+    {
+        [Key]
+        public int IdEncargado { get; set; }
+
+        [Required]
+        public int IdAsignacion { get; set; }
+
+        [Required]
+        public int IdEmpleado { get; set; }
+
+        public DateTime FechaAgregado { get; set; } = DateTime.Now;
+
+        // Navegación
+        [ForeignKey("IdAsignacion")]
+        public MaquinaAsignacion Asignacion { get; set; } = null!;
+
+        [ForeignKey("IdEmpleado")]
+        public Empleado Empleado { get; set; } = null!;
     }
 
     // ── Log / Historial de Máquina ────────────────────────────
