@@ -85,7 +85,7 @@
                             }
                         </div>
                     </div>
-                    <div class="det-field"><div class="det-label">Fecha asignación</div><div class="det-value">@Model.AsignacionActual.FechaAsignacion.ToString("dd/MM/yyyy")</div></div>
+                    <div class="det-field"><div class="det-label">Fecha asignación</div><div class="det-value">@(Model.AsignacionActual.FechaAsignacion.HasValue ? Model.AsignacionActual.FechaAsignacion.Value.ToString("dd/MM/yyyy") : "—")</div></div>
                     @if (!string.IsNullOrEmpty(Model.AsignacionActual.Observaciones))
                     {
                         <div class="det-field" style="grid-column:1/-1;"><div class="det-label">Observaciones</div><div class="det-value">@Model.AsignacionActual.Observaciones</div></div>

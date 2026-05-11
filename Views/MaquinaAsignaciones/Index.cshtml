@@ -104,7 +104,7 @@
                                 else { <span style="color:var(--gris-400);">—</span> }
                             </td>
                             <td><span class="badge @bcOp">@a.EstadoOperativo</span></td>
-                            <td style="font-size:0.82rem; color:var(--gris-500);">@a.FechaAsignacion.ToString("dd/MM/yyyy")</td>
+                            <td style="font-size:0.82rem; color:var(--gris-500);">@(a.FechaAsignacion.HasValue ? a.FechaAsignacion.Value.ToString("dd/MM/yyyy") : "—")</td>
                             <td>
                                 <div style="display:flex; gap:6px; justify-content:center;">
                                     <a asp-controller="Maquinas" asp-action="Details" asp-route-id="@a.IdMaquina"

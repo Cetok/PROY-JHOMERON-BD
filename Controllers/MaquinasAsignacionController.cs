@@ -73,8 +73,7 @@ namespace PROYJHOME2026.Controllers
             await CargarSelectLists(idMaquina);
             var vm = new MaquinaAsignacion
             {
-                FechaAsignacion = DateTime.Today,
-                IdMaquina       = idMaquina ?? 0
+                IdMaquina = idMaquina ?? 0
             };
             return View(vm);
         }

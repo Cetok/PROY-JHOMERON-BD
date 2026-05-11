@@ -64,8 +64,7 @@ namespace PROYJHOME2026.Models
         /// <summary>Empleado encargado principal (se mantiene por compatibilidad, puede ser null si hay múltiples).</summary>
         public int? IdEmpleadoEncargado { get; set; }
 
-        [Required]
-        public DateTime FechaAsignacion { get; set; }
+        public DateTime? FechaAsignacion { get; set; }
 
         /// <summary>Operativo | Inactivo</summary>
         [Required]

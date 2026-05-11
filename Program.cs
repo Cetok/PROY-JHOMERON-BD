@@ -78,6 +78,7 @@ using (var scope = app.Services.CreateScope())
 //"Server=miapp-db.cdieqi08ih0k.sa-east-1.rds.amazonaws.com,1433;Database=NombreDeTuBD;User Id=admin;Password=TuPassword;TrustServerCertificate=True;"
 //"Server=.;Database=PROYJHOME2026;Integrated Security=true;TrustServerCertificate=true;"
 //Server=192.168.2.5;Database=SgsJhomeron;User Id=sa;Password=admin;TrustServerCertificate=true;
+//Server=.;Database=PROYJHOME_TEST;Integrated Security=true;TrustServerCertificate=true;
 await DbSeeder.SeedAdminAsync(app.Services);
 
 app.Run();
