@@ -28,6 +28,7 @@ namespace PROYJHOME2026.Data
         public DbSet<MaquinaAsignacion> MaquinaAsignaciones { get; set; }
         public DbSet<MaquinaAsignacionEncargado> MaquinaAsignacionEncargados { get; set; }
         public DbSet<MaquinaLog> MaquinaLogs { get; set; }
+        public DbSet<MaquinaAccesorioCambio> MaquinaAccesorioCambios { get; set; }
 
         // ── Nuevas tablas ───────────────────────────────────────
         public DbSet<Notificacion> Notificaciones { get; set; }
@@ -212,6 +213,10 @@ namespace PROYJHOME2026.Data
             // Un empleado no puede estar dos veces en la misma asignación
             modelBuilder.Entity<MaquinaAsignacionEncargado>()
                 .HasIndex(e => new { e.IdAsignacion, e.IdEmpleado }).IsUnique();
+
+            modelBuilder.Entity<MaquinaAccesorioCambio>()
+                .HasOne(c => c.Maquina).WithMany(m => m.CambiosAccesorios)
+                .HasForeignKey(c => c.IdMaquina).OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

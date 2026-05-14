@@ -87,9 +87,17 @@
 
             <div asp-validation-summary="All" class="form-error" style="margin-bottom:12px;"></div>
 
+                    <div class="form-group form-group--full">
+                        <label class="form-label">Estado operativo</label>
+                        <select asp-for="EstadoOperativo" class="form-control">
+                            <option value="Operativo">Operativo</option>
+                            <option value="Almacenado en stock">Almacenado en stock</option>
+                            <option value="Inoperativo">Inoperativo</option>
+                        </select>
+                    </div>
+
             <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:var(--r-sm); padding:12px 14px; margin-bottom:16px; font-size:0.82rem; color:var(--azul);">
-                Al asignar, la máquina quedará en estado <strong>Operativo</strong>.
-                Si ya tenía una asignación activa, se cerrará automáticamente.
+                Si ya tenía una asignación activa, se cerrará automáticamente al crear esta nueva.
             </div>
 
             <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">

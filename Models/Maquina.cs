@@ -42,6 +42,7 @@ namespace PROYJHOME2026.Models
         // Navegación
         public ICollection<MaquinaAsignacion> Asignaciones { get; set; } = new List<MaquinaAsignacion>();
         public ICollection<MaquinaLog> Logs { get; set; } = new List<MaquinaLog>();
+        public ICollection<MaquinaAccesorioCambio> CambiosAccesorios { get; set; } = new List<MaquinaAccesorioCambio>();
 
         // Helper: devuelve la asignación activa actual (puede ser null)
         [NotMapped]
@@ -66,7 +67,7 @@ namespace PROYJHOME2026.Models
 
         public DateTime? FechaAsignacion { get; set; }
 
-        /// <summary>Operativo | Inactivo</summary>
+        /// <summary>Operativo | Almacenado en stock | Inoperativo</summary>
         [Required]
         [StringLength(50)]
         public string EstadoOperativo { get; set; } = "Operativo";
@@ -145,6 +146,43 @@ namespace PROYJHOME2026.Models
 
         [StringLength(1000)]
         public string? Observaciones { get; set; }
+
+        public DateTime FechaHora { get; set; } = DateTime.Now;
+
+        [ForeignKey("IdMaquina")]
+        public Maquina Maquina { get; set; } = null!;
+    }
+
+    // ── Historial de Accesorios/Partes ────────────────────────
+    [Table("MaquinaAccesorioCambios")]
+    public class MaquinaAccesorioCambio
+    {
+        [Key]
+        public int IdCambio { get; set; }
+
+        [Required]
+        public int IdMaquina { get; set; }
+
+        /// <summary>Nombre del accesorio/parte que se cambió. Ej: Filtro, Banda, Motor, etc.</summary>
+        [Required]
+        [StringLength(200)]
+        public string NombreAccesorio { get; set; } = string.Empty;
+
+        /// <summary>Descripción o código del accesorio/parte anterior.</summary>
+        [StringLength(500)]
+        public string? AccesorioAnterior { get; set; }
+
+        /// <summary>Descripción o código del accesorio/parte nuevo.</summary>
+        [StringLength(500)]
+        public string? AccesorioNuevo { get; set; }
+
+        [StringLength(1000)]
+        public string? Observaciones { get; set; }
+
+        public int? IdUsuario { get; set; }
+
+        [StringLength(100)]
+        public string? NombreUsuario { get; set; }
 
         public DateTime FechaHora { get; set; } = DateTime.Now;
 

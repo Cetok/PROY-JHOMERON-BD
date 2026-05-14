@@ -21,7 +21,10 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, string? estado, int pagina = 1)
+        // ── INDEX ────────────────────────────────────────────────
+        public async Task<IActionResult> Index(
+            string? nombreMaquina, string? numeroDesde, string? numeroHasta,
+            string? estado, string? marca, string? encargado, int pagina = 1)
         {
             int porPagina = 10;
             var query = _context.Maquinas
@@ -29,25 +32,53 @@ namespace PROYJHOME2026.Controllers
                 .Include(m => m.Asignaciones.Where(a => a.EsActiva)).ThenInclude(a => a.Encargados).ThenInclude(e => e.Empleado)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(buscar))
+            if (!string.IsNullOrWhiteSpace(nombreMaquina))
+                query = query.Where(m => m.NombreMaquina.Contains(nombreMaquina));
+
+            if (!string.IsNullOrWhiteSpace(numeroDesde) && !string.IsNullOrWhiteSpace(numeroHasta))
                 query = query.Where(m =>
-                    m.NumeroMaquina.Contains(buscar) ||
-                    m.NombreMaquina.Contains(buscar) ||
-                    (m.Marca != null && m.Marca.Contains(buscar)));
+                    m.NumeroMaquina.CompareTo(numeroDesde) >= 0 &&
+                    m.NumeroMaquina.CompareTo(numeroHasta) <= 0);
+            else if (!string.IsNullOrWhiteSpace(numeroDesde))
+                query = query.Where(m => m.NumeroMaquina.Contains(numeroDesde));
 
             if (!string.IsNullOrWhiteSpace(estado))
                 query = query.Where(m => m.Estado == estado);
 
+            if (!string.IsNullOrWhiteSpace(marca))
+                query = query.Where(m => m.Marca != null && m.Marca.Contains(marca));
+
+            if (!string.IsNullOrWhiteSpace(encargado))
+                query = query.Where(m => m.Asignaciones.Any(a => a.EsActiva &&
+                    a.Encargados.Any(e =>
+                        (e.Empleado.nombre != null && e.Empleado.nombre.Contains(encargado)) ||
+                        (e.Empleado.paterno != null && e.Empleado.paterno.Contains(encargado)))));
+
             int total    = await query.CountAsync();
-            var maquinas = await query.OrderByDescending(m => m.IdMaquina)
+            var listaMaquinas = await query.OrderBy(m => m.NumeroMaquina)
                 .Skip((pagina - 1) * porPagina).Take(porPagina).ToListAsync();
 
-            ViewBag.Buscar       = buscar;
-            ViewBag.Estado       = estado;
-            ViewBag.Pagina       = pagina;
-            ViewBag.Total        = total;
-            ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
-            return View(maquinas);
+            // Filtro de rango en memoria (string.Compare no es traducible a SQL)
+            if (!string.IsNullOrWhiteSpace(numeroDesde) && !string.IsNullOrWhiteSpace(numeroHasta))
+            {
+                listaMaquinas = listaMaquinas
+                    .Where(m =>
+                        string.Compare(m.NumeroMaquina, numeroDesde, StringComparison.OrdinalIgnoreCase) >= 0 &&
+                        string.Compare(m.NumeroMaquina, numeroHasta, StringComparison.OrdinalIgnoreCase) <= 0)
+                    .ToList();
+                total = listaMaquinas.Count;
+            }
+
+            ViewBag.NombreMaquina = nombreMaquina;
+            ViewBag.NumeroDesde   = numeroDesde;
+            ViewBag.NumeroHasta   = numeroHasta;
+            ViewBag.Estado        = estado;
+            ViewBag.Marca         = marca;
+            ViewBag.Encargado     = encargado;
+            ViewBag.Pagina        = pagina;
+            ViewBag.Total         = total;
+            ViewBag.TotalPaginas  = (int)Math.Ceiling((double)total / porPagina);
+            return View(listaMaquinas);
         }
 
         // ── DETAILS ──────────────────────────────────────────────
@@ -57,6 +88,7 @@ namespace PROYJHOME2026.Controllers
                 .Include(m => m.Asignaciones).ThenInclude(a => a.Grupo)
                 .Include(m => m.Asignaciones).ThenInclude(a => a.Encargados).ThenInclude(e => e.Empleado)
                 .Include(m => m.Logs.OrderByDescending(l => l.FechaHora))
+                .Include(m => m.CambiosAccesorios.OrderByDescending(c => c.FechaHora))
                 .FirstOrDefaultAsync(m => m.IdMaquina == id);
 
             if (maquina == null) return NotFound();
@@ -145,6 +177,27 @@ namespace PROYJHOME2026.Controllers
 
                     _context.Update(maquina);
                     await _context.SaveChangesAsync();
+
+                    // Si cambió el campo AccesoriosParte → grabar historial automático
+                    var accesorioAntes  = anterior.AccesoriosParte?.Trim() ?? "";
+                    var accesorioDespues = maquina.AccesoriosParte?.Trim() ?? "";
+                    if (accesorioAntes != accesorioDespues)
+                    {
+                        var idStr  = HttpContext.Session.GetString("UsuarioId");
+                        var nombre = HttpContext.Session.GetString("UsuarioNombre");
+                        _context.MaquinaAccesorioCambios.Add(new MaquinaAccesorioCambio
+                        {
+                            IdMaquina         = id,
+                            NombreAccesorio   = "Accesorios / Partes",
+                            AccesorioAnterior = string.IsNullOrWhiteSpace(accesorioAntes)   ? "—" : accesorioAntes,
+                            AccesorioNuevo    = string.IsNullOrWhiteSpace(accesorioDespues) ? "—" : accesorioDespues,
+                            Observaciones     = "Cambio registrado automáticamente al editar la máquina.",
+                            IdUsuario         = int.TryParse(idStr, out int uidAcc) ? uidAcc : null,
+                            NombreUsuario     = nombre,
+                            FechaHora         = DateTime.Now
+                        });
+                        await _context.SaveChangesAsync();
+                    }
 
                     // Registrar log por cada campo que cambió
                     var cambios = new List<(string campo, string? antes, string? despues)>

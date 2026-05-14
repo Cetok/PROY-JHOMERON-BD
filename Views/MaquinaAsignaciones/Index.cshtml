@@ -2,11 +2,22 @@
 @{
     ViewData["Title"]      = "Asignaciones de Máquinas";
     ViewData["Breadcrumb"] = "Producción / Asignaciones";
-    int    pagina       = ViewBag.Pagina;
-    int    totalPaginas = ViewBag.TotalPaginas;
-    int    total        = ViewBag.Total;
-    string buscar       = ViewBag.Buscar   ?? "";
-    string estadoOp     = ViewBag.EstadoOp ?? "";
+    int    pagina        = ViewBag.Pagina;
+    int    totalPaginas  = ViewBag.TotalPaginas;
+    int    total         = ViewBag.Total;
+    string nombreMaquina  = ViewBag.NombreMaquina  ?? "";
+    string numeroDesde    = ViewBag.NumeroDesde    ?? "";
+    string numeroHasta    = ViewBag.NumeroHasta    ?? "";
+    string estadoOp       = ViewBag.EstadoOp       ?? "";
+    string marca          = ViewBag.Marca          ?? "";
+    string encargado      = ViewBag.Encargado      ?? "";
+    string areaEspecifica = ViewBag.AreaEspecifica ?? "";
+    string fechaDesde     = ViewBag.FechaDesde     ?? "";
+    string fechaHasta     = ViewBag.FechaHasta     ?? "";
+    bool   hayFiltros     = !string.IsNullOrEmpty(nombreMaquina) || !string.IsNullOrEmpty(numeroDesde) ||
+                            !string.IsNullOrEmpty(estadoOp) || !string.IsNullOrEmpty(marca) ||
+                            !string.IsNullOrEmpty(encargado) || !string.IsNullOrEmpty(areaEspecifica) ||
+                            !string.IsNullOrEmpty(fechaDesde) || !string.IsNullOrEmpty(fechaHasta);
 }
 
 <div class="page-header">
@@ -25,45 +36,56 @@
 
 <!-- FILTROS -->
 <div class="card" style="margin-bottom:20px; padding:16px 20px;">
-    <form method="get" asp-action="Index" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div style="flex:1; min-width:200px;">
-            <label class="form-label">Buscar</label>
-            <div style="position:relative;">
-                <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" name="buscar" value="@buscar" class="form-control"
-                       style="padding-left:34px;" placeholder="Máquina, grupo, encargado..." />
+    <form method="get" asp-action="Index">
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="flex:1; min-width:150px;">
+                <label class="form-label">Nombre de máquina</label>
+                <input type="text" name="nombreMaquina" value="@nombreMaquina" class="form-control" placeholder="Ej: Llenadora..." />
             </div>
-        </div>
-        <div style="min-width:160px;">
-            <label class="form-label">Estado operativo</label>
-            <select name="estadoOp" class="form-control">
-                <option value="">Todos</option>
-                @if (estadoOp == "Operativo")
-                    {
-                        <option value="Operativo" selected>Operativo</option>
-                    }
-                    else
-                    {
-                        <option value="Operativo">Operativo</option>
-                    }
-
-                    @if (estadoOp == "Inactivo")
-                    {
-                        <option value="Inactivo" selected>Inactivo</option>
-                    }
-                    else
-                    {
-                        <option value="Inactivo">Inactivo</option>
-                    }
-            </select>
-        </div>
-        <div style="display:flex; gap:8px;">
-            <button type="submit" class="btn btn--primary">
-                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                Buscar
-            </button>
-            @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estadoOp))
-            { <a asp-action="Index" class="btn btn--secondary">Limpiar</a> }
+            <div style="min-width:110px;">
+                <label class="form-label">N° Desde</label>
+                <input type="text" name="numeroDesde" value="@numeroDesde" class="form-control" placeholder="BN01" />
+            </div>
+            <div style="min-width:110px;">
+                <label class="form-label">N° Hasta</label>
+                <input type="text" name="numeroHasta" value="@numeroHasta" class="form-control" placeholder="BN09" />
+            </div>
+            <div style="min-width:160px;">
+                <label class="form-label">Estado operativo</label>
+                <select name="estadoOp" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="Operativo"          selected="@(estadoOp=="Operativo"          ?"selected":null)">Operativo</option>
+                    <option value="Almacenado en stock" selected="@(estadoOp=="Almacenado en stock"?"selected":null)">Almacenado en stock</option>
+                    <option value="Inoperativo"        selected="@(estadoOp=="Inoperativo"        ?"selected":null)">Inoperativo</option>
+                </select>
+            </div>
+            <div style="min-width:120px;">
+                <label class="form-label">Marca</label>
+                <input type="text" name="marca" value="@marca" class="form-control" placeholder="Ej: Bosch..." />
+            </div>
+            <div style="min-width:140px;">
+                <label class="form-label">Encargado</label>
+                <input type="text" name="encargado" value="@encargado" class="form-control" placeholder="Nombre o apellido..." />
+            </div>
+            <div style="min-width:140px;">
+                <label class="form-label">Área específica</label>
+                <input type="text" name="areaEspecifica" value="@areaEspecifica" class="form-control" placeholder="Ej: Llenado..." />
+            </div>
+            <div style="min-width:130px;">
+                <label class="form-label">Fecha desde</label>
+                <input type="date" name="fechaDesde" value="@fechaDesde" class="form-control" />
+            </div>
+            <div style="min-width:130px;">
+                <label class="form-label">Fecha hasta</label>
+                <input type="date" name="fechaHasta" value="@fechaHasta" class="form-control" />
+            </div>
+            <div style="display:flex; gap:8px; align-self:flex-end;">
+                <button type="submit" class="btn btn--primary">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Buscar
+                </button>
+                @if (hayFiltros) { <a asp-action="Index" class="btn btn--secondary">Limpiar</a> }
+            </div>
         </div>
     </form>
 </div>
@@ -79,7 +101,7 @@
                         <th>Máquina</th>
                         <th>Grupo / Área</th>
                         <th>Área Específica</th>
-                        <th>Encargado</th>
+                        <th>Encargado(s)</th>
                         <th>Estado Operativo</th>
                         <th>Fecha Asignación</th>
                         <th style="text-align:center;">Acciones</th>
@@ -88,7 +110,11 @@
                 <tbody>
                     @foreach (var a in Model)
                     {
-                        var bcOp = a.EstadoOperativo == "Operativo" ? "badge--verde" : "badge--rojo";
+                        string bcOp;
+                        if      (a.EstadoOperativo == "Operativo")           bcOp = "badge--verde";
+                        else if (a.EstadoOperativo == "Almacenado en stock") bcOp = "badge--amarillo";
+                        else                                                   bcOp = "badge--rojo";
+
                         <tr>
                             <td>
                                 <div style="font-weight:700; font-family:monospace; color:var(--azul-dark);">@a.Maquina?.NumeroMaquina</div>
@@ -98,13 +124,13 @@
                             <td style="font-size:0.82rem; color:var(--gris-600);">@(a.AreaEspecifica ?? "—")</td>
                             <td style="font-size:0.82rem; color:var(--azul);">
                                 @if (a.Encargados.Any())
-                                {
-                                    @string.Join(", ", a.Encargados.Select(e => e.Empleado?.nombre + " " + e.Empleado?.paterno))
-                                }
+                                { @string.Join(", ", a.Encargados.Select(e => e.Empleado?.nombre + " " + e.Empleado?.paterno)) }
                                 else { <span style="color:var(--gris-400);">—</span> }
                             </td>
                             <td><span class="badge @bcOp">@a.EstadoOperativo</span></td>
-                            <td style="font-size:0.82rem; color:var(--gris-500);">@(a.FechaAsignacion.HasValue ? a.FechaAsignacion.Value.ToString("dd/MM/yyyy") : "—")</td>
+                            <td style="font-size:0.82rem; color:var(--gris-500);">
+                                @(a.FechaAsignacion.HasValue ? a.FechaAsignacion.Value.ToString("dd/MM/yyyy") : "—")
+                            </td>
                             <td>
                                 <div style="display:flex; gap:6px; justify-content:center;">
                                     <a asp-controller="Maquinas" asp-action="Details" asp-route-id="@a.IdMaquina"
@@ -127,11 +153,36 @@
             <div class="pagination">
                 <span style="font-size:0.75rem; color:var(--gris-400); margin-right:8px;">Página @pagina de @totalPaginas</span>
                 @if (pagina > 1)
-                { <a asp-action="Index" asp-route-pagina="@(pagina-1)" asp-route-buscar="@buscar" asp-route-estadoOp="@estadoOp" class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a> }
+                {
+                    <a asp-action="Index" asp-route-pagina="@(pagina-1)"
+                       asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde"
+                       asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp"
+                       asp-route-marca="@marca" asp-route-encargado="@encargado"
+                       asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde"
+                       asp-route-fechaHasta="@fechaHasta" class="pagination__btn">
+                        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
+                }
                 @for (int i = Math.Max(1, pagina-2); i <= Math.Min(totalPaginas, pagina+2); i++)
-                { <a asp-action="Index" asp-route-pagina="@i" asp-route-buscar="@buscar" asp-route-estadoOp="@estadoOp" class="pagination__btn @(i==pagina?"active":"")">@i</a> }
+                {
+                    <a asp-action="Index" asp-route-pagina="@i"
+                       asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde"
+                       asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp"
+                       asp-route-marca="@marca" asp-route-encargado="@encargado"
+                       asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde"
+                       asp-route-fechaHasta="@fechaHasta" class="pagination__btn @(i==pagina?"active":"")">@i</a>
+                }
                 @if (pagina < totalPaginas)
-                { <a asp-action="Index" asp-route-pagina="@(pagina+1)" asp-route-buscar="@buscar" asp-route-estadoOp="@estadoOp" class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a> }
+                {
+                    <a asp-action="Index" asp-route-pagina="@(pagina+1)"
+                       asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde"
+                       asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp"
+                       asp-route-marca="@marca" asp-route-encargado="@encargado"
+                       asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde"
+                       asp-route-fechaHasta="@fechaHasta" class="pagination__btn">
+                        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
+                }
             </div>
         }
     }

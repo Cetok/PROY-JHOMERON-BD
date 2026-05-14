@@ -283,6 +283,60 @@
     </div>
     } 
 
+    <!-- HISTORIAL DE CAMBIOS DE ACCESORIOS/PARTES -->
+    <div class="card" style="padding:0; overflow:hidden; margin-bottom:20px;">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--gris-200); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">Historial de cambios — Accesorios / Partes</div>
+                <div style="font-size:0.75rem; color:var(--gris-400); margin-top:2px;">Se registra automáticamente cada vez que se edita el campo de accesorios</div>
+            </div>
+            <span class="badge badge--celeste">@Model.CambiosAccesorios.Count()</span>
+        </div>
+
+        @if (Model.CambiosAccesorios.Any())
+        {
+            <div class="table-wrapper" style="border:none; border-radius:0;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha / Hora</th>
+                            <th>Contenido anterior</th>
+                            <th>Contenido nuevo</th>
+                            <th>Modificado por</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.CambiosAccesorios)
+                        {
+                            <tr>
+                                <td style="font-size:0.78rem; color:var(--gris-500); white-space:nowrap;">@c.FechaHora.ToString("dd/MM/yy HH:mm")</td>
+                                <td style="font-size:0.78rem; max-width:300px; word-break:break-word;">
+                                    <span class="diff-cell"
+                                          data-antes="@(c.AccesorioAnterior ?? "")"
+                                          data-despues="@(c.AccesorioNuevo ?? "")"
+                                          data-modo="antes"></span>
+                                </td>
+                                <td style="font-size:0.82rem; max-width:300px; word-break:break-word;">
+                                    <span class="diff-cell"
+                                          data-antes="@(c.AccesorioAnterior ?? "")"
+                                          data-despues="@(c.AccesorioNuevo ?? "")"
+                                          data-modo="despues"></span>
+                                </td>
+                                <td style="font-size:0.75rem; color:var(--gris-400);">@(c.NombreUsuario ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div style="padding:24px; text-align:center; color:var(--gris-400); font-size:0.85rem;">
+                Aún no hay cambios de accesorios registrados. Se registran automáticamente al editar la máquina.
+            </div>
+        }
+    </div>
+
     <!-- HISTORIAL DE CAMBIOS -->
     @if (Model.Logs.Any())
     {
@@ -335,5 +389,67 @@
 .det-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:3px; }
 .det-value { font-size:0.88rem; font-weight:500; color:var(--gris-900); }
 .det-section-title { font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); padding-bottom:8px; border-bottom:1px solid var(--gris-200); margin-bottom:14px; }
+.diff-removed { background:#fee2e2; color:#b91c1c; border-radius:3px; padding:1px 3px; text-decoration:line-through; margin:1px; display:inline-block; }
+.diff-added   { background:#dcfce7; color:#15803d; border-radius:3px; padding:1px 3px; font-weight:600; margin:1px; display:inline-block; }
+.diff-equal   { color:var(--gris-600); margin:1px; display:inline-block; }
 </style>
+}
+
+@section Scripts {
+<script>
+(function(){
+    // Diff simple por palabras
+    function diffPalabras(antes, despues) {
+        var pA = antes.trim()   === "" ? [] : antes.trim().split(/\s+/);
+        var pD = despues.trim() === "" ? [] : despues.trim().split(/\s+/);
+
+        // LCS (Longest Common Subsequence) dp tabla
+        var n = pA.length, m = pD.length;
+        var dp = [];
+        for (var i = 0; i <= n; i++) { dp[i] = []; for (var j = 0; j <= m; j++) dp[i][j] = 0; }
+        for (var i = 1; i <= n; i++)
+            for (var j = 1; j <= m; j++)
+                dp[i][j] = pA[i-1] === pD[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+
+        // Reconstruir diff
+        var ops = [], i = n, j = m;
+        while (i > 0 || j > 0) {
+            if (i > 0 && j > 0 && pA[i-1] === pD[j-1]) { ops.unshift({t:'eq', v:pA[i-1]}); i--; j--; }
+            else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) { ops.unshift({t:'add', v:pD[j-1]}); j--; }
+            else { ops.unshift({t:'del', v:pA[i-1]}); i--; }
+        }
+        return ops;
+    }
+
+    function renderAntes(ops) {
+        if (!ops.length) return '<span style="color:var(--gris-400);">—</span>';
+        return ops.filter(o => o.t !== 'add').map(o =>
+            o.t === 'del'
+                ? '<span class="diff-removed">' + escHtml(o.v) + '</span>'
+                : '<span class="diff-equal">'   + escHtml(o.v) + '</span>'
+        ).join(' ');
+    }
+
+    function renderDespues(ops) {
+        if (!ops.length) return '<span style="color:var(--gris-400);">—</span>';
+        return ops.filter(o => o.t !== 'del').map(o =>
+            o.t === 'add'
+                ? '<span class="diff-added">'  + escHtml(o.v) + '</span>'
+                : '<span class="diff-equal">'  + escHtml(o.v) + '</span>'
+        ).join(' ');
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    document.querySelectorAll('.diff-cell').forEach(function(el) {
+        var antes   = el.dataset.antes;
+        var despues = el.dataset.despues;
+        var modo    = el.dataset.modo;
+        var ops = diffPalabras(antes, despues);
+        el.innerHTML = modo === 'antes' ? renderAntes(ops) : renderDespues(ops);
+    });
+})();
+</script>
 }

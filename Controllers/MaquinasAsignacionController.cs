@@ -21,7 +21,11 @@ namespace PROYJHOME2026.Controllers
         }
 
         // INDEX
-        public async Task<IActionResult> Index(string? buscar, string? estadoOp, int pagina = 1)
+        public async Task<IActionResult> Index(
+            string? nombreMaquina, string? numeroDesde, string? numeroHasta,
+            string? estadoOp, string? marca, string? encargado,
+            string? areaEspecifica, DateTime? fechaDesde, DateTime? fechaHasta,
+            int pagina = 1)
         {
             int porPagina = 10;
             var query = _context.MaquinaAsignaciones
@@ -30,27 +34,52 @@ namespace PROYJHOME2026.Controllers
                 .Include(a => a.Encargados).ThenInclude(e => e.Empleado)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(buscar))
+            if (!string.IsNullOrWhiteSpace(nombreMaquina))
+                query = query.Where(a => a.Maquina.NombreMaquina.Contains(nombreMaquina));
+
+            if (!string.IsNullOrWhiteSpace(numeroDesde) && !string.IsNullOrWhiteSpace(numeroHasta))
                 query = query.Where(a =>
-                    a.Maquina.NumeroMaquina.Contains(buscar) ||
-                    a.Maquina.NombreMaquina.Contains(buscar) ||
-                    (a.Grupo.area != null && a.Grupo.area.Contains(buscar)) ||
-                    a.Encargados.Any(e =>
-                        (e.Empleado.nombre != null && e.Empleado.nombre.Contains(buscar)) ||
-                        (e.Empleado.paterno != null && e.Empleado.paterno.Contains(buscar))));
+                    a.Maquina.NumeroMaquina.CompareTo(numeroDesde) >= 0 &&
+                    a.Maquina.NumeroMaquina.CompareTo(numeroHasta) <= 0);
+            else if (!string.IsNullOrWhiteSpace(numeroDesde))
+                query = query.Where(a => a.Maquina.NumeroMaquina.Contains(numeroDesde));
 
             if (!string.IsNullOrWhiteSpace(estadoOp))
                 query = query.Where(a => a.EstadoOperativo == estadoOp);
 
+            if (!string.IsNullOrWhiteSpace(marca))
+                query = query.Where(a => a.Maquina.Marca != null && a.Maquina.Marca.Contains(marca));
+
+            if (!string.IsNullOrWhiteSpace(encargado))
+                query = query.Where(a => a.Encargados.Any(e =>
+                    (e.Empleado.nombre != null && e.Empleado.nombre.Contains(encargado)) ||
+                    (e.Empleado.paterno != null && e.Empleado.paterno.Contains(encargado))));
+
+            if (!string.IsNullOrWhiteSpace(areaEspecifica))
+                query = query.Where(a => a.AreaEspecifica != null && a.AreaEspecifica.Contains(areaEspecifica));
+
+            if (fechaDesde.HasValue)
+                query = query.Where(a => a.FechaAsignacion.HasValue && a.FechaAsignacion >= fechaDesde.Value);
+
+            if (fechaHasta.HasValue)
+                query = query.Where(a => a.FechaAsignacion.HasValue && a.FechaAsignacion <= fechaHasta.Value.AddDays(1));
+
             int total        = await query.CountAsync();
-            var asignaciones = await query.OrderByDescending(a => a.FechaAsignacion)
+            var asignaciones = await query.OrderBy(a => a.Maquina.NumeroMaquina)
                 .Skip((pagina - 1) * porPagina).Take(porPagina).ToListAsync();
 
-            ViewBag.Buscar       = buscar;
-            ViewBag.EstadoOp     = estadoOp;
-            ViewBag.Pagina       = pagina;
-            ViewBag.Total        = total;
-            ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
+            ViewBag.NombreMaquina = nombreMaquina;
+            ViewBag.NumeroDesde   = numeroDesde;
+            ViewBag.NumeroHasta   = numeroHasta;
+            ViewBag.EstadoOp      = estadoOp;
+            ViewBag.Marca         = marca;
+            ViewBag.Encargado     = encargado;
+            ViewBag.AreaEspecifica= areaEspecifica;
+            ViewBag.FechaDesde    = fechaDesde?.ToString("yyyy-MM-dd");
+            ViewBag.FechaHasta    = fechaHasta?.ToString("yyyy-MM-dd");
+            ViewBag.Pagina        = pagina;
+            ViewBag.Total         = total;
+            ViewBag.TotalPaginas  = (int)Math.Ceiling((double)total / porPagina);
             return View(asignaciones);
         }
 
@@ -103,8 +132,7 @@ namespace PROYJHOME2026.Controllers
                 return View(asig);
             }
 
-            asig.EstadoOperativo = "Operativo";
-            asig.EsActiva        = true;
+            asig.EsActiva = true;
 
             if (ModelState.IsValid)
             {
