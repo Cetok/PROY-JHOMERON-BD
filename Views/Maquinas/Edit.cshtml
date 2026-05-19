@@ -2,13 +2,14 @@
 @{
     ViewData["Title"]      = "Editar Máquina";
     ViewData["Breadcrumb"] = "Producción / Máquinas / Editar";
+    bool esBaja = Model.Estado == "Dado de Baja";
 }
 
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Producción</div>
         <h1 class="page-header__title">Editar Máquina</h1>
-        <p class="page-header__subtitle">@Model.NumeroMaquina — @Model.NombreMaquina</p>
+        <p class="page-header__subtitle" style="font-family:monospace;">@Model.NumeroCompleto — @Model.NombreMaquina</p>
     </div>
     <div class="page-header__actions">
         <a asp-action="Details" asp-route-id="@Model.IdMaquina" class="btn btn--ghost btn--sm">Ver detalle</a>
@@ -19,26 +20,68 @@
     </div>
 </div>
 
+@if (esBaja)
+{
+    <div style="background:#fee2e2; border:1px solid #dc2626; border-radius:var(--r-sm); padding:14px 18px; margin-bottom:16px; color:#991b1b; font-size:0.85rem; max-width:760px;">
+        ⛔ Esta máquina está <strong>Dada de Baja</strong> y no puede ser modificada.
+    </div>
+}
+
 <div style="max-width:760px;">
-    <div class="card">
+    <div class="card" style="@(esBaja ? "opacity:0.6; pointer-events:none;" : "")">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
-            <input asp-for="IdMaquina" type="hidden" />
-            <input asp-for="FechaRegistro" type="hidden" />
+            <input asp-for="IdMaquina"       type="hidden" />
+            <input asp-for="FechaRegistro"   type="hidden" />
             <input asp-for="IdUsuarioCreador" type="hidden" />
+            <input asp-for="Estado"          type="hidden" />
+            <input asp-for="Correlativo"     type="hidden" />
+            <input asp-for="FechaBaja"       type="hidden" />
+            <input asp-for="MotivoBaja"      type="hidden" />
 
             <div style="margin-bottom:24px;">
                 <p class="form-section-title">Datos de la máquina</p>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">N° de Máquina <span class="req">*</span></label>
+                        <label class="form-label">N° de Máquina (base) <span class="req">*</span></label>
                         <input asp-for="NumeroMaquina" class="form-control" />
                         <span asp-validation-for="NumeroMaquina" class="form-error"></span>
+                        <span style="font-size:0.72rem; color:var(--gris-400); margin-top:3px; display:block;">
+                            Si cambias el número, se generará un nuevo correlativo automáticamente.
+                        </span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Correlativo actual</label>
+                        <div style="font-family:monospace; font-size:1.1rem; font-weight:800; color:var(--azul);
+                             background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.2);
+                             border-radius:var(--r-sm); padding:8px 14px; display:inline-block; margin-top:4px;">
+                            @Model.NumeroCompleto
+                        </div>
+                        <span style="font-size:0.72rem; color:var(--gris-400); margin-top:3px; display:block;">
+                            El correlativo no se puede editar manualmente.
+                        </span>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nombre de Máquina <span class="req">*</span></label>
                         <input asp-for="NombreMaquina" class="form-control" />
                         <span asp-validation-for="NombreMaquina" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estado actual</label>
+                        <div style="margin-top:6px;">
+                            @{
+                                var bc = Model.Estado switch {
+                                    "Registrado"    => "badge--gris",
+                                    "Activo"        => "badge--verde",
+                                    "Mantenimiento" => "badge--amarillo",
+                                    "Inoperativo"   => "badge--rojo",
+                                    "Dado de Baja"  => "badge--rojo",
+                                    _               => "badge--gris"
+                                };
+                            }
+                            <span class="badge @bc">@Model.Estado</span>
+                            <span style="font-size:0.72rem; color:var(--gris-400); margin-left:8px;">Cambia desde el detalle</span>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Marca</label>
@@ -66,7 +109,7 @@
             </div>
 
             <div style="display:flex; gap:10px; padding-top:4px; border-top:1px solid var(--gris-200);">
-                <button type="submit" class="btn btn--primary btn--lg">
+                <button type="submit" class="btn btn--primary btn--lg" @(esBaja ? "disabled" : "")>
                     <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
                     Guardar cambios
                 </button>

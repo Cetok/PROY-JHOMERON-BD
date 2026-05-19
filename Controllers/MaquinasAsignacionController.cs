@@ -99,11 +99,18 @@ namespace PROYJHOME2026.Controllers
         // CREATE GET
         public async Task<IActionResult> Create(int? idMaquina)
         {
-            await CargarSelectLists(idMaquina);
-            var vm = new MaquinaAsignacion
+            // Bloquear si la máquina está dada de baja
+            if (idMaquina.HasValue)
             {
-                IdMaquina = idMaquina ?? 0
-            };
+                var maq = await _context.Maquinas.FindAsync(idMaquina.Value);
+                if (maq?.Estado == "Dado de Baja")
+                {
+                    TempData["Error"] = "No se puede crear una asignación para una máquina dada de baja.";
+                    return RedirectToAction("Details", "Maquinas", new { id = idMaquina });
+                }
+            }
+            await CargarSelectLists(idMaquina);
+            var vm = new MaquinaAsignacion { IdMaquina = idMaquina ?? 0 };
             return View(vm);
         }
 

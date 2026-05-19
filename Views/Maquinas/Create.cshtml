@@ -2,6 +2,7 @@
 @{
     ViewData["Title"]      = "Nueva Máquina";
     ViewData["Breadcrumb"] = "Producción / Máquinas / Nueva";
+    string proximoCorrelativo = ViewBag.ProximoCorrelativo ?? "";
 }
 
 <div class="page-header">
@@ -26,14 +27,38 @@
                 <p class="form-section-title">Datos de la máquina</p>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">N° de Máquina <span class="req">*</span></label>
-                        <input asp-for="NumeroMaquina" class="form-control" placeholder="Ej: MAQ-001" />
+                        <label class="form-label">N° de Máquina (base) <span class="req">*</span></label>
+                        <input asp-for="NumeroMaquina" id="inp-numero" class="form-control"
+                               placeholder="Ej: E01, BN, MAQ..." autocomplete="off" />
                         <span asp-validation-for="NumeroMaquina" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <!-- Correlativo calculado automáticamente -->
+                        <label class="form-label">Correlativo asignado</label>
+                        <div id="correlativo-preview" style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+                            <span id="correlativo-badge" style="font-family:monospace; font-size:1.1rem; font-weight:800;
+                                  color:var(--azul); background:rgba(37,99,235,0.08); border:1px solid rgba(37,99,235,0.2);
+                                  border-radius:var(--r-sm); padding:6px 14px;">
+                                @(string.IsNullOrEmpty(proximoCorrelativo) ? "—" : $"{ViewBag.NumeroBase}-{proximoCorrelativo}")
+                            </span>
+                            <span id="correlativo-hint" style="font-size:0.75rem; color:var(--gris-400);">
+                                @(string.IsNullOrEmpty(proximoCorrelativo) ? "Escribe el N° base" : $"Correlativo: {proximoCorrelativo}")
+                            </span>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nombre de Máquina <span class="req">*</span></label>
                         <input asp-for="NombreMaquina" class="form-control" placeholder="Ej: Torno CNC Principal" />
                         <span asp-validation-for="NombreMaquina" class="form-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estado inicial</label>
+                        <select asp-for="Estado" class="form-control">
+                            <option value="Registrado">Registrado</option>
+                            <option value="Activo">Activo</option>
+                            <option value="Mantenimiento">Mantenimiento</option>
+                            <option value="Inoperativo">Inoperativo</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Marca</label>
@@ -49,9 +74,8 @@
             <div style="margin-bottom:24px;">
                 <p class="form-section-title">Accesorios / Partes</p>
                 <div class="form-group">
-                    <label class="form-label">Detalle de accesorios y partes</label>
                     <textarea asp-for="AccesoriosParte" class="form-control" rows="5" maxlength="2000"
-                              placeholder="Lista cada pieza o accesorio de la máquina...&#10;Ej: Motor principal 5HP, Bomba hidráulica, Controlador PLC Siemens S7-300..."></textarea>
+                              placeholder="Lista cada pieza o accesorio de la máquina...&#10;Ej: Motor principal 5HP, Bomba hidráulica..."></textarea>
                     <span style="font-size:0.75rem; color:var(--gris-400); margin-top:3px; display:block;">Máximo 2000 caracteres</span>
                 </div>
             </div>
@@ -84,4 +108,40 @@
 }
 </style>
 }
-@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }
+@section Scripts {
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<script>
+(function(){
+    var inp    = document.getElementById('inp-numero');
+    var badge  = document.getElementById('correlativo-badge');
+    var hint   = document.getElementById('correlativo-hint');
+    var timer  = null;
+
+    inp.addEventListener('input', function(){
+        clearTimeout(timer);
+        var val = inp.value.trim();
+        if (!val) {
+            badge.textContent = '—';
+            hint.textContent  = 'Escribe el N° base';
+            return;
+        }
+        badge.textContent = '...';
+        hint.textContent  = 'Calculando...';
+        timer = setTimeout(function(){
+            fetch('/Maquinas/ProximoCorrelativo?numero=' + encodeURIComponent(val))
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if (d.esPrimera) {
+                        badge.textContent = val;
+                        hint.textContent  = 'Primera de su serie — sin correlativo por ahora';
+                    } else {
+                        badge.textContent = d.completo;
+                        hint.textContent  = 'Correlativo asignado: ' + d.correlativo;
+                    }
+                })
+                .catch(function(){ badge.textContent = '—'; });
+        }, 400);
+    });
+})();
+</script>
+}

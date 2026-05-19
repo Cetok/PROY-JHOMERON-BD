@@ -14,6 +14,16 @@ namespace PROYJHOME2026.Models
         [StringLength(50)]
         public string NumeroMaquina { get; set; } = string.Empty;
 
+        /// <summary>Correlativo auto-generado por serie. Ej: 01, 02, 03</summary>
+        [StringLength(10)]
+        public string? Correlativo { get; set; }
+
+        /// <summary>Muestra NumeroMaquina-Correlativo solo si tiene correlativo asignado.</summary>
+        [NotMapped]
+        public string NumeroCompleto => string.IsNullOrEmpty(Correlativo)
+            ? NumeroMaquina
+            : $"{NumeroMaquina}-{Correlativo}";
+
         [Required]
         [StringLength(150)]
         public string NombreMaquina { get; set; } = string.Empty;
@@ -27,10 +37,15 @@ namespace PROYJHOME2026.Models
 
         public DateTime? FechaCompra { get; set; }
 
-        /// <summary>Registrado | Activo | Mantenimiento | Inoperativo</summary>
+        /// <summary>Registrado | Activo | Mantenimiento | Inoperativo | Dado de Baja</summary>
         [Required]
         [StringLength(100)]
         public string Estado { get; set; } = "Registrado";
+
+        public DateTime? FechaBaja { get; set; }
+
+        [StringLength(1000)]
+        public string? MotivoBaja { get; set; }
 
         [StringLength(1000)]
         public string? Observaciones { get; set; }
@@ -152,6 +167,7 @@ namespace PROYJHOME2026.Models
         [ForeignKey("IdMaquina")]
         public Maquina Maquina { get; set; } = null!;
     }
+// Historial de cambios de accesorios/partes de una máquina
 
     // ── Historial de Accesorios/Partes ────────────────────────
     [Table("MaquinaAccesorioCambios")]
