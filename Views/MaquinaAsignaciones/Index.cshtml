@@ -99,10 +99,10 @@
                 <thead>
                     <tr>
                         <th>Máquina</th>
-                        <th>Grupo / Área</th>
                         <th>Área Específica</th>
                         <th>Encargado(s)</th>
                         <th>Estado Operativo</th>
+                        <th>Comentario</th>
                         <th>Fecha Asignación</th>
                         <th style="text-align:center;">Acciones</th>
                     </tr>
@@ -120,14 +120,25 @@
                                 <div style="font-weight:700; font-family:monospace; color:var(--azul-dark);">@a.Maquina?.NumeroMaquina</div>
                                 <div style="font-size:0.78rem; color:var(--gris-500);">@a.Maquina?.NombreMaquina</div>
                             </td>
-                            <td style="font-weight:600;">@(a.Grupo?.area ?? "—")</td>
                             <td style="font-size:0.82rem; color:var(--gris-600);">@(a.AreaEspecifica ?? "—")</td>
                             <td style="font-size:0.82rem; color:var(--azul);">
                                 @if (a.Encargados.Any())
-                                { @string.Join(", ", a.Encargados.Select(e => e.Empleado?.nombre + " " + e.Empleado?.paterno)) }
-                                else { <span style="color:var(--gris-400);">—</span> }
+                                {
+                                    @string.Join(", ", a.Encargados.Select(e => e.Empleado?.nombre + " " + e.Empleado?.paterno))
+                                }
+                                else
+                                {
+                                    <span style="color:var(--gris-400); font-style:italic;">Sin encargado</span>
+                                }
                             </td>
                             <td><span class="badge @bcOp">@a.EstadoOperativo</span></td>
+                            <td style="font-size:0.82rem; color:var(--gris-600);">
+                                @if (!string.IsNullOrWhiteSpace(a.Observaciones))
+                                {
+                                    <span>@a.Observaciones</span>
+                                }
+                                else { <span style="color:var(--gris-400);">—</span> }
+                            </td>
                             <td style="font-size:0.82rem; color:var(--gris-500);">
                                 @(a.FechaAsignacion.HasValue ? a.FechaAsignacion.Value.ToString("dd/MM/yyyy") : "—")
                             </td>

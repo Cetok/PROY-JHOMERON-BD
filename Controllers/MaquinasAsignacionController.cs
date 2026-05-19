@@ -110,7 +110,7 @@ namespace PROYJHOME2026.Controllers
         // CREATE POST
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(MaquinaAsignacion asig, List<int> idsEncargados)
+        public async Task<IActionResult> Create(MaquinaAsignacion asig, List<string> idsEncargados)
         {
             ModelState.Remove("Maquina");
             ModelState.Remove("Grupo");
@@ -118,14 +118,12 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("EstadoOperativo");
             ModelState.Remove("IdEmpleadoEncargado");
 
-            idsEncargados = idsEncargados.Distinct().Where(i => i > 0).ToList();
-            if (idsEncargados.Count == 0)
-            {
-                ModelState.AddModelError("", "Debe seleccionar al menos 1 encargado.");
-                await CargarSelectLists(asig.IdMaquina);
-                return View(asig);
-            }
-            if (idsEncargados.Count > 5)
+            var idsValidos = (idsEncargados ?? new List<string>())
+                .Where(s => int.TryParse(s, out int v) && v > 0)
+                .Select(s => int.Parse(s))
+                .Distinct().ToList();
+
+            if (idsValidos.Count > 5)
             {
                 ModelState.AddModelError("", "No puede agregar mas de 5 encargados.");
                 await CargarSelectLists(asig.IdMaquina);
@@ -156,7 +154,7 @@ namespace PROYJHOME2026.Controllers
                 _context.MaquinaAsignaciones.Add(asig);
                 await _context.SaveChangesAsync();
 
-                foreach (var idEmp in idsEncargados)
+                foreach (var idEmp in idsValidos)
                     _context.MaquinaAsignacionEncargados.Add(new MaquinaAsignacionEncargado
                     {
                         IdAsignacion  = asig.IdAsignacion,
@@ -167,8 +165,8 @@ namespace PROYJHOME2026.Controllers
 
                 var grupo   = await _context.Grupos.FindAsync(asig.IdGrupo);
                 var maquina = await _context.Maquinas.FindAsync(asig.IdMaquina);
-                var emps    = await _context.Empleados.Where(e => idsEncargados.Contains(e.idEmpleado)).ToListAsync();
-                var nombres = string.Join(", ", emps.Select(e => $"{e.nombre} {e.paterno}"));
+                var emps    = await _context.Empleados.Where(e => idsValidos.Contains(e.idEmpleado)).ToListAsync();
+                var nombres = idsValidos.Any() ? string.Join(", ", emps.Select(e => $"{e.nombre} {e.paterno}")) : "Sin encargado";
 
                 await RegistrarLog(asig.IdMaquina, "CambioAsignacion", "Sin asignacion",
                     $"Grupo: {grupo?.area} | Encargados: {nombres}",
@@ -206,7 +204,7 @@ namespace PROYJHOME2026.Controllers
         // EDIT POST
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, MaquinaAsignacion asig, List<int> idsEncargados)
+        public async Task<IActionResult> Edit(int id, MaquinaAsignacion asig, List<string> idsEncargados)
         {
             if (id != asig.IdAsignacion) return NotFound();
             ModelState.Remove("Maquina");
@@ -214,18 +212,14 @@ namespace PROYJHOME2026.Controllers
             ModelState.Remove("Encargado");
             ModelState.Remove("IdEmpleadoEncargado");
 
-            idsEncargados = idsEncargados.Distinct().Where(i => i > 0).ToList();
-            if (idsEncargados.Count == 0)
-            {
-                ModelState.AddModelError("", "Debe seleccionar al menos 1 encargado.");
-                ViewBag.EncargadosActuales = idsEncargados;
-                await CargarSelectLists(asig.IdMaquina);
-                return View(asig);
-            }
-            if (idsEncargados.Count > 5)
+            var idsValidos = (idsEncargados ?? new List<string>())
+                .Where(s => int.TryParse(s, out int v) && v > 0)
+                .Select(s => int.Parse(s))
+                .Distinct().ToList();
+            if (idsValidos.Count > 5)
             {
                 ModelState.AddModelError("", "No puede agregar mas de 5 encargados.");
-                ViewBag.EncargadosActuales = idsEncargados;
+                ViewBag.EncargadosActuales = idsValidos;
                 await CargarSelectLists(asig.IdMaquina);
                 return View(asig);
             }
@@ -242,7 +236,7 @@ namespace PROYJHOME2026.Controllers
                         .Where(e => e.IdAsignacion == id).ToListAsync();
                     _context.MaquinaAsignacionEncargados.RemoveRange(actuales);
 
-                    foreach (var idEmp in idsEncargados)
+                    foreach (var idEmp in idsValidos)
                         _context.MaquinaAsignacionEncargados.Add(new MaquinaAsignacionEncargado
                         {
                             IdAsignacion  = id,
@@ -253,9 +247,9 @@ namespace PROYJHOME2026.Controllers
                     await _context.SaveChangesAsync();
 
                     var idsAnteriores = actuales.Select(e => e.IdEmpleado).OrderBy(x => x).ToList();
-                    if (!idsAnteriores.SequenceEqual(idsEncargados.OrderBy(x => x).ToList()))
+                    if (!idsAnteriores.SequenceEqual(idsValidos.OrderBy(x => x).ToList()))
                     {
-                        var empsNuevos  = await _context.Empleados.Where(e => idsEncargados.Contains(e.idEmpleado)).ToListAsync();
+                        var empsNuevos    = await _context.Empleados.Where(e => idsValidos.Contains(e.idEmpleado)).ToListAsync();
                         var nombresNuevos = string.Join(", ", empsNuevos.Select(e => $"{e.nombre} {e.paterno}"));
                         await RegistrarLog(asig.IdMaquina, "CambioEncargado",
                             "Encargados anteriores", nombresNuevos, "Cambio de encargados.");
@@ -280,7 +274,7 @@ namespace PROYJHOME2026.Controllers
                 }
             }
 
-            ViewBag.EncargadosActuales = idsEncargados;
+            ViewBag.EncargadosActuales = idsValidos;
             await CargarSelectLists(asig.IdMaquina);
             return View(asig);
         }

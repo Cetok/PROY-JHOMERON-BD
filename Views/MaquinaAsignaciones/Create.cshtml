@@ -59,13 +59,13 @@
 
             <!-- ENCARGADOS -->
             <div style="margin-bottom:24px;">
-                <p class="form-section-title">Encargados <span style="color:var(--gris-400);font-weight:400;font-size:0.7rem;">(mínimo 1, máximo 5)</span></p>
+                <p class="form-section-title">Encargados <span style="color:var(--gris-400);font-weight:400;font-size:0.7rem;">(opcional, máximo 5)</span></p>
 
                 <div id="encargados-container">
                     <!-- fila inicial -->
                     <div class="enc-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                        <select name="idsEncargados" class="form-control" style="flex:1;" required>
-                            <option value="">— Seleccionar empleado —</option>
+                        <select name="idsEncargados" class="form-control" style="flex:1;">
+                            <option value="">— Sin encargado —</option>
                             @foreach (var e in empleados)
                             {
                                 <option value="@e.idEmpleado">@e.Nombre</option>
