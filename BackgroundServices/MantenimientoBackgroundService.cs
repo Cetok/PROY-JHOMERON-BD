@@ -9,16 +9,16 @@ namespace PROYJHOME2026.BackgroundServices
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<MantenimientoBackgroundService> _logger;
-        private readonly TimeSpan _intervalo = TimeSpan.FromHours(1);
+        private readonly TimeSpan _intervalo = TimeSpan.FromMinutes(15);
 
-        // Horas en que se envían las alertas (mañana, tarde, noche)
-        private static readonly int[] HorasAlerta = { 8, 13, 20 };
+        // 3 alertas el día del vencimiento
+        private static readonly int[] HorasVencimientoHoy = { 8, 11, 15 };
+        // 1 alerta diaria cuando quedan 7 días (a las 8am)
+        private const int HoraAlertaSemanal = 8;
+        // Días de anticipación para alertar
+        private const int DiasUmbral = 7;
 
-        // Días de anticipación para alertas WhatsApp
-        private const int DiasUmbralWsp = 30;
-
-        public MantenimientoBackgroundService(
-            IServiceScopeFactory scopeFactory,
+        public MantenimientoBackgroundService(IServiceScopeFactory scopeFactory,
             ILogger<MantenimientoBackgroundService> logger)
         {
             _scopeFactory = scopeFactory;
@@ -30,384 +30,303 @@ namespace PROYJHOME2026.BackgroundServices
             _logger.LogInformation("MantenimientoBackgroundService iniciado.");
             while (!stoppingToken.IsCancellationRequested)
             {
-                await RevisarMantenimientosPendientesAsync();
-                await RevisarModalidadesYSegurosAsync();
-                await RevisarHabilitacionesVehicularesAsync();
+                try
+                {
+                    await RevisarMantenimientosPendientesAsync();
+                    await RevisarVencimientosCarroAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error general en BackgroundService");
+                }
                 await Task.Delay(_intervalo, stoppingToken);
             }
         }
 
+        // Devuelve true si la hora actual está dentro de los primeros 14 minutos de la hora dada
+        private static bool EnVentana(int hora) =>
+            DateTime.Now.Hour == hora && DateTime.Now.Minute < 15;
+
+        // Clave única para evitar duplicados en el día + hora
+        private static string Clave(string tipo, object id, int diasRest, int? hora = null) =>
+            hora.HasValue
+                ? $"{tipo}_{id}_{DateTime.Today:yyyyMMdd}_h{hora}"
+                : $"{tipo}_{id}_{DateTime.Today:yyyyMMdd}";
+
         // ══════════════════════════════════════════════════════════
-        // MANTENIMIENTOS — notifica hoy/mañana + WhatsApp ≤10 días
+        // MANTENIMIENTOS DE CARROS
         // ══════════════════════════════════════════════════════════
         private async Task RevisarMantenimientosPendientesAsync()
         {
             try
             {
-                using var scope  = _scopeFactory.CreateScope();
-                var context      = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var notifService = scope.ServiceProvider.GetRequiredService<NotificacionService>();
-                var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+                using var scope     = _scopeFactory.CreateScope();
+                var context         = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var notifService    = scope.ServiceProvider.GetRequiredService<NotificacionService>();
+                var emailService    = scope.ServiceProvider.GetRequiredService<EmailService>();
                 var twilioService   = scope.ServiceProvider.GetRequiredService<TwilioService>();
 
                 var hoy    = DateTime.Today;
                 var manana = hoy.AddDays(1);
 
-                // ── Notificación interna: hoy o mañana ──────────
+                // Usuarios Admin y Transporte con correo
+                var usuarios = await context.Usuarios
+                    .Where(u => u.activo && u.correo != null &&
+                                (u.rol == "Admin" || u.rol == "Transporte"))
+                    .ToListAsync();
+
+                // Notificación interna: hoy o mañana
                 var pendientes = await context.MantenimientosCarros
                     .Include(m => m.Carro)
                     .Include(m => m.TipoMantenimiento)
-                    .Include(m => m.UsuarioCreador)
                     .Where(m => m.Estado == "Pendiente"
                              && m.FechaProgramada.Date >= hoy
                              && m.FechaProgramada.Date <= manana)
                     .ToListAsync();
 
-                var usuarios = await context.Usuarios
-                    .Where(u => u.activo && u.correo != null)
-                    .ToListAsync();
-
                 foreach (var m in pendientes)
                 {
-                    var esHoy    = m.FechaProgramada.Date == hoy;
-                    var esManana = m.FechaProgramada.Date == manana;
-
-                    var titulo  = esHoy
+                    var esHoy  = m.FechaProgramada.Date == hoy;
+                    var titulo = esHoy
                         ? $"⚙️ Mantenimiento HOY — {m.Carro?.Placa}"
                         : $"📅 Mantenimiento mañana — {m.Carro?.Placa}";
-                    var mensaje = esHoy
-                        ? $"El mantenimiento de {m.TipoMantenimiento?.Nombre} para {m.Carro?.Placa} está programado para hoy."
-                        : $"Recuerda: mañana hay mantenimiento de {m.TipoMantenimiento?.Nombre} para {m.Carro?.Placa}.";
 
-                    bool yaNotificado = await context.Notificaciones
+                    bool yaNotif = await context.Notificaciones
                         .AnyAsync(n => n.IdMante == m.IdMante
                                     && n.FechaCreacion.Date == hoy
                                     && n.Titulo == titulo);
-
-                    if (!yaNotificado)
+                    if (!yaNotif)
                     {
-                        await notifService.CrearAsync("Mantenimiento", titulo, mensaje,
+                        await notifService.CrearAsync("Mantenimiento", titulo,
+                            $"Mantenimiento de {m.TipoMantenimiento?.Nombre} para {m.Carro?.Placa} — {m.FechaProgramada:dd/MM/yyyy}",
                             $"/MantenimientoCarros/Details/{m.IdMante}", m.IdMante);
+                    }
 
-                        if (esHoy)
+                    // Email: solo si es hoy, en ventanas 8h, 11h, 15h
+                    if (esHoy)
+                    {
+                        foreach (var hora in HorasVencimientoHoy)
                         {
-                            foreach (var u in usuarios.Where(u => !string.IsNullOrEmpty(u.correo)))
+                            if (!EnVentana(hora)) continue;
+                            var claveEmail = Clave("mante_email", m.IdMante, 0, hora);
+                            bool yaEmail = await context.Notificaciones
+                                .AnyAsync(n => n.Titulo == $"EMAIL_SENT_{claveEmail}");
+                            if (!yaEmail)
                             {
-                                await emailService.EnviarAlertaMantenimientoAsync(
-                                    u.correo!, u.nombreCompleto ?? u.username,
-                                    m.Carro?.Placa ?? "—", m.TipoMantenimiento?.Nombre ?? "—",
-                                    m.FechaProgramada, m.IdMante);
+                                foreach (var u in usuarios)
+                                    await emailService.EnviarAlertaMantenimientoAsync(
+                                        u.correo!, u.nombreCompleto ?? u.username,
+                                        m.Carro?.Placa ?? "—", m.TipoMantenimiento?.Nombre ?? "—",
+                                        m.FechaProgramada, m.IdMante);
+
+                                // WhatsApp
+                                await twilioService.EnviarATodosAsync(
+                                    Clave("mante_wsp", m.IdMante, 0, hora),
+                                    $"🔧 *Mantenimiento HOY*\nVehículo: {m.Carro?.Placa}\nTipo: {m.TipoMantenimiento?.Nombre}\nFecha: {m.FechaProgramada:dd/MM/yyyy}");
+
+                                // Marcar como enviado
+                                context.Notificaciones.Add(new Notificacion
+                                {
+                                    IdUsuario     = usuarios.FirstOrDefault()?.idUsuario ?? 0,
+                                    Tipo          = "Sistema",
+                                    Titulo        = $"EMAIL_SENT_{claveEmail}",
+                                    Leida         = true,
+                                    FechaCreacion = DateTime.Now
+                                });
+                                await context.SaveChangesAsync();
                             }
                         }
                     }
                 }
-
-                // ── WhatsApp: mantenimientos en los próximos 10 días (solo a las 8h, 13h, 20h) ──
-                var horaActualMante = DateTime.Now.Hour;
-                if (HorasAlerta.Contains(horaActualMante))
-                {
-                var proximos10 = await context.MantenimientosCarros
-                    .Include(m => m.Carro)
-                    .Include(m => m.TipoMantenimiento)
-                    .Where(m => m.Estado == "Pendiente"
-                             && m.FechaProgramada.Date >= hoy
-                             && m.FechaProgramada.Date <= hoy.AddDays(DiasUmbralWsp))
-                    .ToListAsync();
-
-                foreach (var m in proximos10)
-                {
-                    var dias        = (m.FechaProgramada.Date - hoy).Days;
-                    var claveMsgWsp = $"mante_{m.IdMante}_{dias}dias_h{horaActualMante}";
-
-                    string txtWsp;
-                    if (dias == 0)
-                        txtWsp = $"🔧 *MANTENIMIENTO HOY*\n" +
-                                 $"Vehículo: {m.Carro?.Placa}\n" +
-                                 $"Tipo: {m.TipoMantenimiento?.Nombre}\n" +
-                                 $"Fecha programada: {m.FechaProgramada:dd/MM/yyyy}";
-                    else
-                        txtWsp = $"🔧 *Mantenimiento en {dias} día(s)*\n" +
-                                 $"Vehículo: {m.Carro?.Placa}\n" +
-                                 $"Tipo: {m.TipoMantenimiento?.Nombre}\n" +
-                                 $"Fecha programada: {m.FechaProgramada:dd/MM/yyyy}";
-
-                    await twilioService.EnviarATodosAsync(claveMsgWsp, txtWsp);
-                }
-                } // fin if HorasAlerta
             }
             catch (Exception ex) { _logger.LogError(ex, "Error revisando mantenimientos"); }
         }
 
         // ══════════════════════════════════════════════════════════
-        // MODALIDADES Y SEGUROS — 3 veces al día + WhatsApp ≤10 días
+        // VENCIMIENTOS: MODALIDADES, SEGUROS, HABILITACIONES
         // ══════════════════════════════════════════════════════════
-        private async Task RevisarModalidadesYSegurosAsync()
+        private async Task RevisarVencimientosCarroAsync()
         {
-            var horaActual = DateTime.Now.Hour;
-            if (!HorasAlerta.Contains(horaActual)) return;
-
             try
             {
-                using var scope = _scopeFactory.CreateScope();
-                var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var twilioService  = scope.ServiceProvider.GetRequiredService<TwilioService>();
+                using var scope   = _scopeFactory.CreateScope();
+                var context       = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var emailService  = scope.ServiceProvider.GetRequiredService<EmailService>();
+                var twilioService = scope.ServiceProvider.GetRequiredService<TwilioService>();
 
-                var hoy = DateTime.Today;
+                var hoy      = DateTime.Today;
+                var horaActual = DateTime.Now.Hour;
 
-                var destinatarios = await context.Usuarios
-                    .Where(u => u.activo && (u.rol == "Admin" || u.rol == "Transporte"))
+                var usuarios = await context.Usuarios
+                    .Where(u => u.activo && u.correo != null &&
+                                (u.rol == "Admin" || u.rol == "Transporte"))
                     .ToListAsync();
 
-                // ── MODALIDADES ──────────────────────────────────
+                // Modalidades
                 var modalidades = await context.CarroModalidades
-                    .Include(cm => cm.Carro)
-                    .Include(cm => cm.Modalidad)
-                    .Where(cm => cm.FechaVencimiento.HasValue)
-                    .ToListAsync();
+                    .Include(cm => cm.Carro).Include(cm => cm.Modalidad)
+                    .Where(cm => cm.FechaVencimiento.HasValue).ToListAsync();
 
                 foreach (var cm in modalidades)
-                {
-                    var vence    = cm.FechaVencimiento!.Value.Date;
-                    var diasRest = (vence - hoy).Days;
-                    string titulo, mensaje, tipo;
+                    await ProcesarVencimiento(context, emailService, twilioService, usuarios,
+                        hoy, horaActual,
+                        fechaVenc:    cm.FechaVencimiento!.Value.Date,
+                        tipoDoc:      $"Modalidad {cm.Modalidad?.TipoModalidad}",
+                        placa:        cm.Carro?.Placa ?? "—",
+                        claveBase:    $"modal_{cm.IdCarro}_{cm.IdModalidad}",
+                        urlDetalle:   $"/Carros/Details/{cm.IdCarro}");
 
-                    if (diasRest < 0)
-                    {
-                        titulo  = $"🔴 Modalidad VENCIDA — {cm.Carro?.Placa}";
-                        mensaje = $"La modalidad '{cm.Modalidad?.TipoModalidad}' del vehículo {cm.Carro?.Placa} venció el {vence:dd/MM/yyyy}. Renuévala a la brevedad.";
-                        tipo    = "CambioEstado";
-                    }
-                    else if (diasRest <= 30)
-                    {
-                        titulo  = $"⚠️ Modalidad por vencer — {cm.Carro?.Placa}";
-                        mensaje = $"La modalidad '{cm.Modalidad?.TipoModalidad}' del vehículo {cm.Carro?.Placa} vence en {diasRest} día(s) ({vence:dd/MM/yyyy}).";
-                        tipo    = "Mantenimiento";
-                    }
-                    else continue;
-
-                    bool yaNotif = await context.Notificaciones
-                        .AnyAsync(n => n.Titulo == titulo
-                                    && n.FechaCreacion.Date == hoy
-                                    && n.FechaCreacion.Hour == horaActual);
-                    if (!yaNotif)
-                    {
-                        foreach (var u in destinatarios)
-                        {
-                            context.Notificaciones.Add(new Notificacion
-                            {
-                                IdUsuario     = u.idUsuario,
-                                Tipo          = tipo,
-                                Titulo        = titulo,
-                                Mensaje       = mensaje,
-                                Url           = $"/Carros/Details/{cm.IdCarro}",
-                                Leida         = false,
-                                FechaCreacion = DateTime.Now
-                            });
-                        }
-                    }
-
-                    // WhatsApp si vence en 10 días o menos (incluyendo vencidos)
-                    if (diasRest <= DiasUmbralWsp)
-                    {
-                        string txtWsp;
-                        if (diasRest < 0)
-                            txtWsp = $"🔴 *Modalidad VENCIDA*\n" +
-                                     $"Vehículo: {cm.Carro?.Placa}\n" +
-                                     $"Tipo: {cm.Modalidad?.TipoModalidad}\n" +
-                                     $"Venció el: {vence:dd/MM/yyyy}\n" +
-                                     $"Por favor renovar a la brevedad.";
-                        else if (diasRest == 0)
-                            txtWsp = $"🚨 *Modalidad vence HOY*\n" +
-                                     $"Vehículo: {cm.Carro?.Placa}\n" +
-                                     $"Tipo: {cm.Modalidad?.TipoModalidad}\n" +
-                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
-                        else
-                            txtWsp = $"⚠️ *Modalidad por vencer en {diasRest} día(s)*\n" +
-                                     $"Vehículo: {cm.Carro?.Placa}\n" +
-                                     $"Tipo: {cm.Modalidad?.TipoModalidad}\n" +
-                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
-
-                        var clave = $"modalidad_{cm.IdCarro}_{cm.IdModalidad}_{diasRest}dias_h{horaActual}";
-                        await twilioService.EnviarATodosAsync(clave, txtWsp);
-                    }
-                }
-
-                // ── SEGUROS ──────────────────────────────────────
+                // Seguros
                 var seguros = await context.CarroSeguros
-                    .Include(cs => cs.Carro)
-                    .Include(cs => cs.Seguro)
-                    .Where(cs => cs.FechaCulminada.HasValue)
-                    .ToListAsync();
+                    .Include(cs => cs.Carro).Include(cs => cs.Seguro)
+                    .Where(cs => cs.FechaCulminada.HasValue).ToListAsync();
 
                 foreach (var cs in seguros)
-                {
-                    var vence    = cs.FechaCulminada!.Value.Date;
-                    var diasRest = (vence - hoy).Days;
-                    string titulo, mensaje, tipo;
+                    await ProcesarVencimiento(context, emailService, twilioService, usuarios,
+                        hoy, horaActual,
+                        fechaVenc:    cs.FechaCulminada!.Value.Date,
+                        tipoDoc:      $"Seguro {cs.Seguro?.TipoSeguro}",
+                        placa:        cs.Carro?.Placa ?? "—",
+                        claveBase:    $"seguro_{cs.IdCarro}_{cs.IdSeguro}",
+                        urlDetalle:   $"/Carros/Details/{cs.IdCarro}");
 
-                    if (diasRest < 0)
-                    {
-                        titulo  = $"🔴 Seguro VENCIDO — {cs.Carro?.Placa}";
-                        mensaje = $"El seguro '{cs.Seguro?.TipoSeguro}' del vehículo {cs.Carro?.Placa} venció el {vence:dd/MM/yyyy}. Renuévalo a la brevedad.";
-                        tipo    = "CambioEstado";
-                    }
-                    else if (diasRest <= 30)
-                    {
-                        titulo  = $"⚠️ Seguro por vencer — {cs.Carro?.Placa}";
-                        mensaje = $"El seguro '{cs.Seguro?.TipoSeguro}' del vehículo {cs.Carro?.Placa} vence en {diasRest} día(s) ({vence:dd/MM/yyyy}).";
-                        tipo    = "Mantenimiento";
-                    }
-                    else continue;
-
-                    bool yaNotif = await context.Notificaciones
-                        .AnyAsync(n => n.Titulo == titulo
-                                    && n.FechaCreacion.Date == hoy
-                                    && n.FechaCreacion.Hour == horaActual);
-                    if (!yaNotif)
-                    {
-                        foreach (var u in destinatarios)
-                        {
-                            context.Notificaciones.Add(new Notificacion
-                            {
-                                IdUsuario     = u.idUsuario,
-                                Tipo          = tipo,
-                                Titulo        = titulo,
-                                Mensaje       = mensaje,
-                                Url           = $"/Carros/Details/{cs.IdCarro}",
-                                Leida         = false,
-                                FechaCreacion = DateTime.Now
-                            });
-                        }
-                    }
-
-                    // WhatsApp ≤10 días
-                    if (diasRest <= DiasUmbralWsp)
-                    {
-                        string txtWsp;
-                        if (diasRest < 0)
-                            txtWsp = $"🔴 *Seguro VENCIDO*\n" +
-                                     $"Vehículo: {cs.Carro?.Placa}\n" +
-                                     $"Tipo: {cs.Seguro?.TipoSeguro}\n" +
-                                     $"Venció el: {vence:dd/MM/yyyy}\n" +
-                                     $"Por favor renovar a la brevedad.";
-                        else if (diasRest == 0)
-                            txtWsp = $"🚨 *Seguro vence HOY*\n" +
-                                     $"Vehículo: {cs.Carro?.Placa}\n" +
-                                     $"Tipo: {cs.Seguro?.TipoSeguro}\n" +
-                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
-                        else
-                            txtWsp = $"⚠️ *Seguro por vencer en {diasRest} día(s)*\n" +
-                                     $"Vehículo: {cs.Carro?.Placa}\n" +
-                                     $"Tipo: {cs.Seguro?.TipoSeguro}\n" +
-                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
-
-                        var clave = $"seguro_{cs.IdCarro}_{cs.IdSeguro}_{diasRest}dias_h{horaActual}";
-                        await twilioService.EnviarATodosAsync(clave, txtWsp);
-                    }
-                }
-
-                await context.SaveChangesAsync();
-                _logger.LogInformation("Revisión modalidades/seguros completada — hora {h}:00", horaActual);
-            }
-            catch (Exception ex) { _logger.LogError(ex, "Error revisando modalidades/seguros"); }
-        }
-
-        // ══════════════════════════════════════════════════════════
-        // HABILITACIONES VEHICULARES — 3 veces al día + WhatsApp ≤10 días
-        // ══════════════════════════════════════════════════════════
-        private async Task RevisarHabilitacionesVehicularesAsync()
-        {
-            var horaActual = DateTime.Now.Hour;
-            if (!HorasAlerta.Contains(horaActual)) return;
-
-            try
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var twilioService  = scope.ServiceProvider.GetRequiredService<TwilioService>();
-
-                var hoy = DateTime.Today;
-
-                var destinatarios = await context.Usuarios
-                    .Where(u => u.activo && (u.rol == "Admin" || u.rol == "Transporte"))
-                    .ToListAsync();
-
+                // Habilitaciones vehiculares
                 var habilitaciones = await context.HabilitacionesVehiculares
-                    .Include(h => h.Carro)
-                    .Where(h => h.EsVigente)
-                    .ToListAsync();
+                    .Include(h => h.Carro).Where(h => h.EsVigente).ToListAsync();
 
                 foreach (var h in habilitaciones)
-                {
-                    var vence    = h.FechaCulminacion.Date;
-                    var diasRest = (vence - hoy).Days;
-                    string titulo, mensaje, tipo;
-
-                    if (diasRest < 0)
-                    {
-                        titulo  = $"🔴 Hab. Vehicular VENCIDA — {h.Carro?.Placa}";
-                        mensaje = $"La habilitación vehicular [{h.Codigo}] del vehículo {h.Carro?.Placa} venció el {vence:dd/MM/yyyy}. Renuévala a la brevedad.";
-                        tipo    = "CambioEstado";
-                    }
-                    else if (diasRest <= 30)
-                    {
-                        titulo  = $"⚠️ Hab. Vehicular por vencer — {h.Carro?.Placa}";
-                        mensaje = $"La habilitación vehicular [{h.Codigo}] del vehículo {h.Carro?.Placa} vence en {diasRest} día(s) ({vence:dd/MM/yyyy}).";
-                        tipo    = "Mantenimiento";
-                    }
-                    else continue;
-
-                    bool yaNotif = await context.Notificaciones
-                        .AnyAsync(n => n.Titulo == titulo
-                                    && n.FechaCreacion.Date == hoy
-                                    && n.FechaCreacion.Hour == horaActual);
-                    if (!yaNotif)
-                    {
-                        foreach (var u in destinatarios)
-                        {
-                            context.Notificaciones.Add(new Notificacion
-                            {
-                                IdUsuario     = u.idUsuario,
-                                Tipo          = tipo,
-                                Titulo        = titulo,
-                                Mensaje       = mensaje,
-                                Url           = $"/Carros/Details/{h.IdCarro}",
-                                Leida         = false,
-                                FechaCreacion = DateTime.Now
-                            });
-                        }
-                    }
-
-                    // WhatsApp ≤10 días
-                    if (diasRest <= DiasUmbralWsp)
-                    {
-                        string txtWsp;
-                        if (diasRest < 0)
-                            txtWsp = $"🔴 *Revisión Técnica VENCIDA*\n" +
-                                     $"Vehículo: {h.Carro?.Placa}\n" +
-                                     $"Código: {h.Codigo}\n" +
-                                     $"Venció el: {vence:dd/MM/yyyy}\n" +
-                                     $"Por favor renovar a la brevedad.";
-                        else if (diasRest == 0)
-                            txtWsp = $"🚨 *Revisión Técnica vence HOY*\n" +
-                                     $"Vehículo: {h.Carro?.Placa}\n" +
-                                     $"Código: {h.Codigo}\n" +
-                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
-                        else
-                            txtWsp = $"⚠️ *Revisión Técnica por vencer en {diasRest} día(s)*\n" +
-                                     $"Vehículo: {h.Carro?.Placa}\n" +
-                                     $"Código: {h.Codigo}\n" +
-                                     $"Fecha vencimiento: {vence:dd/MM/yyyy}";
-
-                        var clave = $"habveh_{h.IdHabilitacion}_{diasRest}dias_h{horaActual}";
-                        await twilioService.EnviarATodosAsync(clave, txtWsp);
-                    }
-                }
+                    await ProcesarVencimiento(context, emailService, twilioService, usuarios,
+                        hoy, horaActual,
+                        fechaVenc:    h.FechaCulminacion.Date,
+                        tipoDoc:      $"Habilitación Vehicular [{h.Codigo}]",
+                        placa:        h.Carro?.Placa ?? "—",
+                        claveBase:    $"habveh_{h.IdHabilitacion}",
+                        urlDetalle:   $"/Carros/Details/{h.IdCarro}");
 
                 await context.SaveChangesAsync();
-                _logger.LogInformation("Revisión habilitaciones vehiculares completada — hora {h}:00", horaActual);
             }
-            catch (Exception ex) { _logger.LogError(ex, "Error revisando habilitaciones vehiculares"); }
+            catch (Exception ex) { _logger.LogError(ex, "Error revisando vencimientos de carro"); }
+        }
+
+        // ── Procesar un vencimiento individual ───────────────────
+        private async Task ProcesarVencimiento(
+            AppDbContext context, EmailService emailService,
+            TwilioService twilioService, List<Usuario> usuarios,
+            DateTime hoy, int horaActual,
+            DateTime fechaVenc, string tipoDoc, string placa,
+            string claveBase, string urlDetalle)
+        {
+            var diasRest = (fechaVenc - hoy).Days;
+
+            // Solo procesar si está vencido, vence hoy, o quedan exactamente 7 días
+            bool esHoy    = diasRest == 0;
+            bool es7dias  = diasRest == DiasUmbral;
+            bool vencido  = diasRest < 0;
+
+            if (!esHoy && !es7dias && !vencido) return;
+
+            // ── Caso 1: Vence hoy o ya venció → 3 veces al día ──
+            if (esHoy || vencido)
+            {
+                foreach (var hora in HorasVencimientoHoy)
+                {
+                    if (!EnVentana(hora)) continue;
+
+                    var claveEnvio = $"EMAIL_SENT_{claveBase}_{hoy:yyyyMMdd}_h{hora}";
+                    bool yaEnviado = await context.Notificaciones
+                        .AnyAsync(n => n.Titulo == claveEnvio);
+                    if (yaEnviado) continue;
+
+                    // Notificación interna
+                    foreach (var u in usuarios)
+                    {
+                        var titulo  = vencido
+                            ? $"🔴 {tipoDoc} VENCIDO — {placa}"
+                            : $"🚨 {tipoDoc} vence HOY — {placa}";
+                        var mensaje = vencido
+                            ? $"{tipoDoc} del vehículo {placa} venció el {fechaVenc:dd/MM/yyyy}. Renuévalo a la brevedad."
+                            : $"{tipoDoc} del vehículo {placa} vence HOY {fechaVenc:dd/MM/yyyy}.";
+                        context.Notificaciones.Add(new Notificacion
+                        {
+                            IdUsuario     = u.idUsuario,
+                            Tipo          = "CambioEstado",
+                            Titulo        = titulo,
+                            Mensaje       = mensaje,
+                            Url           = urlDetalle,
+                            Leida         = false,
+                            FechaCreacion = DateTime.Now
+                        });
+                    }
+
+                    // Email
+                    foreach (var u in usuarios)
+                        await emailService.EnviarAlertaVencimientoAsync(
+                            u.correo!, u.nombreCompleto ?? u.username,
+                            tipoDoc, placa, fechaVenc, diasRest);
+
+                    // WhatsApp
+                    var txtWsp = vencido
+                        ? $"🔴 *{tipoDoc} VENCIDO*\nVehículo: {placa}\nVenció el: {fechaVenc:dd/MM/yyyy}\nRenovar a la brevedad."
+                        : $"🚨 *{tipoDoc} vence HOY*\nVehículo: {placa}\nFecha: {fechaVenc:dd/MM/yyyy}";
+                    await twilioService.EnviarATodosAsync($"{claveBase}_{hoy:yyyyMMdd}_h{hora}", txtWsp);
+
+                    // Marcar enviado
+                    context.Notificaciones.Add(new Notificacion
+                    {
+                        IdUsuario = usuarios.FirstOrDefault()?.idUsuario ?? 0,
+                        Tipo      = "Sistema", Titulo = claveEnvio,
+                        Leida = true, FechaCreacion = DateTime.Now
+                    });
+                    await context.SaveChangesAsync();
+                    break; // Solo una ventana por revisión
+                }
+                return;
+            }
+
+            // ── Caso 2: Quedan exactamente 7 días → 1 vez al día a las 8am ──
+            if (es7dias && EnVentana(HoraAlertaSemanal))
+            {
+                var claveEnvio = $"EMAIL_SENT_{claveBase}_{hoy:yyyyMMdd}_7dias";
+                bool yaEnviado = await context.Notificaciones
+                    .AnyAsync(n => n.Titulo == claveEnvio);
+                if (yaEnviado) return;
+
+                var titulo7  = $"⚠️ {tipoDoc} vence en 7 días — {placa}";
+                var mensaje7 = $"{tipoDoc} del vehículo {placa} vence en 7 días ({fechaVenc:dd/MM/yyyy}). Gestiona la renovación.";
+
+                // Notificación interna
+                foreach (var u in usuarios)
+                    context.Notificaciones.Add(new Notificacion
+                    {
+                        IdUsuario     = u.idUsuario,
+                        Tipo          = "Mantenimiento",
+                        Titulo        = titulo7,
+                        Mensaje       = mensaje7,
+                        Url           = urlDetalle,
+                        Leida         = false,
+                        FechaCreacion = DateTime.Now
+                    });
+
+                // Email
+                foreach (var u in usuarios)
+                    await emailService.EnviarAlertaVencimientoAsync(
+                        u.correo!, u.nombreCompleto ?? u.username,
+                        tipoDoc, placa, fechaVenc, diasRest);
+
+                // WhatsApp
+                await twilioService.EnviarATodosAsync(
+                    $"{claveBase}_{hoy:yyyyMMdd}_7dias",
+                    $"⚠️ *{tipoDoc} vence en 7 días*\nVehículo: {placa}\nFecha vencimiento: {fechaVenc:dd/MM/yyyy}\nGestiona la renovación.");
+
+                // Marcar enviado
+                context.Notificaciones.Add(new Notificacion
+                {
+                    IdUsuario = usuarios.FirstOrDefault()?.idUsuario ?? 0,
+                    Tipo = "Sistema", Titulo = claveEnvio,
+                    Leida = true, FechaCreacion = DateTime.Now
+                });
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

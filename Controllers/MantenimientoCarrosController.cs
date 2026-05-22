@@ -153,25 +153,16 @@ namespace PROYJHOME2026.Controllers
                     descripcion: $"Registró mantenimiento #{vm.IdMante} para vehículo IdCarro={vm.IdCarro} programado el {vm.FechaProgramada:dd/MM/yyyy}"
                 );
 
-                // Si la fecha programada es hoy, enviar email inmediatamente
-                if (vm.FechaProgramada.Date == DateTime.Today)
+
+                // Email al registrar — usuario que actúa + admins
                 {
                     var carro = await _context.Carros.FindAsync(vm.IdCarro);
                     var tipo  = await _context.TiposMantenimiento.FindAsync(vm.IdTipoMante);
-                    var usuarios = await _context.Usuarios
-                        .Where(u => u.activo && u.correo != null).ToListAsync();
-
-                    foreach (var u in usuarios)
-                    {
-                        await _emailService.EnviarAlertaMantenimientoAsync(
-                            destinatario:      u.correo!,
-                            nombreUsuario:     u.nombreCompleto ?? u.username,
-                            placa:             carro?.Placa ?? "—",
-                            tipoMantenimiento: tipo?.Nombre ?? "—",
-                            fechaProgramada:   vm.FechaProgramada,
-                            idMante:           vm.IdMante
-                        );
-                    }
+                    foreach (var u in await ObtenerDestinatariosEmailAsync(vm.IdUsuarioCreador))
+                        await _emailService.EnviarAlertaEstadoMantenimientoAsync(
+                            u.correo!, u.nombreCompleto ?? u.username,
+                            carro?.Placa ?? "—", tipo?.Nombre ?? "—",
+                            "Pendiente", vm.FechaProgramada);
                 }
 
                 TempData["Success"] = "Mantenimiento registrado. Estado: Pendiente.";
@@ -224,11 +215,18 @@ namespace PROYJHOME2026.Controllers
                 descripcion: $"Cambió mantenimiento #{id} de Pendiente → En proceso"
             );
 
-            // WhatsApp instantaneo — inicio de proceso
+            // WhatsApp + Email — inicio de proceso
             try
             {
                 var txtWsp = $"\uD83D\uDD27 *Mantenimiento EN PROCESO*\nVehiculo: {m.Carro?.Placa}\nTipo: {m.TipoMantenimiento?.Nombre}\nInicio: {DateTime.Now:dd/MM/yyyy HH:mm}";
                 await _twilioService.EnviarATodosAsync($"mante_proceso_{id}", txtWsp);
+
+                var idUsuarioActivo = int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _uid2) ? _uid2 : (int?)null;
+                foreach (var u in await ObtenerDestinatariosEmailAsync(idUsuarioActivo))
+                    await _emailService.EnviarAlertaEstadoMantenimientoAsync(
+                        u.correo!, u.nombreCompleto ?? u.username,
+                        m.Carro?.Placa ?? "—", m.TipoMantenimiento?.Nombre ?? "—",
+                        "En proceso", m.FechaProgramada);
             }
             catch (Exception ex) { _ = ex; }
 
@@ -297,6 +295,14 @@ namespace PROYJHOME2026.Controllers
                     : "";
                 var txtWsp = $"\uD83C\uDFC1 *Mantenimiento CULMINADO*\nVehiculo: {m.Carro?.Placa}\nTipo: {m.TipoMantenimiento?.Nombre}\nCulminado: {DateTime.Now:dd/MM/yyyy HH:mm}{comentarioWsp}";
                 await _twilioService.EnviarATodosAsync($"mante_culminado_{id}", txtWsp);
+
+                // Email al culminar
+                var idUsuarioActivo = int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _uid3) ? _uid3 : (int?)null;
+                foreach (var u in await ObtenerDestinatariosEmailAsync(idUsuarioActivo))
+                    await _emailService.EnviarAlertaEstadoMantenimientoAsync(
+                        u.correo!, u.nombreCompleto ?? u.username,
+                        m.Carro?.Placa ?? "—", m.TipoMantenimiento?.Nombre ?? "—",
+                        "Culminado", m.FechaProgramada);
             }
             catch (Exception ex) { _ = ex; }
 
@@ -452,6 +458,28 @@ namespace PROYJHOME2026.Controllers
 
             ViewBag.CarrosList = new SelectList(carros,  "IdCarro",     "Desc",   idCarroSel);
             ViewBag.TiposList  = new SelectList(tipos,   "IdTipoMante", "Nombre", idTipoSel);
+        }
+
+        /// <summary>
+        /// Devuelve destinatarios de correo: el usuario que hizo la acción + todos los admins.
+        /// Sin duplicados. Solo usuarios con correo registrado.
+        /// </summary>
+        private async Task<List<Usuario>> ObtenerDestinatariosEmailAsync(int? idUsuarioAccion)
+        {
+            var admins = await _context.Usuarios
+                .Where(u => u.activo && u.correo != null && u.rol == "Admin")
+                .ToListAsync();
+
+            if (idUsuarioAccion.HasValue)
+            {
+                var usuarioActivo = await _context.Usuarios
+                    .FirstOrDefaultAsync(u => u.idUsuario == idUsuarioAccion.Value
+                                           && u.activo && u.correo != null);
+                if (usuarioActivo != null && !admins.Any(a => a.idUsuario == usuarioActivo.idUsuario))
+                    admins.Add(usuarioActivo);
+            }
+
+            return admins;
         }
     }
 }
