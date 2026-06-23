@@ -2,14 +2,9 @@
 @{
     ViewData["Title"]      = "Empleados";
     ViewData["Breadcrumb"] = "Empleados";
-    int pagina       = ViewBag.Pagina;
-    int totalPaginas = ViewBag.TotalPaginas;
-    int total        = ViewBag.Total;
-    string buscar    = ViewBag.Buscar ?? "";
-    string estado    = ViewBag.Estado ?? "";
-    string orden     = ViewBag.Orden  ?? "az";
+    int pagina=ViewBag.Pagina; int totalPaginas=ViewBag.TotalPaginas; int total=ViewBag.Total;
+    string buscar=ViewBag.Buscar??""; string estado=ViewBag.Estado??""; string orden=ViewBag.Orden??"az";
 }
-
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Recursos Humanos</div>
@@ -17,19 +12,19 @@
         <p class="page-header__subtitle">@total registro(s) encontrado(s)</p>
     </div>
     <div class="page-header__actions">
-        
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Empleados', 'excel')" title="Exportar a Excel">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+            Excel
+        </button>
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Empleados', 'pdf')" title="Exportar a PDF">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+        </button>
         <a asp-controller="Grupos" asp-action="Index" class="btn btn--secondary">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;">
-                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-                <path d="M16 3.13a4 4 0 010 7.75"/>
-            </svg>
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             Ver grupos
         </a>
-
-        @if (Context.Session.GetString("UsuarioRol") == "Admin")
-        {
+        @if (Context.Session.GetString("UsuarioRol") == "Admin") {
             <a asp-action="Create" class="btn btn--celeste">
                 <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Nuevo empleado
@@ -37,114 +32,62 @@
         }
     </div>
 </div>
-
-<!-- FILTROS -->
 <div class="card" style="margin-bottom:20px; padding:16px 20px;">
     <form method="get" asp-action="Index" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
         <div style="flex:1; min-width:200px;">
             <label class="form-label">Buscar</label>
             <div style="position:relative;">
                 <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" name="buscar" value="@buscar" class="form-control"
-                       style="padding-left:34px;" placeholder="Nombre, apellido o DNI..." />
+                <input type="text" name="buscar" value="@buscar" class="form-control" style="padding-left:34px;" placeholder="Nombre, apellido o DNI..." />
             </div>
         </div>
         <div style="min-width:160px;">
             <label class="form-label">Estado</label>
             <select name="estado" class="form-control">
                 <option value="">Todos</option>
-                @if (estado == "Activo") {
-                    <option value="Activo" selected>Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                } else if (estado == "Inactivo") {
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo" selected>Inactivo</option>
-                } else {
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
-                }
+                @if(estado=="Activo"){<option value="Activo" selected>Activo</option><option value="Inactivo">Inactivo</option>}
+                else if(estado=="Inactivo"){<option value="Activo">Activo</option><option value="Inactivo" selected>Inactivo</option>}
+                else{<option value="Activo">Activo</option><option value="Inactivo">Inactivo</option>}
             </select>
         </div>
         <div style="display:flex; gap:8px;">
-            <button type="submit" class="btn btn--primary">
-                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                Buscar
-            </button>
-            @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estado))
-            {
-                <a asp-action="Index" class="btn btn--secondary">Limpiar</a>
-            }
+            <button type="submit" class="btn btn--primary"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Buscar</button>
+            @if(!string.IsNullOrEmpty(buscar)||!string.IsNullOrEmpty(estado)){<a asp-action="Index" class="btn btn--secondary">Limpiar</a>}
         </div>
     </form>
 </div>
-
-<!-- TABLA -->
 <div class="card" style="padding:0; overflow:hidden;">
-    @if (Model.Any())
-    {
+    @if (Model.Any()) {
         <div class="table-wrapper" style="border:none; border-radius:0;">
             <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Empleado</th>
-                        <th>DNI</th>
-                        <th>Correo</th>
-                        <th>Dirección</th>
-                        <th>Estado</th>
-                        <th style="text-align:center;">Acciones</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>#</th><th>Empleado</th><th>DNI</th><th>Correo</th><th>Dirección</th><th>Estado</th><th style="text-align:center;">Acciones</th></tr></thead>
                 <tbody>
-                    @foreach (var e in Model)
-                    {
+                    @foreach (var e in Model) {
                         <tr>
-                            <td style="color:var(--gris-400); font-weight:400; font-size:0.78rem;">
-                                @e.idEmpleado
-                            </td>
+                            <td style="color:var(--gris-400);font-weight:400;font-size:0.78rem;">@e.idEmpleado</td>
                             <td>
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <div class="emp-avatar">
-                                        @((e.nombre?.Length > 0 ? e.nombre[0].ToString() : "?").ToUpper())@((e.paterno?.Length > 0 ? e.paterno[0].ToString() : "").ToUpper())
-                                    </div>
-                                    <div>
-                                        <div style="font-weight:600; color:var(--gris-900);">
-                                            @e.nombre @e.paterno @e.materno
-                                        </div>
-                                    </div>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div class="emp-avatar">@((e.nombre?.Length>0?e.nombre[0].ToString():"?").ToUpper())@((e.paterno?.Length>0?e.paterno[0].ToString():"").ToUpper())</div>
+                                    <div><div style="font-weight:600;color:var(--gris-900);">@e.nombre @e.paterno @e.materno</div></div>
                                 </div>
                             </td>
-                            <td style="font-family:monospace; letter-spacing:0.05em;">
-                                @(e.dni ?? "—")
-                            </td>
-                            <td style="color:var(--celeste); font-weight:400; font-size:0.82rem;">
-                                @(e.correo ?? "—")
-                            </td>
-                            <td style="color:var(--gris-500); font-weight:400; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                                @(e.direccion ?? "—")
+                            <td style="font-family:monospace;letter-spacing:0.05em;">@(e.dni??"—")</td>
+                            <td style="color:var(--celeste);font-size:0.82rem;">@(e.correo??"—")</td>
+                            <td style="color:var(--gris-500);font-size:0.82rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(e.direccion??"—")</td>
+                            <td>
+                                @{ var bc=e.estado=="Activo"?"badge--verde":e.estado=="Inactivo"?"badge--rojo":"badge--gris"; }
+                                <span class="badge @bc">@(e.estado??"—")</span>
                             </td>
                             <td>
-                                @{
-                                    var bc = e.estado == "Activo" ? "badge--verde"
-                                           : e.estado == "Inactivo" ? "badge--rojo"
-                                           : "badge--gris";
-                                }
-                                <span class="badge @bc">@(e.estado ?? "—")</span>
-                            </td>
-                            <td>
-                                <div style="display:flex; gap:6px; justify-content:center;">
-                                    <a asp-action="Details" asp-route-id="@e.idEmpleado"
-                                       class="btn btn--ghost btn--icon" title="Ver detalle">
+                                <div style="display:flex;gap:6px;justify-content:center;">
+                                    <a asp-action="Details" asp-route-id="@e.idEmpleado" class="btn btn--ghost btn--icon" title="Ver detalle">
                                         <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </a>
-                                    @if (Context.Session.GetString("UsuarioRol") != "SSOMA")
-                                    {
-                                    <a asp-action="Edit" asp-route-id="@e.idEmpleado"
-                                       class="btn btn--secondary btn--icon" title="Editar">
-                                        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                    </a>
+                                    @if(Context.Session.GetString("UsuarioRol")!="SSOMA"){
+                                        <a asp-action="Edit" asp-route-id="@e.idEmpleado" class="btn btn--secondary btn--icon" title="Editar">
+                                            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        </a>
                                     }
-                                    
                                 </div>
                             </td>
                         </tr>
@@ -152,63 +95,47 @@
                 </tbody>
             </table>
         </div>
-
-        @if (totalPaginas > 1)
-        {
+        @if(totalPaginas>1){
             <div class="pagination">
-                <span style="font-size:0.75rem; color:var(--gris-400); margin-right:8px;">
-                    Página @pagina de @totalPaginas
-                </span>
-                @if (pagina > 1)
-                {
-                    <a asp-action="Index" asp-route-pagina="@(pagina-1)"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
-                       class="pagination__btn">
-                        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                    </a>
-                }
-                @for (int i = Math.Max(1, pagina - 2); i <= Math.Min(totalPaginas, pagina + 2); i++)
-                {
-                    <a asp-action="Index" asp-route-pagina="@i"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
-                       class="pagination__btn @(i == pagina ? "active" : "")">@i</a>
-                }
-                @if (pagina < totalPaginas)
-                {
-                    <a asp-action="Index" asp-route-pagina="@(pagina+1)"
-                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
-                       class="pagination__btn">
-                        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                    </a>
-                }
+                <span style="font-size:0.75rem;color:var(--gris-400);margin-right:8px;">Página @pagina de @totalPaginas</span>
+                @if(pagina>1){<a asp-action="Index" asp-route-pagina="@(pagina-1)" asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden" class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>}
+                @for(int i=Math.Max(1,pagina-2);i<=Math.Min(totalPaginas,pagina+2);i++){<a asp-action="Index" asp-route-pagina="@i" asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden" class="pagination__btn @(i==pagina?"active":"")">@i</a>}
+                @if(pagina<totalPaginas){<a asp-action="Index" asp-route-pagina="@(pagina+1)" asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden" class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>}
             </div>
         }
-    }
-    else
-    {
+    } else {
         <div class="empty-state">
-            <div class="empty-state__icon">
-                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            </div>
+            <div class="empty-state__icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
             <div class="empty-state__title">No se encontraron empleados</div>
-            <div class="empty-state__text">
-                @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estado))
-                { <span>Intenta con otros filtros.</span> }
-                else
-                { <span>Aún no hay empleados registrados.</span> }
-            </div>
+            <div class="empty-state__text">@if(!string.IsNullOrEmpty(buscar)||!string.IsNullOrEmpty(estado)){<span>Intenta con otros filtros.</span>}else{<span>Aún no hay empleados registrados.</span>}</div>
         </div>
     }
 </div>
 
+@section Scripts {
+<script>
+function exportarTabla(tituloReporte, tipo) {
+    var tabla = document.querySelector("table");
+    if (!tabla) { alert("No hay datos para exportar."); return; }
+    var ths = Array.from(tabla.querySelectorAll("thead th"));
+    var idxAcc = ths.findIndex(function(th){ return th.innerText.trim()==="Acciones"; });
+    var idxNum = ths.findIndex(function(th){ return th.innerText.trim()==="#"; });
+    var columnas = ths.filter(function(_,i){ return i!==idxAcc&&i!==idxNum; }).map(function(th){ return th.innerText.trim(); }).filter(function(t){ return t.length>0; });
+    var filas = Array.from(tabla.querySelectorAll("tbody tr")).map(function(tr){
+        return Array.from(tr.querySelectorAll("td")).filter(function(_,i){ return i!==idxAcc&&i!==idxNum; }).map(function(td){ return td.innerText.trim().replace(/\s+/g," "); });
+    });
+    if (!filas.length){ alert("No hay filas para exportar."); return; }
+    fetch(tipo==="excel"?"/IA/ExportarExcel":"/IA/ExportarPdf",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({titulo:tituloReporte,columnas:columnas,filas:filas})
+    }).then(function(r){if(!r.ok)throw new Error();return r.blob();})
+    .then(function(b){var u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=tituloReporte.replace(/\s+/g,"_")+"_"+new Date().toISOString().slice(0,10)+(tipo==="excel"?".csv":".pdf");a.click();URL.revokeObjectURL(u);})
+    .catch(function(){alert("Error al exportar.");});
+}
+</script>
+}
 @section Styles {
 <style>
-.emp-avatar {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--azul-mid), var(--celeste));
-    display: grid; place-items: center;
-    font-family: var(--font-display); font-weight: 700;
-    font-size: 0.72rem; color: var(--blanco); flex-shrink: 0;
-}
+.emp-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--azul-mid),var(--celeste));display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:0.72rem;color:var(--blanco);flex-shrink:0;}
 </style>
 }

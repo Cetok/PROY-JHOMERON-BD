@@ -1,0 +1,144 @@
+@model PROYJHOME2026.Services.IaDashboardDto
+@if (Model == null) { return; }
+
+@{
+    var colores = new[] { "azul", "verde", "amarillo", "rojo", "purple" };
+    int ci = 0;
+    string Color() => colores[ci++ % colores.Length];
+}
+
+@* TI *@
+@if (Model.TarjetasTI.Any())
+{
+    <div class="dash-section">
+        <div class="dash-section__label">💻 Equipos TI — @Model.TotalTI total</div>
+        @foreach (var t in Model.TarjetasTI)
+        {
+            <div class="dash-card dash-card--@Color()">
+                <div class="dash-card__icon">🖥</div>
+                <div>
+                    <div class="dash-card__label">@t.Label</div>
+                    <div class="dash-card__valor">@t.Valor</div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* FLOTA *@
+@if (Model.TarjetasFlota.Any())
+{
+    <div class="dash-section">
+        <div class="dash-section__label">🚗 Flota vehicular — @Model.TotalFlota total</div>
+        @foreach (var t in Model.TarjetasFlota)
+        {
+            <div class="dash-card dash-card--@Color()">
+                <div class="dash-card__icon">🚗</div>
+                <div>
+                    <div class="dash-card__label">@t.Label</div>
+                    <div class="dash-card__valor">@t.Valor</div>
+                </div>
+            </div>
+        }
+        @if (Model.MantenimientosPendientes > 0)
+        {
+            <div class="dash-card dash-card--amarillo">
+                <div class="dash-card__icon">🔧</div>
+                <div>
+                    <div class="dash-card__label">Mantenimientos pendientes</div>
+                    <div class="dash-card__valor">@Model.MantenimientosPendientes</div>
+                </div>
+            </div>
+        }
+        @if (Model.MantenimientosEnProceso > 0)
+        {
+            <div class="dash-card dash-card--azul">
+                <div class="dash-card__icon">⚙️</div>
+                <div>
+                    <div class="dash-card__label">En proceso</div>
+                    <div class="dash-card__valor">@Model.MantenimientosEnProceso</div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* PRODUCCIÓN *@
+@if (Model.TarjetasProduccion.Any())
+{
+    <div class="dash-section">
+        <div class="dash-section__label">⚙️ Producción — @Model.TotalProduccion máquinas</div>
+        @foreach (var t in Model.TarjetasProduccion)
+        {
+            <div class="dash-card dash-card--@Color()">
+                <div class="dash-card__icon">🔩</div>
+                <div>
+                    <div class="dash-card__label">@t.Label</div>
+                    <div class="dash-card__valor">@t.Valor</div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* LOGÍSTICA *@
+@if (Model.TarjetasLogistica.Any())
+{
+    <div class="dash-section">
+        <div class="dash-section__label">📱 Logística — @Model.TotalLogistica chips</div>
+        @foreach (var t in Model.TarjetasLogistica)
+        {
+            <div class="dash-card dash-card--@Color()">
+                <div class="dash-card__icon">📶</div>
+                <div>
+                    <div class="dash-card__label">@t.Label</div>
+                    <div class="dash-card__valor">@t.Valor</div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* SSOMA *@
+@if (Model.TotalBotiquines > 0 || Model.TotalExtintores > 0)
+{
+    <div class="dash-section">
+        <div class="dash-section__label">🦺 SSOMA</div>
+        <div class="dash-card dash-card--verde">
+            <div class="dash-card__icon">🏥</div>
+            <div>
+                <div class="dash-card__label">Botiquines</div>
+                <div class="dash-card__valor">@Model.TotalBotiquines</div>
+            </div>
+        </div>
+        <div class="dash-card dash-card--rojo">
+            <div class="dash-card__icon">🧯</div>
+            <div>
+                <div class="dash-card__label">Extintores</div>
+                <div class="dash-card__valor">@Model.TotalExtintores</div>
+            </div>
+        </div>
+    </div>
+}
+
+@* RR.HH (solo admin) *@
+@if (Model.TotalEmpleados > 0)
+{
+    <div class="dash-section">
+        <div class="dash-section__label">👥 RR.HH</div>
+        <div class="dash-card dash-card--azul">
+            <div class="dash-card__icon">👤</div>
+            <div>
+                <div class="dash-card__label">Total empleados</div>
+                <div class="dash-card__valor">@Model.TotalEmpleados</div>
+            </div>
+        </div>
+        <div class="dash-card dash-card--verde">
+            <div class="dash-card__icon">✅</div>
+            <div>
+                <div class="dash-card__label">Activos</div>
+                <div class="dash-card__valor">@Model.EmpleadosActivos</div>
+            </div>
+        </div>
+    </div>
+}

@@ -22,13 +22,14 @@
         <p class="page-header__subtitle">@total máquina(s) encontrada(s)</p>
     </div>
     <div class="page-header__actions">
-        <a asp-controller="Reportes" asp-action="IndexProduccion" class="btn btn--secondary btn--sm">
-            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-            </svg>
-            Reportes
-        </a>
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Máquinas', 'excel')" title="Exportar a Excel">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Excel
+        </button>
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Máquinas', 'pdf')" title="Exportar a PDF">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+        </button>
         <a asp-action="Create" class="btn btn--celeste">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nueva máquina
@@ -40,12 +41,10 @@
 <div class="card" style="margin-bottom:20px; padding:16px 20px;">
     <form method="get" asp-action="Index">
         <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-            <!-- Nombre -->
             <div style="flex:1; min-width:160px;">
                 <label class="form-label">Nombre de máquina</label>
                 <input type="text" name="nombreMaquina" value="@nombreMaquina" class="form-control" placeholder="Ej: Llenadora..." />
             </div>
-            <!-- Rango N° -->
             <div style="min-width:120px;">
                 <label class="form-label">N° Desde</label>
                 <input type="text" name="numeroDesde" value="@numeroDesde" class="form-control" placeholder="BN01" />
@@ -54,7 +53,6 @@
                 <label class="form-label">N° Hasta</label>
                 <input type="text" name="numeroHasta" value="@numeroHasta" class="form-control" placeholder="BN09" />
             </div>
-            <!-- Estado -->
             <div style="min-width:150px;">
                 <label class="form-label">Estado</label>
                 <select name="estado" class="form-control">
@@ -66,12 +64,10 @@
                     <option value="Dado de Baja"  selected="@(estado=="Dado de Baja"  ?"selected":null)">Dado de Baja</option>
                 </select>
             </div>
-            <!-- Marca -->
             <div style="min-width:130px;">
                 <label class="form-label">Marca</label>
                 <input type="text" name="marca" value="@marca" class="form-control" placeholder="Ej: Bosch..." />
             </div>
-            <!-- Encargado -->
             <div style="min-width:150px;">
                 <label class="form-label">Encargado</label>
                 <input type="text" name="encargado" value="@encargado" class="form-control" placeholder="Nombre o apellido..." />
@@ -190,3 +186,52 @@
         </div>
     }
 </div>
+
+@section Scripts {
+<script>
+function exportarTabla(tituloReporte, tipo) {
+    var tabla = document.querySelector("table");
+    if (!tabla) { alert("No hay datos para exportar."); return; }
+
+    var ths = Array.from(tabla.querySelectorAll("thead th"));
+    var idxAcciones = ths.findIndex(function(th) { return th.innerText.trim() === "Acciones"; });
+    var idxNum      = ths.findIndex(function(th) { return th.innerText.trim() === "#"; });
+
+    var columnas = ths
+        .filter(function(_, i) { return i !== idxAcciones && i !== idxNum; })
+        .map(function(th) { return th.innerText.trim(); })
+        .filter(function(t) { return t.length > 0; });
+
+    var filas = Array.from(tabla.querySelectorAll("tbody tr")).map(function(tr) {
+        return Array.from(tr.querySelectorAll("td"))
+            .filter(function(_, i) { return i !== idxAcciones && i !== idxNum; })
+            .map(function(td) { return td.innerText.trim().replace(/\s+/g, " "); });
+    });
+
+    if (filas.length === 0) { alert("No hay filas para exportar."); return; }
+
+    var payload = { titulo: tituloReporte, columnas: columnas, filas: filas };
+    var ruta    = tipo === "excel" ? "/IA/ExportarExcel" : "/IA/ExportarPdf";
+    var ext     = tipo === "excel" ? ".csv" : ".pdf";
+
+    fetch(ruta, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+    .then(function(res) {
+        if (!res.ok) throw new Error("Error al exportar");
+        return res.blob();
+    })
+    .then(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a   = document.createElement("a");
+        a.href     = url;
+        a.download = tituloReporte.replace(/\s+/g, "_") + "_" + new Date().toISOString().slice(0,10) + ext;
+        a.click();
+        URL.revokeObjectURL(url);
+    })
+    .catch(function(e) { alert("Error al exportar: " + e.message); });
+}
+</script>
+}

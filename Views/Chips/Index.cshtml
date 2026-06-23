@@ -16,6 +16,14 @@
         <p class="page-header__subtitle">@total chip(s) registrado(s)</p>
     </div>
     <div class="page-header__actions">
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Chips SIM', 'excel')" title="Exportar a Excel">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Excel
+        </button>
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Chips SIM', 'pdf')" title="Exportar a PDF">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+        </button>
         <a asp-action="Create" class="btn btn--celeste">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nuevo chip
@@ -23,31 +31,22 @@
     </div>
 </div>
 
-<!-- FILTRO -->
 <div class="card" style="margin-bottom:20px; padding:16px 20px;">
     <form method="get" asp-action="Index" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
         <div style="flex:1; min-width:200px;">
             <label class="form-label">Buscar número</label>
             <div style="position:relative;">
                 <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" name="buscar" value="@buscar" class="form-control"
-                       style="padding-left:34px;" placeholder="Ej: 987654321..." />
+                <input type="text" name="buscar" value="@buscar" class="form-control" style="padding-left:34px;" placeholder="Ej: 987654321..." />
             </div>
         </div>
         <div style="display:flex; gap:8px;">
-            <button type="submit" class="btn btn--primary">
-                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                Buscar
-            </button>
-            @if (!string.IsNullOrEmpty(buscar))
-            {
-                <a asp-action="Index" class="btn btn--secondary">Limpiar</a>
-            }
+            <button type="submit" class="btn btn--primary"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Buscar</button>
+            @if (!string.IsNullOrEmpty(buscar)) { <a asp-action="Index" class="btn btn--secondary">Limpiar</a> }
         </div>
     </form>
 </div>
 
-<!-- TABLA -->
 <div class="card" style="padding:0; overflow:hidden;">
     @if (Model.Any())
     {
@@ -66,40 +65,27 @@
                     {
                         bool asignado = idsAsignados.Contains(c.IdChip);
                         <tr>
-                            <td style="color:var(--gris-400); font-size:0.78rem; font-weight:400; width:60px;">
-                                @c.IdChip
-                            </td>
+                            <td style="color:var(--gris-400); font-size:0.78rem; font-weight:400; width:60px;">@c.IdChip</td>
                             <td>
                                 <div style="display:flex; align-items:center; gap:10px;">
                                     <div class="chip-icon">
                                         <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M16 2v3M8 2v3M2 8h3M2 16h3M22 8h-3M22 16h-3M16 22v-3M8 22v-3"/></svg>
                                     </div>
-                                    <span style="font-family:monospace; font-size:0.9rem; font-weight:600; letter-spacing:0.05em; color:var(--gris-900);">
-                                        @c.NumeroCelular
-                                    </span>
+                                    <span style="font-family:monospace; font-size:0.9rem; font-weight:600; letter-spacing:0.05em; color:var(--gris-900);">@c.NumeroCelular</span>
                                 </div>
                             </td>
                             <td>
-                                @if (asignado)
-                                {
-                                    <span class="badge badge--celeste">Asignado</span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge--verde">Disponible</span>
-                                }
+                                @if (asignado) { <span class="badge badge--celeste">Asignado</span> }
+                                else           { <span class="badge badge--verde">Disponible</span> }
                             </td>
                             <td>
                                 <div style="display:flex; gap:6px; justify-content:center;">
-                                    <a asp-action="Details" asp-route-id="@c.IdChip"
-                                       class="btn btn--ghost btn--icon" title="Ver detalle">
+                                    <a asp-action="Details" asp-route-id="@c.IdChip" class="btn btn--ghost btn--icon" title="Ver detalle">
                                         <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </a>
-                                    <a asp-action="Edit" asp-route-id="@c.IdChip"
-                                       class="btn btn--secondary btn--icon" title="Editar">
+                                    <a asp-action="Edit" asp-route-id="@c.IdChip" class="btn btn--secondary btn--icon" title="Editar">
                                         <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                     </a>
-                                    
                                 </div>
                             </td>
                         </tr>
@@ -107,61 +93,53 @@
                 </tbody>
             </table>
         </div>
-
         @if (totalPaginas > 1)
         {
             <div class="pagination">
-                <span style="font-size:0.75rem; color:var(--gris-400); margin-right:8px;">
-                    Página @pagina de @totalPaginas
-                </span>
-                @if (pagina > 1)
-                {
-                    <a asp-action="Index" asp-route-pagina="@(pagina-1)" asp-route-buscar="@buscar"
-                       class="pagination__btn">
-                        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                    </a>
-                }
-                @for (int i = Math.Max(1, pagina - 2); i <= Math.Min(totalPaginas, pagina + 2); i++)
-                {
-                    <a asp-action="Index" asp-route-pagina="@i" asp-route-buscar="@buscar"
-                       class="pagination__btn @(i == pagina ? "active" : "")">@i</a>
-                }
-                @if (pagina < totalPaginas)
-                {
-                    <a asp-action="Index" asp-route-pagina="@(pagina+1)" asp-route-buscar="@buscar"
-                       class="pagination__btn">
-                        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                    </a>
-                }
+                <span style="font-size:0.75rem; color:var(--gris-400); margin-right:8px;">Página @pagina de @totalPaginas</span>
+                @if (pagina > 1) { <a asp-action="Index" asp-route-pagina="@(pagina-1)" asp-route-buscar="@buscar" class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a> }
+                @for (int i = Math.Max(1, pagina-2); i <= Math.Min(totalPaginas, pagina+2); i++) { <a asp-action="Index" asp-route-pagina="@i" asp-route-buscar="@buscar" class="pagination__btn @(i==pagina?"active":"")">@i</a> }
+                @if (pagina < totalPaginas) { <a asp-action="Index" asp-route-pagina="@(pagina+1)" asp-route-buscar="@buscar" class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a> }
             </div>
         }
     }
     else
     {
         <div class="empty-state">
-            <div class="empty-state__icon">
-                <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M16 2v3M8 2v3M2 8h3M2 16h3M22 8h-3M22 16h-3M16 22v-3M8 22v-3"/></svg>
-            </div>
+            <div class="empty-state__icon"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M16 2v3M8 2v3M2 8h3M2 16h3M22 8h-3M22 16h-3M16 22v-3M8 22v-3"/></svg></div>
             <div class="empty-state__title">No se encontraron chips</div>
-            <div class="empty-state__text">
-                @if (!string.IsNullOrEmpty(buscar))
-                { <span>Intenta con otro número.</span> }
-                else { <span>Aún no hay chips registrados.</span> }
-            </div>
+            <div class="empty-state__text">@if (!string.IsNullOrEmpty(buscar)){ <span>Intenta con otro número.</span> }else{ <span>Aún no hay chips registrados.</span> }</div>
         </div>
     }
 </div>
 
+
+@section Scripts {
+<script>
+function exportarTabla(tituloReporte, tipo) {
+    var tabla = document.querySelector("table");
+    if (!tabla) { alert("No hay datos para exportar."); return; }
+    var ths = Array.from(tabla.querySelectorAll("thead th"));
+    var idxAcc = ths.findIndex(function(th){ return th.innerText.trim()==="Acciones"; });
+    var idxNum = ths.findIndex(function(th){ return th.innerText.trim()==="#"; });
+    var columnas = ths.filter(function(_,i){ return i!==idxAcc && i!==idxNum; }).map(function(th){ return th.innerText.trim(); }).filter(function(t){ return t.length>0; });
+    var filas = Array.from(tabla.querySelectorAll("tbody tr")).map(function(tr){
+        return Array.from(tr.querySelectorAll("td")).filter(function(_,i){ return i!==idxAcc && i!==idxNum; }).map(function(td){ return td.innerText.trim().replace(/\s+/g," "); });
+    });
+    if (filas.length===0){ alert("No hay filas para exportar."); return; }
+    var payload = { titulo: tituloReporte, columnas: columnas, filas: filas };
+    var ruta = tipo==="excel" ? "/IA/ExportarExcel" : "/IA/ExportarPdf";
+    var ext  = tipo==="excel" ? ".csv" : ".pdf";
+    fetch(ruta,{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) })
+    .then(function(res){ if(!res.ok) throw new Error("Error al exportar"); return res.blob(); })
+    .then(function(blob){ var url=URL.createObjectURL(blob); var a=document.createElement("a"); a.href=url; a.download=tituloReporte.replace(/\s+/g,"_")+"_"+new Date().toISOString().slice(0,10)+ext; a.click(); URL.revokeObjectURL(url); })
+    .catch(function(e){ alert("Error al exportar: "+e.message); });
+}
+</script>
+}
 @section Styles {
 <style>
-.chip-icon {
-    width: 32px; height: 32px; border-radius: var(--r-sm);
-    background: rgba(59,155,232,0.08); border: 1px solid rgba(59,155,232,0.2);
-    display: grid; place-items: center; flex-shrink: 0;
-}
-.chip-icon svg {
-    width: 15px; height: 15px; stroke: var(--celeste);
-    fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-}
+.chip-icon { width:32px; height:32px; border-radius:var(--r-sm); background:rgba(59,155,232,0.08); border:1px solid rgba(59,155,232,0.2); display:grid; place-items:center; flex-shrink:0; }
+.chip-icon svg { width:15px; height:15px; stroke:var(--celeste); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 </style>
 }

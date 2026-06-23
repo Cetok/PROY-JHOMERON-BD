@@ -1,25 +1,14 @@
 @model IEnumerable<PROYJHOME2026.Models.MaquinaAsignacion>
 @{
-    ViewData["Title"]      = "Asignaciones de Máquinas";
-    ViewData["Breadcrumb"] = "Producción / Asignaciones";
-    int    pagina        = ViewBag.Pagina;
-    int    totalPaginas  = ViewBag.TotalPaginas;
-    int    total         = ViewBag.Total;
-    string nombreMaquina  = ViewBag.NombreMaquina  ?? "";
-    string numeroDesde    = ViewBag.NumeroDesde    ?? "";
-    string numeroHasta    = ViewBag.NumeroHasta    ?? "";
-    string estadoOp       = ViewBag.EstadoOp       ?? "";
-    string marca          = ViewBag.Marca          ?? "";
-    string encargado      = ViewBag.Encargado      ?? "";
-    string areaEspecifica = ViewBag.AreaEspecifica ?? "";
-    string fechaDesde     = ViewBag.FechaDesde     ?? "";
-    string fechaHasta     = ViewBag.FechaHasta     ?? "";
-    bool   hayFiltros     = !string.IsNullOrEmpty(nombreMaquina) || !string.IsNullOrEmpty(numeroDesde) ||
-                            !string.IsNullOrEmpty(estadoOp) || !string.IsNullOrEmpty(marca) ||
-                            !string.IsNullOrEmpty(encargado) || !string.IsNullOrEmpty(areaEspecifica) ||
-                            !string.IsNullOrEmpty(fechaDesde) || !string.IsNullOrEmpty(fechaHasta);
+    ViewData["Title"]="Asignaciones de Máquinas"; ViewData["Breadcrumb"]="Producción / Asignaciones";
+    int pagina=ViewBag.Pagina; int totalPaginas=ViewBag.TotalPaginas; int total=ViewBag.Total;
+    string nombreMaquina=ViewBag.NombreMaquina??""; string numeroDesde=ViewBag.NumeroDesde??""; string numeroHasta=ViewBag.NumeroHasta??"";
+    string estadoOp=ViewBag.EstadoOp??""; string marca=ViewBag.Marca??""; string encargado=ViewBag.Encargado??"";
+    string areaEspecifica=ViewBag.AreaEspecifica??""; string fechaDesde=ViewBag.FechaDesde??""; string fechaHasta=ViewBag.FechaHasta??"";
+    bool hayFiltros=!string.IsNullOrEmpty(nombreMaquina)||!string.IsNullOrEmpty(numeroDesde)||!string.IsNullOrEmpty(estadoOp)||
+                    !string.IsNullOrEmpty(marca)||!string.IsNullOrEmpty(encargado)||!string.IsNullOrEmpty(areaEspecifica)||
+                    !string.IsNullOrEmpty(fechaDesde)||!string.IsNullOrEmpty(fechaHasta);
 }
-
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Producción</div>
@@ -27,131 +16,66 @@
         <p class="page-header__subtitle">@total asignación(es) encontrada(s)</p>
     </div>
     <div class="page-header__actions">
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Asignaciones de Maquinas', 'excel')" title="Exportar a Excel">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+            Excel
+        </button>
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Asignaciones de Maquinas', 'pdf')" title="Exportar a PDF">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+        </button>
         <a asp-action="Create" class="btn btn--celeste">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nueva asignación
         </a>
     </div>
 </div>
-
-<!-- FILTROS -->
 <div class="card" style="margin-bottom:20px; padding:16px 20px;">
     <form method="get" asp-action="Index">
         <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-            <div style="flex:1; min-width:150px;">
-                <label class="form-label">Nombre de máquina</label>
-                <input type="text" name="nombreMaquina" value="@nombreMaquina" class="form-control" placeholder="Ej: Llenadora..." />
-            </div>
-            <div style="min-width:110px;">
-                <label class="form-label">N° Desde</label>
-                <input type="text" name="numeroDesde" value="@numeroDesde" class="form-control" placeholder="BN01" />
-            </div>
-            <div style="min-width:110px;">
-                <label class="form-label">N° Hasta</label>
-                <input type="text" name="numeroHasta" value="@numeroHasta" class="form-control" placeholder="BN09" />
-            </div>
+            <div style="flex:1; min-width:150px;"><label class="form-label">Nombre de máquina</label><input type="text" name="nombreMaquina" value="@nombreMaquina" class="form-control" placeholder="Ej: Llenadora..." /></div>
+            <div style="min-width:110px;"><label class="form-label">N° Desde</label><input type="text" name="numeroDesde" value="@numeroDesde" class="form-control" placeholder="BN01" /></div>
+            <div style="min-width:110px;"><label class="form-label">N° Hasta</label><input type="text" name="numeroHasta" value="@numeroHasta" class="form-control" placeholder="BN09" /></div>
             <div style="min-width:160px;">
                 <label class="form-label">Estado operativo</label>
                 <select name="estadoOp" class="form-control">
                     <option value="">Todos</option>
-                    <option value="Operativo"          selected="@(estadoOp=="Operativo"          ?"selected":null)">Operativo</option>
+                    <option value="Operativo" selected="@(estadoOp=="Operativo"?"selected":null)">Operativo</option>
                     <option value="Almacenado en stock" selected="@(estadoOp=="Almacenado en stock"?"selected":null)">Almacenado en stock</option>
-                    <option value="Inoperativo"        selected="@(estadoOp=="Inoperativo"        ?"selected":null)">Inoperativo</option>
+                    <option value="Inoperativo" selected="@(estadoOp=="Inoperativo"?"selected":null)">Inoperativo</option>
                 </select>
             </div>
-            <div style="min-width:120px;">
-                <label class="form-label">Marca</label>
-                <input type="text" name="marca" value="@marca" class="form-control" placeholder="Ej: Bosch..." />
-            </div>
-            <div style="min-width:140px;">
-                <label class="form-label">Encargado</label>
-                <input type="text" name="encargado" value="@encargado" class="form-control" placeholder="Nombre o apellido..." />
-            </div>
-            <div style="min-width:140px;">
-                <label class="form-label">Área específica</label>
-                <input type="text" name="areaEspecifica" value="@areaEspecifica" class="form-control" placeholder="Ej: Llenado..." />
-            </div>
-            <div style="min-width:130px;">
-                <label class="form-label">Fecha desde</label>
-                <input type="date" name="fechaDesde" value="@fechaDesde" class="form-control" />
-            </div>
-            <div style="min-width:130px;">
-                <label class="form-label">Fecha hasta</label>
-                <input type="date" name="fechaHasta" value="@fechaHasta" class="form-control" />
-            </div>
+            <div style="min-width:120px;"><label class="form-label">Marca</label><input type="text" name="marca" value="@marca" class="form-control" placeholder="Ej: Bosch..." /></div>
+            <div style="min-width:140px;"><label class="form-label">Encargado</label><input type="text" name="encargado" value="@encargado" class="form-control" placeholder="Nombre o apellido..." /></div>
+            <div style="min-width:140px;"><label class="form-label">Área específica</label><input type="text" name="areaEspecifica" value="@areaEspecifica" class="form-control" placeholder="Ej: Llenado..." /></div>
+            <div style="min-width:130px;"><label class="form-label">Fecha desde</label><input type="date" name="fechaDesde" value="@fechaDesde" class="form-control" /></div>
+            <div style="min-width:130px;"><label class="form-label">Fecha hasta</label><input type="date" name="fechaHasta" value="@fechaHasta" class="form-control" /></div>
             <div style="display:flex; gap:8px; align-self:flex-end;">
-                <button type="submit" class="btn btn--primary">
-                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    Buscar
-                </button>
-                @if (hayFiltros) { <a asp-action="Index" class="btn btn--secondary">Limpiar</a> }
+                <button type="submit" class="btn btn--primary"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Buscar</button>
+                @if(hayFiltros){<a asp-action="Index" class="btn btn--secondary">Limpiar</a>}
             </div>
         </div>
     </form>
 </div>
-
-<!-- TABLA -->
 <div class="card" style="padding:0; overflow:hidden;">
-    @if (Model.Any())
-    {
+    @if(Model.Any()){
         <div class="table-wrapper" style="border:none; border-radius:0;">
             <table>
-                <thead>
-                    <tr>
-                        <th>Máquina</th>
-                        <th>Área Específica</th>
-                        <th>Encargado(s)</th>
-                        <th>Estado Operativo</th>
-                        <th>Comentario</th>
-                        <th>Fecha Asignación</th>
-                        <th style="text-align:center;">Acciones</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Máquina</th><th>Área Específica</th><th>Encargado(s)</th><th>Estado Operativo</th><th>Comentario</th><th>Fecha Asignación</th><th style="text-align:center;">Acciones</th></tr></thead>
                 <tbody>
-                    @foreach (var a in Model)
-                    {
-                        string bcOp;
-                        if      (a.EstadoOperativo == "Operativo")           bcOp = "badge--verde";
-                        else if (a.EstadoOperativo == "Almacenado en stock") bcOp = "badge--amarillo";
-                        else                                                   bcOp = "badge--rojo";
-
+                    @foreach(var a in Model){
+                        string bcOp; if(a.EstadoOperativo=="Operativo") bcOp="badge--verde"; else if(a.EstadoOperativo=="Almacenado en stock") bcOp="badge--amarillo"; else bcOp="badge--rojo";
                         <tr>
-                            <td>
-                                <div style="font-weight:700; font-family:monospace; color:var(--azul-dark);">@a.Maquina?.NumeroMaquina</div>
-                                <div style="font-size:0.78rem; color:var(--gris-500);">@a.Maquina?.NombreMaquina</div>
-                            </td>
-                            <td style="font-size:0.82rem; color:var(--gris-600);">@(a.AreaEspecifica ?? "—")</td>
-                            <td style="font-size:0.82rem; color:var(--azul);">
-                                @if (a.Encargados.Any())
-                                {
-                                    @string.Join(", ", a.Encargados.Select(e => e.Empleado?.nombre + " " + e.Empleado?.paterno))
-                                }
-                                else
-                                {
-                                    <span style="color:var(--gris-400); font-style:italic;">Sin encargado</span>
-                                }
-                            </td>
+                            <td><div style="font-weight:700;font-family:monospace;color:var(--azul-dark);">@a.Maquina?.NumeroMaquina</div><div style="font-size:0.78rem;color:var(--gris-500);">@a.Maquina?.NombreMaquina</div></td>
+                            <td style="font-size:0.82rem;color:var(--gris-600);">@(a.AreaEspecifica??"—")</td>
+                            <td style="font-size:0.82rem;color:var(--azul);">@if(a.Encargados.Any()){@string.Join(", ",a.Encargados.Select(e=>e.Empleado?.nombre+" "+e.Empleado?.paterno))}else{<span style="color:var(--gris-400);font-style:italic;">Sin encargado</span>}</td>
                             <td><span class="badge @bcOp">@a.EstadoOperativo</span></td>
-                            <td style="font-size:0.82rem; color:var(--gris-600);">
-                                @if (!string.IsNullOrWhiteSpace(a.Observaciones))
-                                {
-                                    <span>@a.Observaciones</span>
-                                }
-                                else { <span style="color:var(--gris-400);">—</span> }
-                            </td>
-                            <td style="font-size:0.82rem; color:var(--gris-500);">
-                                @(a.FechaAsignacion.HasValue ? a.FechaAsignacion.Value.ToString("dd/MM/yyyy") : "—")
-                            </td>
+                            <td style="font-size:0.82rem;color:var(--gris-600);">@if(!string.IsNullOrWhiteSpace(a.Observaciones)){<span>@a.Observaciones</span>}else{<span style="color:var(--gris-400);">—</span>}</td>
+                            <td style="font-size:0.82rem;color:var(--gris-500);">@(a.FechaAsignacion.HasValue?a.FechaAsignacion.Value.ToString("dd/MM/yyyy"):"—")</td>
                             <td>
-                                <div style="display:flex; gap:6px; justify-content:center;">
-                                    <a asp-controller="Maquinas" asp-action="Details" asp-route-id="@a.IdMaquina"
-                                       class="btn btn--ghost btn--icon" title="Ver máquina">
-                                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    </a>
-                                    <a asp-action="Edit" asp-route-id="@a.IdAsignacion"
-                                       class="btn btn--secondary btn--icon" title="Editar">
-                                        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                    </a>
+                                <div style="display:flex;gap:6px;justify-content:center;">
+                                    <a asp-controller="Maquinas" asp-action="Details" asp-route-id="@a.IdMaquina" class="btn btn--ghost btn--icon" title="Ver máquina"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                    <a asp-action="Edit" asp-route-id="@a.IdAsignacion" class="btn btn--secondary btn--icon" title="Editar"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>
                                 </div>
                             </td>
                         </tr>
@@ -159,49 +83,41 @@
                 </tbody>
             </table>
         </div>
-        @if (totalPaginas > 1)
-        {
+        @if(totalPaginas>1){
             <div class="pagination">
-                <span style="font-size:0.75rem; color:var(--gris-400); margin-right:8px;">Página @pagina de @totalPaginas</span>
-                @if (pagina > 1)
-                {
-                    <a asp-action="Index" asp-route-pagina="@(pagina-1)"
-                       asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde"
-                       asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp"
-                       asp-route-marca="@marca" asp-route-encargado="@encargado"
-                       asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde"
-                       asp-route-fechaHasta="@fechaHasta" class="pagination__btn">
-                        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                    </a>
-                }
-                @for (int i = Math.Max(1, pagina-2); i <= Math.Min(totalPaginas, pagina+2); i++)
-                {
-                    <a asp-action="Index" asp-route-pagina="@i"
-                       asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde"
-                       asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp"
-                       asp-route-marca="@marca" asp-route-encargado="@encargado"
-                       asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde"
-                       asp-route-fechaHasta="@fechaHasta" class="pagination__btn @(i==pagina?"active":"")">@i</a>
-                }
-                @if (pagina < totalPaginas)
-                {
-                    <a asp-action="Index" asp-route-pagina="@(pagina+1)"
-                       asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde"
-                       asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp"
-                       asp-route-marca="@marca" asp-route-encargado="@encargado"
-                       asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde"
-                       asp-route-fechaHasta="@fechaHasta" class="pagination__btn">
-                        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                    </a>
-                }
+                <span style="font-size:0.75rem;color:var(--gris-400);margin-right:8px;">Página @pagina de @totalPaginas</span>
+                @if(pagina>1){<a asp-action="Index" asp-route-pagina="@(pagina-1)" asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde" asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp" asp-route-marca="@marca" asp-route-encargado="@encargado" asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde" asp-route-fechaHasta="@fechaHasta" class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>}
+                @for(int i=Math.Max(1,pagina-2);i<=Math.Min(totalPaginas,pagina+2);i++){<a asp-action="Index" asp-route-pagina="@i" asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde" asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp" asp-route-marca="@marca" asp-route-encargado="@encargado" asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde" asp-route-fechaHasta="@fechaHasta" class="pagination__btn @(i==pagina?"active":"")">@i</a>}
+                @if(pagina<totalPaginas){<a asp-action="Index" asp-route-pagina="@(pagina+1)" asp-route-nombreMaquina="@nombreMaquina" asp-route-numeroDesde="@numeroDesde" asp-route-numeroHasta="@numeroHasta" asp-route-estadoOp="@estadoOp" asp-route-marca="@marca" asp-route-encargado="@encargado" asp-route-areaEspecifica="@areaEspecifica" asp-route-fechaDesde="@fechaDesde" asp-route-fechaHasta="@fechaHasta" class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>}
             </div>
         }
-    }
-    else
-    {
+    } else {
         <div class="empty-state">
             <div class="empty-state__icon"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></div>
             <div class="empty-state__title">No se encontraron asignaciones</div>
         </div>
     }
 </div>
+
+@section Scripts {
+<script>
+function exportarTabla(tituloReporte, tipo) {
+    var tabla = document.querySelector("table");
+    if (!tabla) { alert("No hay datos para exportar."); return; }
+    var ths = Array.from(tabla.querySelectorAll("thead th"));
+    var idxAcc = ths.findIndex(function(th){ return th.innerText.trim()==="Acciones"; });
+    var idxNum = ths.findIndex(function(th){ return th.innerText.trim()==="#"; });
+    var columnas = ths.filter(function(_,i){ return i!==idxAcc&&i!==idxNum; }).map(function(th){ return th.innerText.trim(); }).filter(function(t){ return t.length>0; });
+    var filas = Array.from(tabla.querySelectorAll("tbody tr")).map(function(tr){
+        return Array.from(tr.querySelectorAll("td")).filter(function(_,i){ return i!==idxAcc&&i!==idxNum; }).map(function(td){ return td.innerText.trim().replace(/\s+/g," "); });
+    });
+    if (!filas.length){ alert("No hay filas para exportar."); return; }
+    fetch(tipo==="excel"?"/IA/ExportarExcel":"/IA/ExportarPdf",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({titulo:tituloReporte,columnas:columnas,filas:filas})
+    }).then(function(r){if(!r.ok)throw new Error();return r.blob();})
+    .then(function(b){var u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=tituloReporte.replace(/\s+/g,"_")+"_"+new Date().toISOString().slice(0,10)+(tipo==="excel"?".csv":".pdf");a.click();URL.revokeObjectURL(u);})
+    .catch(function(){alert("Error al exportar.");});
+}
+</script>
+}

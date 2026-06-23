@@ -12,15 +12,21 @@ namespace PROYJHOME2026.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var rol = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var rol      = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var username = HttpContext.Session.GetString("UsuarioUsername") ?? "";
+
+            // danitza siempre va al dashboard admin, sin importar su rol
+            if (username.Equals("danitza", StringComparison.OrdinalIgnoreCase))
+                return await MostrarDashboardAdmin();
+
             return rol switch
             {
-                "SoporteTI"  => RedirectToAction("Dashboard",           "Reportes"),
-                "Transporte" => RedirectToAction("DashboardFlota",      "Reportes"),
-                "Produccion" => RedirectToAction("DashboardProduccion", "Reportes"),
-                "SSOMA"      => RedirectToAction("Index",               "Carros"),
-                "Logistica"  => RedirectToAction("Dashboard",           "Reportes"),
-                _            => await MostrarDashboardAdmin()
+                "SoporteTI"  => RedirectToAction("Index", "Equipos"),
+                "Transporte" => RedirectToAction("Index", "Carros"),
+                "Produccion" => RedirectToAction("Index", "Maquinas"),
+                "SSOMA"      => RedirectToAction("Index", "Carros"),
+                "Logistica"  => RedirectToAction("Index", "Chips"),
+                _            => await MostrarDashboardAdmin()   // Admin
             };
         }
 

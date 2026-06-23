@@ -2,7 +2,8 @@
 @{
     ViewData["Title"]      = "Nueva Asignación";
     ViewData["Breadcrumb"] = "Asignaciones / Nueva";
-    var equiposJson = ViewBag.EquiposJson as string ?? "[]";
+    var equiposJson   = ViewBag.EquiposJson as string ?? "[]";
+    var puedeVerChips = (bool)(ViewBag.PuedeVerChips ?? false);
 }
 
 <div class="page-header">
@@ -49,7 +50,9 @@
                 </div>
             </div>
 
-            <!-- Chip — solo visible si el equipo es Celular -->
+            <!-- Chip — solo visible para Admin/Logistica/danitza Y solo si el equipo es Celular -->
+            @if (puedeVerChips)
+            {
             <div id="seccionChip" style="margin-bottom:24px; display:none;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
                     Chip / SIM
@@ -62,6 +65,7 @@
                     <span asp-validation-for="IdChip" class="form-error"></span>
                 </div>
             </div>
+            }
 
             <!-- Área / Grupo y Correo -->
             <div style="margin-bottom:24px;">
@@ -130,23 +134,21 @@
 
 @section Scripts {
 <script>
-const equipos     = @Html.Raw(equiposJson);
+const equipos      = @Html.Raw(equiposJson);
 const selectEquipo = document.getElementById('selectEquipo');
 const seccionChip  = document.getElementById('seccionChip');
+const puedeVerChips = @(puedeVerChips ? "true" : "false");
 
 function toggleChip() {
-    const equipo = equipos.find(e => e.id == selectEquipo.value);
+    if (!puedeVerChips || !seccionChip) return;
+    const equipo    = equipos.find(e => e.id == selectEquipo.value);
     const esCelular = equipo ? equipo.tipo?.toLowerCase().includes('celular') : false;
     seccionChip.style.display = esCelular ? 'block' : 'none';
-
-    // Limpiar chip si no es celular
     if (!esCelular) {
         const sel = seccionChip.querySelector('select');
         if (sel) sel.value = '';
     }
 }
-
-// Ejecutar al cargar por si viene preseleccionado
 toggleChip();
 </script>
 @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

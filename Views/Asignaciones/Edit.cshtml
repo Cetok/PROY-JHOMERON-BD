@@ -2,7 +2,8 @@
 @{
     ViewData["Title"]      = "Editar Asignación";
     ViewData["Breadcrumb"] = "Asignaciones / Editar";
-    var equiposJson = ViewBag.EquiposJson as string ?? "[]";
+    var equiposJson   = ViewBag.EquiposJson as string ?? "[]";
+    var puedeVerChips = (bool)(ViewBag.PuedeVerChips ?? false);
 }
 
 <div class="page-header">
@@ -54,7 +55,9 @@
                 </div>
             </div>
 
-            <!-- Chip — solo visible si el equipo es Celular -->
+            <!-- Chip — solo para Admin/Logistica/danitza Y solo si el equipo es Celular -->
+            @if (puedeVerChips)
+            {
             <div id="seccionChip" style="margin-bottom:24px; display:none;">
                 <p style="font-family:var(--font-display); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--celeste); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--gris-200);">
                     Chip / SIM
@@ -67,6 +70,7 @@
                     <span asp-validation-for="IdChip" class="form-error"></span>
                 </div>
             </div>
+            }
 
             <!-- Área / Grupo y datos adicionales -->
             <div style="margin-bottom:24px;">
@@ -88,8 +92,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Número de cargo</label>
-                        <input asp-for="NumeroCargo" class="form-control"
-                               placeholder="Ej: C-001, EQ-2024-05..." />
+                        <input asp-for="NumeroCargo" class="form-control" placeholder="Ej: C-001, EQ-2024-05..." />
                         <span asp-validation-for="NumeroCargo" class="form-error"></span>
                     </div>
                     <div class="form-group">
@@ -120,23 +123,21 @@
 
 @section Scripts {
 <script>
-// ── Equipos disponibles con su tipo para detectar celular ────
 const equipos      = @Html.Raw(equiposJson);
 const selectEquipo = document.getElementById('selectEquipo');
 const seccionChip  = document.getElementById('seccionChip');
+const puedeVerChips = @(puedeVerChips ? "true" : "false");
 
 function toggleChip() {
+    if (!puedeVerChips || !seccionChip) return;
     const equipo    = equipos.find(e => e.id == selectEquipo.value);
     const esCelular = equipo ? equipo.tipo?.toLowerCase().includes('celular') : false;
     seccionChip.style.display = esCelular ? 'block' : 'none';
-
     if (!esCelular) {
         const sel = seccionChip.querySelector('select');
         if (sel) sel.value = '';
     }
 }
-
-// Al cargar verificar si el equipo actual es celular
 toggleChip();
 </script>
 @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

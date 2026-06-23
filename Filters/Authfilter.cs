@@ -8,23 +8,19 @@ namespace PROYJHOME2026.Filters
         private static readonly HashSet<string> PublicControllers =
             new(StringComparer.OrdinalIgnoreCase) { "Auth" };
 
-        // ── SoporteTI (Oliver) — sin Chips, sin crear/editar Celulares ────────
+        // ── SoporteTI (Oliver) ────────────────────────────────────
         private static readonly HashSet<string> PermisosSoporteTI =
             new(StringComparer.OrdinalIgnoreCase)
             {
                 "Empleados.Index", "Empleados.Details",
                 "Grupos.Index", "Grupos.Details",
                 "Equipos", "TipoEquipos",
-                // Chips NO incluido — Oliver no tiene acceso
                 "Asignaciones", "Asignaciones.CargoPdf", "Historiales", "Motivos",
-                "Reportes.Index", "Reportes.Dashboard", "Reportes.DashboardData",
-                "Reportes.EquiposData", "Reportes.EquiposCsv", "Reportes.EquiposPdf",
-                "Reportes.AsignacionesData", "Reportes.AsignacionesCsv", "Reportes.AsignacionesPdf",
-                "Reportes.HistorialData", "Reportes.HistorialCsv", "Reportes.HistorialPdf",
                 "Notificaciones",
+                "IA",
             };
 
-        // ── Transporte (Silvana) ───────────────────────────────────────────────
+        // ── Transporte (Silvana, Ayde) ────────────────────────────
         private static readonly HashSet<string> PermisosTransporte =
             new(StringComparer.OrdinalIgnoreCase)
             {
@@ -37,49 +33,36 @@ namespace PROYJHOME2026.Filters
                 "HabilitacionesVehiculares", "CertificadosCarro",
                 "CheckListTransporte", "InspeccionBotiquinTransporte",
                 "InspeccionBotiquinGrupo", "InspeccionExtintor",
-                "Reportes.IndexFlota", "Reportes.VehiculosData",
-                "Reportes.VehiculosCsv", "Reportes.VehiculosPdf",
-                "Reportes.MantenimientoData", "Reportes.MantenimientoCsv", "Reportes.MantenimientoPdf",
-                "Reportes.DashboardFlota", "Reportes.DashboardFlotaData",
                 "Notificaciones",
+                "IA",
             };
 
-        // ── Produccion (Eusebio) ──────────────────────────────────────────────
+        // ── Produccion (Eusebio) ──────────────────────────────────
         private static readonly HashSet<string> PermisosProduccion =
             new(StringComparer.OrdinalIgnoreCase)
             {
                 "Empleados.Index", "Empleados.Details",
                 "Grupos.Index", "Grupos.Details",
                 "Maquinas", "MaquinaAsignaciones",
-                "Reportes.IndexProduccion", "Reportes.HistorialProduccion",
-                "Reportes.MaquinasData", "Reportes.MaquinasCsv", "Reportes.MaquinasPdf",
-                "Reportes.HistorialMaquinasData", "Reportes.HistorialMaquinasCsv", "Reportes.HistorialMaquinasPdf",
-                "Reportes.DashboardProduccion", "Reportes.DashboardProduccionData",
                 "Notificaciones",
+                "IA",
             };
 
-        // ── Logistica (Yanet) — Equipos TI + Chips + solo Celulares + Reportes TI
+        // ── Logistica (Yanet) ─────────────────────────────────────
         private static readonly HashSet<string> PermisosLogistica =
             new(StringComparer.OrdinalIgnoreCase)
             {
                 "Empleados.Index", "Empleados.Details",
                 "Grupos.Index", "Grupos.Details",
-                // Equipos: ver todo, crear/editar solo Celulares (controlado por tipo en controller)
                 "Equipos.Index", "Equipos.Details",
-                "Equipos.Create", "Equipos.Edit",       // solo si es Celular (validado en controller)
+                "Equipos.Create", "Equipos.Edit",
                 "TipoEquipos.Index", "TipoEquipos.Details",
-                // Chips: completo
                 "Chips",
-                // Asignaciones: solo para Celulares
                 "Asignaciones.Index", "Asignaciones.Details",
                 "Asignaciones.Create", "Asignaciones.Edit",
                 "Historiales.Index", "Historiales.Details",
-                // Reportes TI: igual que Oliver
-                "Reportes.Index", "Reportes.Dashboard", "Reportes.DashboardData",
-                "Reportes.EquiposData", "Reportes.EquiposCsv", "Reportes.EquiposPdf",
-                "Reportes.AsignacionesData", "Reportes.AsignacionesCsv", "Reportes.AsignacionesPdf",
-                "Reportes.HistorialData", "Reportes.HistorialCsv", "Reportes.HistorialPdf",
                 "Notificaciones",
+                "IA",
             };
 
         private static readonly HashSet<string> EmpleadosBloqueados =
@@ -104,6 +87,9 @@ namespace PROYJHOME2026.Filters
             var rol = context.HttpContext.Session.GetString("UsuarioRol") ?? "";
             if (rol.Equals("Admin", StringComparison.OrdinalIgnoreCase)) return;
 
+            var username = context.HttpContext.Session.GetString("UsuarioUsername") ?? "";
+            if (username.Equals("danitza", StringComparison.OrdinalIgnoreCase)) return;
+
             var permitido = rol switch
             {
                 "SoporteTI"  => TienePermiso(ctrl, accion, PermisosSoporteTI),
@@ -120,7 +106,6 @@ namespace PROYJHOME2026.Filters
 
         private static bool TienePermiso(string ctrl, string accion, HashSet<string> permisos)
         {
-            // Empleados: bloquear crear/editar para todos los no-Admin
             if (ctrl.Equals("Empleados", StringComparison.OrdinalIgnoreCase) &&
                 EmpleadosBloqueados.Contains(accion))
                 return false;
@@ -138,57 +123,45 @@ namespace PROYJHOME2026.Filters
 
         private static bool TienePermisoSSoma(string ctrl, string accion)
         {
-            // Empleados: solo ver (Index + Details), sin crear/editar/eliminar
+            if (ctrl.Equals("IA", StringComparison.OrdinalIgnoreCase)) return true;
+
             if (ctrl.Equals("Empleados", StringComparison.OrdinalIgnoreCase))
                 return AccionesSoloVer.Contains(accion);
 
-            // Carros: solo ver (Index + Details)
             if (ctrl.Equals("Carros", StringComparison.OrdinalIgnoreCase))
                 return AccionesSoloVer.Contains(accion);
 
-            // Habilitaciones Vehiculares y Certificados: acceso completo para SSOMA
             if (ctrl.Equals("HabilitacionesVehiculares", StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("CertificadosCarro", StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("CertificadosCarro",         StringComparison.OrdinalIgnoreCase)) return true;
 
-            // Grupos: Index + Details (sin crear/editar), puede hacer inspecciones desde Details
             if (ctrl.Equals("Grupos", StringComparison.OrdinalIgnoreCase))
                 return AccionesSoloVer.Contains(accion);
 
-            // Asesorios: ver, crear, editar — no eliminar
             if (ctrl.Equals("Asesorios", StringComparison.OrdinalIgnoreCase))
                 return !AccionesBloqueadasSSoma.Contains(accion) || accion == "Index" || accion == "Details";
 
-            // Inspecciones: acceso completo
             if (ctrl.Equals("InspeccionBotiquinTransporte", StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("InspeccionBotiquinGrupo", StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("InspeccionExtintor", StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("CarroAsesorios", StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("GrupoAsesorios", StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("Notificaciones", StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("InspeccionBotiquinGrupo",      StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("InspeccionExtintor",           StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("CarroAsesorios",               StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("GrupoAsesorios",               StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Notificaciones",               StringComparison.OrdinalIgnoreCase)) return true;
             return false;
         }
 
-        // ── Logistica (Yanet) — solo gestiona Celulares ─────────────────────
         private static bool TienePermisoLogistica(string ctrl, string accion)
         {
+            if (ctrl.Equals("IA", StringComparison.OrdinalIgnoreCase)) return true;
+
             var soloVer = new[] { "Index", "Details" };
-            // Logistica NO tiene acceso a Empleados
             if (ctrl.Equals("Grupos",      StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("TipoEquipos", StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("Chips",           StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("Historiales",     StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("Motivos",         StringComparison.OrdinalIgnoreCase)) return true;
-            if (ctrl.Equals("Notificaciones",  StringComparison.OrdinalIgnoreCase)) return true;
-            // Equipos: acceso completo (el controller bloquea tipos no-Celular para Yanet)
+            if (ctrl.Equals("Chips",          StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Historiales",    StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Motivos",        StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Notificaciones", StringComparison.OrdinalIgnoreCase)) return true;
             if (ctrl.Equals("Equipos",        StringComparison.OrdinalIgnoreCase)) return true;
-            // Asignaciones: acceso completo incluido PDF (el controller valida tipo Celular)
             if (ctrl.Equals("Asignaciones",   StringComparison.OrdinalIgnoreCase)) return true;
-            // Reportes TI
-            if (ctrl.Equals("Reportes", StringComparison.OrdinalIgnoreCase) &&
-                new[] { "Index","Dashboard","DashboardData","EquiposData","EquiposCsv","EquiposPdf",
-                        "AsignacionesData","AsignacionesCsv","AsignacionesPdf",
-                        "HistorialData","HistorialCsv","HistorialPdf" }
-                .Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
             return false;
         }
 

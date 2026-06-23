@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
     <style>
-    /* Sidebar color override */
     .sidebar { background: #0d3393 !important; height: 100vh; overflow: hidden; }
     .sidebar__nav { flex: 1; overflow-y: auto; min-height: 0; }
     .sidebar__logo { border-bottom-color: rgba(255,255,255,0.08) !important; }
@@ -15,124 +14,72 @@
     .sidebar__link:hover, .sidebar__link.active { background: rgba(255,255,255,0.1) !important; }
     .sidebar__footer { border-top-color: rgba(255,255,255,0.08) !important; }
     .notif-wrapper  { position: relative; }
-.notif-badge {
-    position: absolute; top: -4px; right: -4px;
-    min-width: 18px; height: 18px; border-radius: 9px;
-    background: #e03d3d; color: white;
-    font-size: 0.62rem; font-weight: 700; line-height: 18px;
-    text-align: center; padding: 0 4px;
-    pointer-events: none; display: none;
-    box-shadow: 0 0 0 2px white;
-}
-.notif-panel {
-    position: absolute; top: calc(100% + 10px); right: 0;
-    width: 370px;
-    background: white;
-    border: 1px solid rgba(26,58,107,0.1);
-    border-radius: 16px;
-    box-shadow: 0 8px 40px rgba(26,58,107,0.16);
-    z-index: 9999; display: none;
-    overflow: hidden;
-}
-.notif-panel__header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 14px 16px 12px;
-    border-bottom: 1px solid #f0f2f8;
-}
-.notif-panel__titulo {
-    font-weight: 700; font-size: 0.9rem; color: #1c2340;
-    display: flex; align-items: center; gap: 8px;
-}
-.notif-panel__titulo-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #e03d3d; display: none;
-}
-.notif-panel__btn-leer {
-    font-size: 0.72rem; color: #3b9be8; background: none;
-    border: none; cursor: pointer; padding: 4px 8px;
-    border-radius: 6px; font-weight: 600;
-    transition: background 0.15s;
-}
-.notif-panel__btn-leer:hover { background: rgba(59,155,232,0.1); }
-.notif-panel__list { max-height: 400px; overflow-y: auto; }
-.notif-panel__empty {
-    text-align: center; padding: 32px 16px;
-    color: #b0b8cc; font-size: 0.82rem;
-}
-.notif-panel__empty-icon {
-    width: 44px; height: 44px; border-radius: 14px;
-    background: #f4f6fa; display: grid; place-items: center;
-    margin: 0 auto 10px;
-}
-.notif-panel__footer {
-    padding: 10px 16px; border-top: 1px solid #f0f2f8;
-    text-align: center;
-}
-.notif-panel__ver-todas {
-    font-size: 0.78rem; color: #3b9be8; font-weight: 600;
-    text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
-}
- 
-/* Items del dropdown */
-.ndrop {
-    display: flex; gap: 11px; align-items: flex-start;
-    padding: 12px 16px;
-    border-bottom: 1px solid #f8f9fc;
-    transition: background 0.12s;
-    text-decoration: none; color: inherit;
-}
-.ndrop:last-child { border-bottom: none; }
-.ndrop:hover { background: #f8f9fc; }
-.ndrop--nueva { background: linear-gradient(to right, rgba(13,51,147,0.03), transparent); }
-.ndrop__icon {
-    width: 36px; height: 36px; border-radius: 10px;
-    display: grid; place-items: center; flex-shrink: 0;
-}
-.ndrop__icon svg { width: 16px; height: 16px; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.ndrop__body  { flex: 1; min-width: 0; }
-.ndrop__titulo {
-    font-size: 0.82rem; font-weight: 700; color: #1c2340;
-    line-height: 1.3; margin-bottom: 2px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.ndrop--leida .ndrop__titulo { font-weight: 500; color: #7a85a0; }
-.ndrop__msg {
-    font-size: 0.74rem; color: #7a85a0;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-bottom: 3px;
-}
-.ndrop--leida .ndrop__msg { color: #b0b8cc; }
-.ndrop__fecha { font-size: 0.68rem; color: #b0b8cc; }
-.ndrop__dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    flex-shrink: 0; margin-top: 5px;
-}
+    .notif-badge {
+        position: absolute; top: -4px; right: -4px;
+        min-width: 18px; height: 18px; border-radius: 9px;
+        background: #e03d3d; color: white;
+        font-size: 0.62rem; font-weight: 700; line-height: 18px;
+        text-align: center; padding: 0 4px;
+        pointer-events: none; display: none;
+        box-shadow: 0 0 0 2px white;
+    }
+    .notif-panel {
+        position: absolute; top: calc(100% + 10px); right: 0;
+        width: 370px; background: white;
+        border: 1px solid rgba(26,58,107,0.1); border-radius: 16px;
+        box-shadow: 0 8px 40px rgba(26,58,107,0.16);
+        z-index: 9999; display: none; overflow: hidden;
+    }
+    .notif-panel__header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 14px 16px 12px; border-bottom: 1px solid #f0f2f8;
+    }
+    .notif-panel__titulo { font-weight: 700; font-size: 0.9rem; color: #1c2340; display: flex; align-items: center; gap: 8px; }
+    .notif-panel__titulo-dot { width: 8px; height: 8px; border-radius: 50%; background: #e03d3d; display: none; }
+    .notif-panel__btn-leer { font-size: 0.72rem; color: #3b9be8; background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-weight: 600; transition: background 0.15s; }
+    .notif-panel__btn-leer:hover { background: rgba(59,155,232,0.1); }
+    .notif-panel__list { max-height: 400px; overflow-y: auto; }
+    .notif-panel__empty { text-align: center; padding: 32px 16px; color: #b0b8cc; font-size: 0.82rem; }
+    .notif-panel__empty-icon { width: 44px; height: 44px; border-radius: 14px; background: #f4f6fa; display: grid; place-items: center; margin: 0 auto 10px; }
+    .notif-panel__footer { padding: 10px 16px; border-top: 1px solid #f0f2f8; text-align: center; }
+    .notif-panel__ver-todas { font-size: 0.78rem; color: #3b9be8; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+    .ndrop { display: flex; gap: 11px; align-items: flex-start; padding: 12px 16px; border-bottom: 1px solid #f8f9fc; transition: background 0.12s; text-decoration: none; color: inherit; }
+    .ndrop:last-child { border-bottom: none; }
+    .ndrop:hover { background: #f8f9fc; }
+    .ndrop--nueva { background: linear-gradient(to right, rgba(13,51,147,0.03), transparent); }
+    .ndrop__icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+    .ndrop__icon svg { width: 16px; height: 16px; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .ndrop__body { flex: 1; min-width: 0; }
+    .ndrop__titulo { font-size: 0.82rem; font-weight: 700; color: #1c2340; line-height: 1.3; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ndrop--leida .ndrop__titulo { font-weight: 500; color: #7a85a0; }
+    .ndrop__msg { font-size: 0.74rem; color: #7a85a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+    .ndrop--leida .ndrop__msg { color: #b0b8cc; }
+    .ndrop__fecha { font-size: 0.68rem; color: #b0b8cc; }
+    .ndrop__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .btn--primary, button[type="submit"].btn--primary { background: #0d3393 !important; color: white !important; border-color: #0d3393 !important; }
+    .btn--primary:hover { background: #0a2570 !important; box-shadow: 0 4px 14px rgba(13,51,147,0.35) !important; }
+    .btn--celeste { background: #0ea5e9 !important; color: white !important; border-color: #0ea5e9 !important; }
+    .btn--celeste:hover { background: #0284c7 !important; box-shadow: 0 4px 14px rgba(14,165,233,0.4) !important; }
 
-    /* ── Button color overrides ── */
-    .btn--primary, button[type="submit"].btn--primary {
-        background: #0d3393 !important;
-        color: white !important;
-        border-color: #0d3393 !important;
+    /* IA link especial */
+    .sidebar__link--ia {
+        background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(59,130,246,0.15)) !important;
+        border: 1px solid rgba(99,102,241,0.3) !important;
+        border-radius: 8px !important;
     }
-    .btn--primary:hover {
-        background: #0a2570 !important;
-        box-shadow: 0 4px 14px rgba(13,51,147,0.35) !important;
+    .sidebar__link--ia:hover, .sidebar__link--ia.active {
+        background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(59,130,246,0.3)) !important;
     }
-    .btn--celeste {
-        background: #0ea5e9 !important;
-        color: white !important;
-        border-color: #0ea5e9 !important;
-    }
-    .btn--celeste:hover {
-        background: #0284c7 !important;
-        box-shadow: 0 4px 14px rgba(14,165,233,0.4) !important;
+    .sidebar__link--ia .ia-badge {
+        font-size: 0.55rem; font-weight: 800; letter-spacing: 0.05em;
+        background: linear-gradient(135deg,#6366f1,#3b82f6);
+        color: white; padding: 2px 6px; border-radius: 4px; margin-left: auto;
     }
     </style>
 </head>
 <body>
 
 <div class="layout">
-
     <aside class="sidebar" id="sidebar">
 
         <div class="sidebar__logo">
@@ -159,12 +106,29 @@
             var esProduccion = rolActual == "Produccion";
             var esSSoma      = rolActual == "SSOMA";
             var esYanet      = rolActual == "Logistica";
+            var esDanitza    = Context.Session.GetString("UsuarioUsername") == "danitza";
             var accion       = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
             var ctrl         = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
         }
 
+            <!-- IA GENERATIVA — todos los roles -->
+            <div class="sidebar__section">
+                <p class="sidebar__section-label">Inteligencia Artificial</p>
+                <div class="sidebar__item">
+                    <a class="sidebar__link sidebar__link--ia @(ctrl == "IA" ? "active" : "")"
+                       asp-controller="IA" asp-action="Index">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;">
+                            <path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 01-1 1H9a1 1 0 01-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/>
+                            <path d="M9 21h6M10 17v4M14 17v4"/>
+                        </svg>
+                        IA Generativa
+                        <span class="ia-badge">BETA</span>
+                    </a>
+                </div>
+            </div>
+
             <!-- PRINCIPAL — solo Admin -->
-            @if (esAdmin)
+            @if (esAdmin || esDanitza)
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Principal</p>
@@ -179,21 +143,21 @@
             }
 
             <!-- RECURSOS HUMANOS -->
-            @if (esAdmin || esSoporteTI || esTransporte)
+            @if (esAdmin || esSoporteTI || esTransporte || esDanitza)
             {
                 <div class="sidebar__section">
                     <p class="sidebar__section-label">Recursos Humanos</p>
                     @if (!esYanet)
                     {
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Empleados" ? "active" : "")"
-                           asp-controller="Empleados" asp-action="Index">
-                            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                            Empleados
-                        </a>
-                    </div>
+                        <div class="sidebar__item">
+                            <a class="sidebar__link @(ctrl == "Empleados" ? "active" : "")"
+                               asp-controller="Empleados" asp-action="Index">
+                                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                                Empleados
+                            </a>
+                        </div>
                     }
-                    @if (esAdmin)
+                    @if (esAdmin || esDanitza)
                     {
                         <div class="sidebar__item">
                             <a class="sidebar__link @(ctrl == "Seguros" ? "active" : "")"
@@ -213,7 +177,7 @@
                 </div>
             }
 
-            <!-- SSOMA — Grupos, Vehículos + Accesorios -->
+            <!-- SSOMA -->
             @if (esSSoma)
             {
                 <div class="sidebar__section">
@@ -245,7 +209,7 @@
                 </div>
             }
 
-            <!-- EQUIPOS TI — Admin, SoporteTI, Yanet -->
+            <!-- EQUIPOS TI -->
             @if (esAdmin || esSoporteTI || esYanet)
             {
                 <div class="sidebar__section">
@@ -257,7 +221,6 @@
                             Equipos
                         </a>
                     </div>
-                    @* Chips: solo Admin y Yanet (Oliver NO) *@
                     @if (esAdmin || esYanet)
                     {
                         <div class="sidebar__item">
@@ -288,7 +251,7 @@
                 </div>
             }
 
-            <!-- FLOTA VEHICULAR — Admin y Transporte -->
+            <!-- FLOTA VEHICULAR -->
             @if (esAdmin || esTransporte)
             {
                 <div class="sidebar__section">
@@ -317,7 +280,7 @@
                 </div>
             }
 
-            <!-- PRODUCCIÓN — Admin y Produccion -->
+            <!-- PRODUCCIÓN -->
             @if (esAdmin || esProduccion)
             {
                 <div class="sidebar__section">
@@ -341,72 +304,6 @@
                            asp-controller="Maquinas" asp-action="Historial">
                             <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             Historial
-                        </a>
-                    </div>
-                </div>
-            }
-
-            <!-- REPORTES TI — Admin, SoporteTI, Yanet -->
-            @if (esAdmin || esSoporteTI || esYanet)
-            {
-                <div class="sidebar__section">
-                    <p class="sidebar__section-label">Reportes TI</p>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "Index" ? "active" : "")"
-                           asp-controller="Reportes" asp-action="Index">
-                            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-                            Reportes
-                        </a>
-                    </div>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "Dashboard" ? "active" : "")"
-                           asp-controller="Reportes" asp-action="Dashboard">
-                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                            Dashboard
-                        </a>
-                    </div>
-                </div>
-            }
-
-            <!-- REPORTES FLOTA — Admin y Transporte -->
-            @if (esAdmin || esTransporte)
-            {
-                <div class="sidebar__section">
-                    <p class="sidebar__section-label">Reportes Flota</p>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "IndexFlota" ? "active" : "")"
-                           asp-controller="Reportes" asp-action="IndexFlota">
-                            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-                            Reportes Flota
-                        </a>
-                    </div>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "DashboardFlota" ? "active" : "")"
-                           asp-controller="Reportes" asp-action="DashboardFlota">
-                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                            Dashboard Flota
-                        </a>
-                    </div>
-                </div>
-            }
-
-            <!-- REPORTES PRODUCCIÓN — Admin y Produccion -->
-            @if (esAdmin || esProduccion)
-            {
-                <div class="sidebar__section">
-                    <p class="sidebar__section-label">Reportes Producción</p>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "IndexProduccion" ? "active" : "")"
-                           asp-controller="Reportes" asp-action="IndexProduccion">
-                            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-                            Reportes
-                        </a>
-                    </div>
-                    <div class="sidebar__item">
-                        <a class="sidebar__link @(ctrl == "Reportes" && accion == "DashboardProduccion" ? "active" : "")"
-                           asp-controller="Reportes" asp-action="DashboardProduccion">
-                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                            Dashboard
                         </a>
                     </div>
                 </div>
@@ -445,14 +342,11 @@
                 </form>
             </div>
         </div>
-
     </aside>
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
-
-        <!-- NAVBAR -->
         <header class="navbar">
             <button class="navbar__toggle" id="sidebarToggle" aria-label="Abrir menú">
                 <svg viewBox="0 0 24 24">
@@ -461,7 +355,6 @@
                     <line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
             </button>
-
             <nav class="navbar__breadcrumb" aria-label="Ruta de navegación">
                 <a asp-controller="Home" asp-action="Index">Inicio</a>
                 @if (ViewData["Breadcrumb"] != null)
@@ -470,52 +363,43 @@
                     <span class="navbar__breadcrumb-current">@ViewData["Breadcrumb"]</span>
                 }
             </nav>
-
             <div class="navbar__actions">
-
-                <!-- CAMPANITA DE NOTIFICACIONES -->
                 <div class="notif-wrapper" id="notifWrapper">
                     <button class="navbar__btn" id="notifBtn" title="Notificaciones" onclick="toggleNotifPanel()">
                         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
                         <span class="notif-badge" id="notifBadge">0</span>
                     </button>
-                   <div class="notif-panel" id="notifPanel">
-                    <div class="notif-panel__header">
-                        <div class="notif-panel__titulo">
-                            Notificaciones
-                            <span class="notif-panel__titulo-dot" id="notifDot"></span>
-                        </div>
-                        <button class="notif-panel__btn-leer" onclick="marcarTodasLeidas()">
-                            Marcar leídas
-                        </button>
-                    </div>
-                    <div class="notif-panel__list" id="notifList">
-                        <div class="notif-panel__empty">
-                            <div class="notif-panel__empty-icon">
-                                <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#b0b8cc;fill:none;stroke-width:1.5;stroke-linecap:round;">
-                                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                                </svg>
+                    <div class="notif-panel" id="notifPanel">
+                        <div class="notif-panel__header">
+                            <div class="notif-panel__titulo">
+                                Notificaciones
+                                <span class="notif-panel__titulo-dot" id="notifDot"></span>
                             </div>
-                            Cargando...
+                            <button class="notif-panel__btn-leer" onclick="marcarTodasLeidas()">Marcar leídas</button>
+                        </div>
+                        <div class="notif-panel__list" id="notifList">
+                            <div class="notif-panel__empty">
+                                <div class="notif-panel__empty-icon">
+                                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#b0b8cc;fill:none;stroke-width:1.5;stroke-linecap:round;">
+                                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    </svg>
+                                </div>
+                                Cargando...
+                            </div>
+                        </div>
+                        <div class="notif-panel__footer">
+                            <a href="/Notificaciones/Index" class="notif-panel__ver-todas">
+                                Ver todas las notificaciones
+                                <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;"><polyline points="9 18 15 12 9 6"/></svg>
+                            </a>
                         </div>
                     </div>
-                    <div class="notif-panel__footer">
-                        <a href="/Notificaciones/Index" class="notif-panel__ver-todas">
-                            Ver todas las notificaciones
-                            <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;"><polyline points="9 18 15 12 9 6"/></svg>
-                        </a>
-                    </div>
                 </div>
-                </div>
-
-
             </div>
         </header>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <main class="main">
             <div class="main__content">
-
                 @if (TempData["Success"] != null)
                 {
                     <div class="alert alert--success">
@@ -537,174 +421,108 @@
                         <span>@TempData["Warning"]</span>
                     </div>
                 }
-
                 @RenderBody()
             </div>
-
             <footer class="footer">
                 <span class="footer__brand">SG-JHOMERON</span>
                 <span>&copy; @DateTime.Now.Year — RUC:20601777844</span>
             </footer>
         </main>
-
     </div>
 </div>
 
 <script>
-    // ── Sidebar toggle ────────────────────────────────────────
-    const toggle  = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
+const toggle  = document.getElementById('sidebarToggle');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+function openSidebar()  { sidebar.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow='hidden'; }
+function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow=''; }
+toggle?.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+overlay?.addEventListener('click', closeSidebar);
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeSidebar(); });
 
-    function openSidebar()  { sidebar.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
-    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; }
-
-    toggle?.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
-    overlay?.addEventListener('click', closeSidebar);
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
-
-    // ── Notificaciones ────────────────────────────────────────
-    let notifAbierto = false;
-
-    function toggleNotifPanel() {
-        notifAbierto = !notifAbierto;
-        document.getElementById('notifPanel').style.display = notifAbierto ? 'block' : 'none';
-        if (notifAbierto) cargarNotificaciones();
+let notifAbierto = false;
+function toggleNotifPanel() {
+    notifAbierto = !notifAbierto;
+    document.getElementById('notifPanel').style.display = notifAbierto ? 'block' : 'none';
+    if (notifAbierto) cargarNotificaciones();
+}
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('notifWrapper');
+    if (wrapper && !wrapper.contains(e.target) && notifAbierto) {
+        notifAbierto = false;
+        document.getElementById('notifPanel').style.display = 'none';
     }
+});
 
-    document.addEventListener('click', function(e) {
-        const wrapper = document.getElementById('notifWrapper');
-        if (wrapper && !wrapper.contains(e.target) && notifAbierto) {
-            notifAbierto = false;
-            document.getElementById('notifPanel').style.display = 'none';
-        }
-    });
-
-    // Config visual por tipo de notificación
 const NTIPO = {
-    'Mantenimiento': {
-        color: '#f59e0b',
-        label: 'Mantenimiento',
-        svg: "<path d='M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z'/>"
-    },
-    'Creacion': {
-        color: '#10b981',
-        label: 'Nuevo',
-        svg: "<circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='16'/><line x1='8' y1='12' x2='16' y2='12'/>"
-    },
-    'Edicion': {
-        color: '#3b9be8',
-        label: 'Editado',
-        svg: "<path d='M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z'/>"
-    },
-    'Eliminacion': {
-        color: '#e03d3d',
-        label: 'Eliminado',
-        svg: "<polyline points='3 6 5 6 21 6'/><path d='M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6'/><path d='M10 11v6'/><path d='M14 11v6'/>"
-    },
-    'CambioEstado': {
-        color: '#7c3aed',
-        label: 'Estado',
-        svg: "<polyline points='17 1 21 5 17 9'/><path d='M3 11V9a4 4 0 014-4h14'/><polyline points='7 23 3 19 7 15'/><path d='M21 13v2a4 4 0 01-4 4H3'/>"
-    },
+    'Mantenimiento': { color:'#f59e0b', svg:"<path d='M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z'/>" },
+    'Creacion':      { color:'#10b981', svg:"<circle cx='12' cy='12' r='10'/><line x1='12' y1='8' x2='12' y2='16'/><line x1='8' y1='12' x2='16' y2='12'/>" },
+    'Edicion':       { color:'#3b9be8', svg:"<path d='M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z'/>" },
+    'Eliminacion':   { color:'#e03d3d', svg:"<polyline points='3 6 5 6 21 6'/><path d='M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6'/>" },
+    'CambioEstado':  { color:'#7c3aed', svg:"<polyline points='17 1 21 5 17 9'/><path d='M3 11V9a4 4 0 014-4h14'/><polyline points='7 23 3 19 7 15'/><path d='M21 13v2a4 4 0 01-4 4H3'/>" },
 };
-    const ntipoDefault = {
-        color: '#0d3393',
-        label: 'Sistema',
-        svg: "<path d='M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'/><path d='M13.73 21a2 2 0 01-3.46 0'/>"
-    };
-    
-    async function cargarNotificaciones() {
-        try {
-            const res  = await fetch('/Notificaciones/ObtenerNoLeidas');
-            const data = await res.json();
-    
-            // Badge contador
-            const badge = document.getElementById('notifBadge');
-            badge.textContent   = data.contador;
-            badge.style.display = data.contador > 0 ? 'block' : 'none';
-    
-            // Punto en el header del panel
-            const dot = document.getElementById('notifDot');
-            if (dot) dot.style.display = data.contador > 0 ? 'block' : 'none';
-    
-            const lista = document.getElementById('notifList');
-    
-            if (!data.notificaciones || data.notificaciones.length === 0) {
-                lista.innerHTML = `
-                    <div class="notif-panel__empty">
-                        <div class="notif-panel__empty-icon">
-                            <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#b0b8cc;fill:none;stroke-width:1.5;stroke-linecap:round;">
-                                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                                <path d="M13.73 21a2 2 0 01-3.46 0"/>
-                            </svg>
-                        </div>
-                        Sin notificaciones
-                    </div>`;
-                return;
-            }
-    
-            lista.innerHTML = data.notificaciones.map(n => {
-                const cfg  = NTIPO[n.tipo] ?? ntipoDefault;
-                const hex  = cfg.color;
-                const bgI  = hex + '18';
-                const href = n.url ? `href="${n.url}"` : '';
-                return `
-                <a ${href} class="ndrop ${n.leida ? 'ndrop--leida' : 'ndrop--nueva'}" style="cursor:${n.url ? 'pointer' : 'default'}">
-                    <div class="ndrop__icon" style="background:${bgI};">
-                        <svg viewBox="0 0 24 24" style="stroke:${hex};">${cfg.svg}</svg>
-                    </div>
-                    <div class="ndrop__body">
-                        <div class="ndrop__titulo">${n.titulo}</div>
-                        ${n.mensaje ? `<div class="ndrop__msg">${n.mensaje}</div>` : ''}
-                        <div class="ndrop__fecha">${n.fechaCreacion}</div>
-                    </div>
-                    ${!n.leida ? `<div class="ndrop__dot" style="background:${hex};box-shadow:0 0 0 3px ${bgI};"></div>` : ''}
-                </a>`;
-            }).join('');
-    
-        } catch(e) { console.error('Error notificaciones:', e); }
-    }
+const nDefault = { color:'#0d3393', svg:"<path d='M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'/><path d='M13.73 21a2 2 0 01-3.46 0'/>" };
 
-    async function marcarTodasLeidas() {
-        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
-        await fetch('/Notificaciones/MarcarTodasLeidas', {
-            method: 'POST',
-            headers: { 'RequestVerificationToken': token }
-        });
-        cargarNotificaciones();
-    }
+async function cargarNotificaciones() {
+    try {
+        const res  = await fetch('/Notificaciones/ObtenerNoLeidas');
+        const data = await res.json();
+        const badge = document.getElementById('notifBadge');
+        badge.textContent   = data.contador;
+        badge.style.display = data.contador > 0 ? 'block' : 'none';
+        const dot = document.getElementById('notifDot');
+        if (dot) dot.style.display = data.contador > 0 ? 'block' : 'none';
+        const lista = document.getElementById('notifList');
+        if (!data.notificaciones || data.notificaciones.length === 0) {
+            lista.innerHTML = '<div class="notif-panel__empty"><div class="notif-panel__empty-icon"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#b0b8cc;fill:none;stroke-width:1.5;stroke-linecap:round;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>Sin notificaciones</div>';
+            return;
+        }
+        lista.innerHTML = data.notificaciones.map(n => {
+            const cfg = NTIPO[n.tipo] ?? nDefault;
+            const bgI = cfg.color + '18';
+            const href = n.url ? `href="${n.url}"` : '';
+            return `<a ${href} class="ndrop ${n.leida?'ndrop--leida':'ndrop--nueva'}" style="cursor:${n.url?'pointer':'default'}">
+                <div class="ndrop__icon" style="background:${bgI};"><svg viewBox="0 0 24 24" style="stroke:${cfg.color};">${cfg.svg}</svg></div>
+                <div class="ndrop__body">
+                    <div class="ndrop__titulo">${n.titulo}</div>
+                    ${n.mensaje?`<div class="ndrop__msg">${n.mensaje}</div>`:''}
+                    <div class="ndrop__fecha">${n.fechaCreacion}</div>
+                </div>
+                ${!n.leida?`<div class="ndrop__dot" style="background:${cfg.color};box-shadow:0 0 0 3px ${bgI};"></div>`:''}
+            </a>`;
+        }).join('');
+    } catch(e) { console.error('Error notificaciones:', e); }
+}
 
-    async function actualizarContador() {
-        try {
-            const res  = await fetch('/Notificaciones/ObtenerNoLeidas');
-            const data = await res.json();
-            const badge = document.getElementById('notifBadge');
-            if (badge) {
-                badge.textContent   = data.contador;
-                badge.style.display = data.contador > 0 ? 'block' : 'none';
-            }
-        } catch(e) {}
-    }
+async function marcarTodasLeidas() {
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    await fetch('/Notificaciones/MarcarTodasLeidas', { method:'POST', headers:{'RequestVerificationToken':token} });
+    cargarNotificaciones();
+}
 
-    // Cargar contador al iniciar y cada 2 minutos
-    actualizarContador();
-    setInterval(actualizarContador, 2 * 60 * 1000);
+async function actualizarContador() {
+    try {
+        const res  = await fetch('/Notificaciones/ObtenerNoLeidas');
+        const data = await res.json();
+        const badge = document.getElementById('notifBadge');
+        if (badge) { badge.textContent = data.contador; badge.style.display = data.contador>0?'block':'none'; }
+    } catch(e) {}
+}
+actualizarContador();
+setInterval(actualizarContador, 2*60*1000);
 </script>
 
 @await RenderSectionAsync("Scripts", required: false)
 <script>
-// ── Fix sidebar: scroll automático al ítem activo al cargar la página ──────
-(function () {
+(function(){
     var nav    = document.querySelector('.sidebar__nav');
     var activo = document.querySelector('.sidebar__link.active');
     if (nav && activo) {
-        // Calcular posición del ítem activo relativa al nav
         var navRect    = nav.getBoundingClientRect();
         var activoRect = activo.getBoundingClientRect();
-        // Hacer scroll para centrar el ítem activo dentro del nav
-        var offset = activoRect.top - navRect.top - (nav.clientHeight / 2) + (activo.clientHeight / 2);
-        nav.scrollTop = offset;
+        var offset     = activoRect.top - navRect.top - (nav.clientHeight/2) + (activo.clientHeight/2);
+        nav.scrollTop  = offset;
     }
 })();
 </script>

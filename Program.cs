@@ -40,9 +40,11 @@ builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<AuthFilter>();
 });
-
-var app = builder.Build();
+builder.Services.AddScoped<IAService>();
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+var app = builder.Build();
+
+
 
 // ── Middleware pipeline ──────────────────────────────────────
 if (!app.Environment.IsDevelopment())

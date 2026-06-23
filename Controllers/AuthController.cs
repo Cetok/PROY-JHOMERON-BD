@@ -12,9 +12,8 @@ namespace PROYJHOME2026.Controllers
         private readonly AppDbContext    _context;
         private readonly AuditoriaService _auditoriaService;
 
-        // Máximo de intentos antes de bloquear la cuenta
-        private const int MaxIntentos      = 5;
-        private const int MinutosBloqueo   = 15;
+        private const int MaxIntentos    = 5;
+        private const int MinutosBloqueo = 15;
 
         public AuthController(AppDbContext context, AuditoriaService auditoriaService)
         {
@@ -26,7 +25,6 @@ namespace PROYJHOME2026.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl)
         {
-            // Si ya hay sesión activa → redirigir al dashboard
             if (HttpContext.Session.GetString("UsuarioId") != null)
                 return RedirectToAction("Index", "Home");
 
@@ -39,7 +37,6 @@ namespace PROYJHOME2026.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string username, string password, string? returnUrl)
         {
-            // Validación básica vacíos
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
                 ViewBag.Error     = "Por favor ingresa tu usuario y contraseña.";
@@ -47,23 +44,19 @@ namespace PROYJHOME2026.Controllers
                 return View();
             }
 
-            // Buscar usuario (case-insensitive)
             var usuario = await _context.Usuarios
                 .FirstOrDefaultAsync(u => u.username.ToLower() == username.ToLower());
 
-            // ── Mensaje genérico siempre (no revelar si usuario existe) ──
             const string errorGenerico = "Usuario o contraseña incorrectos.";
 
             if (usuario == null)
             {
-                // Pequeña espera para dificultar timing attacks
                 await Task.Delay(300);
                 ViewBag.Error     = errorGenerico;
                 ViewBag.ReturnUrl = returnUrl;
                 return View();
             }
 
-            // ── Verificar si está bloqueado ──────────────────────
             if (usuario.bloqueadoHasta.HasValue && usuario.bloqueadoHasta > DateTime.Now)
             {
                 var minutosRestantes = (int)Math.Ceiling(
@@ -74,7 +67,6 @@ namespace PROYJHOME2026.Controllers
                 return View();
             }
 
-            // ── Verificar cuenta activa ──────────────────────────
             if (!usuario.activo)
             {
                 ViewBag.Error     = "Tu cuenta está desactivada. Contacta al administrador.";
@@ -82,7 +74,6 @@ namespace PROYJHOME2026.Controllers
                 return View();
             }
 
-            // ── Verificar contraseña con BCrypt ──────────────────
             bool passwordValido = BCrypt.Net.BCrypt.Verify(password, usuario.passwordHash);
 
             if (!passwordValido)
@@ -113,29 +104,30 @@ namespace PROYJHOME2026.Controllers
             usuario.ultimoAcceso     = DateTime.Now;
             await _context.SaveChangesAsync();
 
-            // Guardar datos en sesión
             HttpContext.Session.SetString("UsuarioId",       usuario.idUsuario.ToString());
             HttpContext.Session.SetString("UsuarioNombre",   usuario.nombreCompleto ?? usuario.username);
             HttpContext.Session.SetString("UsuarioUsername", usuario.username);
             HttpContext.Session.SetString("UsuarioRol",      usuario.rol);
 
-            // Auditoría login
             await _auditoriaService.RegistrarAsync("Login", "Usuario", usuario.idUsuario,
                 $"Inicio de sesión: {usuario.username}");
 
-            // Redirigir a returnUrl si es válida, si no al dashboard
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
- 
-            // Redirigir según rol
+
+            // ── Redirigir según rol al Index de su módulo principal ──
+            // danitza tiene rol Admin o equivalente, igual cae en el default
+            if (usuario.username.Equals("danitza", StringComparison.OrdinalIgnoreCase))
+                return RedirectToAction("Index", "Home");
+
             return usuario.rol switch
             {
-                "SoporteTI"  => RedirectToAction("Dashboard",           "Reportes"),
-                "Transporte" => RedirectToAction("DashboardFlota",      "Reportes"),
-                "Produccion" => RedirectToAction("DashboardProduccion", "Reportes"),
-                "SSOMA"      => RedirectToAction("Index",               "Carros"),
-                "Logistica"  => RedirectToAction("Dashboard",           "Reportes"),
-                _            => RedirectToAction("Index", "Home")   // Admin y cualquier otro
+                "SoporteTI"  => RedirectToAction("Index", "Equipos"),
+                "Transporte" => RedirectToAction("Index", "Carros"),
+                "Produccion" => RedirectToAction("Index", "Maquinas"),
+                "SSOMA"      => RedirectToAction("Index", "Carros"),
+                "Logistica"  => RedirectToAction("Index", "Chips"),
+                _            => RedirectToAction("Index", "Home")   // Admin
             };
         }
 
@@ -144,6 +136,11 @@ namespace PROYJHOME2026.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            var iaService = HttpContext.RequestServices.GetRequiredService<IAService>();
+            var idStr = HttpContext.Session.GetString("UsuarioId");
+            if (int.TryParse(idStr, out int idU))
+                await iaService.CerrarSesionAsync(idU);
+
             var nombre = HttpContext.Session.GetString("UsuarioNombre") ?? "Usuario";
             await _auditoriaService.RegistrarAsync("Logout", "Usuario", null,
                 $"Cerró sesión: {nombre}");

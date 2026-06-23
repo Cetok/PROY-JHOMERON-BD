@@ -29,6 +29,8 @@ namespace PROYJHOME2026.Data
         public DbSet<MaquinaAsignacionEncargado> MaquinaAsignacionEncargados { get; set; }
         public DbSet<MaquinaLog> MaquinaLogs { get; set; }
         public DbSet<MaquinaAccesorioCambio> MaquinaAccesorioCambios { get; set; }
+         public DbSet<IAConversacion> IAConversaciones { get; set; }
+        public DbSet<IAMensaje>      IAMensajes       { get; set; }
 
         // ── Nuevas tablas ───────────────────────────────────────
         public DbSet<Notificacion> Notificaciones { get; set; }

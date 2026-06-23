@@ -1,0 +1,532 @@
+@{
+    ViewData["Title"]      = "IA Generativa";
+    ViewData["Breadcrumb"] = "IA Generativa";
+    var usuario    = ViewBag.Usuario    as PROYJHOME2026.Models.Usuario;
+    var convActiva = ViewBag.ConvActiva as PROYJHOME2026.Models.IAConversacion;
+    var historial  = ViewBag.Historial  as List<PROYJHOME2026.Models.IAConversacion> ?? new();
+    var dashboard  = ViewBag.Dashboard  as PROYJHOME2026.Services.IaDashboardDto;
+    var mensajes   = ViewBag.Mensajes   as List<PROYJHOME2026.Models.IAMensaje> ?? new();
+    var inicial    = (usuario?.nombreCompleto ?? usuario?.username ?? "U").Split(' ')
+                        .Take(2).Select(p => p[0].ToString().ToUpper());
+    var avatarUser = string.Concat(inicial);
+}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+@section Styles {
+<style>
+/* ── LAYOUT ── */
+.ia-page { display:flex; height:calc(100vh - 130px); gap:0; border-radius:12px; overflow:hidden; border:1px solid #e2e8f0; background:#f8fafc; }
+
+/* ── SIDEBAR ── */
+.ia-sidebar { width:260px; min-width:260px; background:#fff; border-right:1px solid #e2e8f0; display:flex; flex-direction:column; }
+.ia-sidebar__header { padding:16px; border-bottom:1px solid #f1f5f9; }
+.ia-sidebar__label  { font-size:0.65rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8; margin-bottom:10px; }
+.btn-nueva-conv {
+    width:100%; display:flex; align-items:center; gap:8px; justify-content:center;
+    background:linear-gradient(135deg,#0d3393,#0ea5e9); color:white;
+    border:none; border-radius:8px; padding:9px 14px;
+    font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s;
+}
+.btn-nueva-conv:hover { opacity:0.9; transform:translateY(-1px); box-shadow:0 4px 12px rgba(13,51,147,0.25); }
+.ia-sidebar__list { flex:1; overflow-y:auto; padding:8px; }
+.conv-item { padding:10px 12px; border-radius:8px; cursor:pointer; margin-bottom:4px; transition:all 0.15s; border:1px solid transparent; }
+.conv-item:hover  { background:#f1f5f9; }
+.conv-item.activa { background:#eff6ff; border-color:#bfdbfe; }
+.conv-item__titulo { font-size:0.78rem; color:#1e293b; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.conv-item__fecha  { font-size:0.67rem; color:#94a3b8; margin-top:2px; }
+
+/* ── CHAT ── */
+.ia-chat { flex:1; display:flex; flex-direction:column; min-width:0; background:#fff; }
+.ia-chat__header { padding:14px 20px; border-bottom:1px solid #f1f5f9; background:#fff; display:flex; align-items:center; gap:12px; }
+.ia-logo { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#0d3393,#0ea5e9); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+.ia-chat__title    { font-size:0.95rem; font-weight:700; color:#1e293b; }
+.ia-chat__subtitle { font-size:0.72rem; color:#64748b; }
+.ia-chat__area { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; background:#f8fafc; }
+
+/* ── MENSAJES ── */
+.msg { display:flex; gap:10px; max-width:100%; }
+.msg--user { flex-direction:row-reverse; }
+.msg__avatar { width:32px; height:32px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:700; }
+.msg--user .msg__avatar      { background:linear-gradient(135deg,#0d3393,#0ea5e9); color:white; }
+.msg--assistant .msg__avatar { background:linear-gradient(135deg,#0ea5e9,#06b6d4); color:white; }
+.msg__body { max-width:78%; display:flex; flex-direction:column; gap:6px; }
+.msg--user .msg__body { align-items:flex-end; }
+.msg__burbuja { padding:10px 14px; border-radius:12px; font-size:0.84rem; line-height:1.6; }
+.msg--user .msg__burbuja {
+    background:linear-gradient(135deg,#0d3393,#0ea5e9); color:white;
+    border-radius:12px 12px 3px 12px;
+}
+.msg--assistant .msg__burbuja {
+    background:#fff; color:#1e293b;
+    border:1px solid #e2e8f0; border-radius:3px 12px 12px 12px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.05);
+}
+.msg__burbuja h1,.msg__burbuja h2,.msg__burbuja h3 { color:#0d3393; margin:8px 0 4px; font-size:1em; }
+.msg__burbuja ul,.msg__burbuja ol { padding-left:16px; }
+.msg__burbuja li { margin-bottom:3px; }
+.msg__burbuja strong { color:#0d3393; }
+.msg__burbuja code { background:#eff6ff; color:#0d3393; padding:2px 5px; border-radius:4px; font-size:0.8rem; }
+.msg__burbuja table { width:100%; border-collapse:collapse; margin-top:8px; font-size:0.8rem; }
+.msg__burbuja th { background:#eff6ff; color:#0d3393; padding:6px 10px; text-align:left; border-bottom:2px solid #bfdbfe; }
+.msg__burbuja td { padding:5px 10px; border-bottom:1px solid #f1f5f9; }
+.msg__burbuja tr:last-child td { border-bottom:none; }
+
+/* Recomendación */
+.msg__recomendacion {
+    background:#fffbeb; border:1px solid #fde68a; border-left:3px solid #f59e0b;
+    border-radius:8px; padding:8px 12px; font-size:0.78rem; color:#92400e;
+}
+.msg__recomendacion::before { content:"💡 "; }
+
+/* Gráfico */
+.msg__grafico { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; max-width:420px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+.msg__grafico-titulo { font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px; text-align:center; }
+.msg__grafico canvas { max-height:200px; }
+
+/* Exportar */
+.msg__exportar { display:flex; gap:6px; flex-wrap:wrap; }
+.btn-export { display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:7px; font-size:0.75rem; font-weight:600; cursor:pointer; border:none; transition:all 0.15s; }
+.btn-export--excel { background:#16a34a; color:white; }
+.btn-export--pdf   { background:#dc2626; color:white; }
+.btn-export:hover  { opacity:0.85; transform:translateY(-1px); }
+
+/* Error */
+.msg__error { background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#991b1b; }
+
+/* Typing */
+.typing { display:flex; align-items:center; gap:3px; padding:4px 0; }
+.typing span { width:6px; height:6px; background:#0d3393; border-radius:50%; opacity:0.4; animation:typing 1.2s infinite; }
+.typing span:nth-child(2) { animation-delay:0.2s; }
+.typing span:nth-child(3) { animation-delay:0.4s; }
+@@keyframes typing { 0%,60%,100%{opacity:0.2;transform:scale(0.8)} 30%{opacity:1;transform:scale(1)} }
+
+/* Input */
+.ia-chat__input-area { padding:14px 20px; border-top:1px solid #f1f5f9; background:#fff; }
+.ia-input-wrap { display:flex; gap:8px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:6px 6px 6px 14px; align-items:flex-end; transition:border-color 0.2s; }
+.ia-input-wrap:focus-within { border-color:#0d3393; box-shadow:0 0 0 3px rgba(13,51,147,0.08); }
+#ia-input { flex:1; background:transparent; border:none; outline:none; color:#1e293b; font-size:0.87rem; resize:none; max-height:100px; min-height:22px; line-height:1.5; font-family:inherit; }
+#ia-input::placeholder { color:#94a3b8; }
+.btn-send { width:34px; height:34px; background:linear-gradient(135deg,#0d3393,#0ea5e9); border:none; border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0; }
+.btn-send:hover    { opacity:0.9; transform:scale(1.05); }
+.btn-send:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+.btn-send svg { width:15px; height:15px; stroke:white; fill:none; stroke-width:2; }
+.ia-hint { font-size:0.67rem; color:#94a3b8; margin-top:5px; text-align:center; }
+
+/* Welcome */
+.ia-welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px; }
+.ia-welcome__logo { width:64px; height:64px; border-radius:18px; background:linear-gradient(135deg,#0d3393,#0ea5e9); display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:16px; box-shadow:0 8px 24px rgba(13,51,147,0.2); }
+.ia-welcome__title { font-size:1.4rem; font-weight:800; color:#1e293b; margin-bottom:6px; }
+.ia-welcome__sub   { font-size:0.85rem; color:#64748b; margin-bottom:24px; max-width:360px; }
+.ia-sugerencias { display:flex; flex-direction:column; gap:6px; width:100%; max-width:420px; }
+.ia-sug { background:#fff; border:1.5px solid #e2e8f0; border-radius:9px; padding:9px 14px; font-size:0.81rem; color:#475569; cursor:pointer; text-align:left; transition:all 0.15s; }
+.ia-sug:hover { border-color:#0d3393; color:#0d3393; background:#eff6ff; }
+
+/* ── DASHBOARD ── */
+.ia-dashboard { width:280px; min-width:280px; background:#fff; border-left:1px solid #e2e8f0; display:flex; flex-direction:column; overflow-y:auto; padding:14px; }
+.dash-header { font-size:0.65rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#94a3b8; margin-bottom:12px; display:flex; align-items:center; gap:5px; }
+.dash-area-badge { background:linear-gradient(135deg,#0d3393,#0ea5e9); color:white; font-size:0.68rem; font-weight:700; padding:4px 10px; border-radius:20px; margin-bottom:14px; text-align:center; }
+.dash-section { margin-bottom:16px; }
+.dash-section__label { font-size:0.65rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+.dash-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:9px; padding:10px 12px; margin-bottom:5px; display:flex; align-items:center; gap:8px; transition:all 0.15s; }
+.dash-card:hover { border-color:#bfdbfe; background:#eff6ff; }
+.dash-card__icon  { font-size:1.1rem; }
+.dash-card__label { font-size:0.72rem; color:#64748b; }
+.dash-card__valor { font-size:1.3rem; font-weight:800; color:#0d3393; }
+.dash-card--verde   .dash-card__valor { color:#16a34a; }
+.dash-card--rojo    .dash-card__valor { color:#dc2626; }
+.dash-card--amarillo .dash-card__valor { color:#d97706; }
+.dash-card--celeste  .dash-card__valor { color:#0ea5e9; }
+.dash-card--purple   .dash-card__valor { color:#7c3aed; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:#e2e8f0; border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:#cbd5e1; }
+</style>
+}
+
+<div class="ia-page">
+
+  <!-- SIDEBAR -->
+  <div class="ia-sidebar">
+    <div class="ia-sidebar__header">
+      <div class="ia-sidebar__label">Conversaciones</div>
+      <button class="btn-nueva-conv" onclick="nuevaConversacion()">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nueva conversación
+      </button>
+    </div>
+    <div class="ia-sidebar__list">
+      <div class="conv-item activa" id="conv-activa-item">
+        <div class="conv-item__titulo">💬 Conversación actual</div>
+        <div class="conv-item__fecha">Activa ahora</div>
+      </div>
+      @foreach (var conv in historial)
+      {
+        <div class="conv-item" onclick="cargarConversacion(@conv.IdConversacion)">
+          <div class="conv-item__titulo">@(conv.Titulo ?? "Conversación sin título")</div>
+          <div class="conv-item__fecha">@conv.FechaUltimoMensaje.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="ia-chat">
+    <div class="ia-chat__header">
+      <div class="ia-logo">🤖</div>
+      <div>
+        <div class="ia-chat__title">IA Generativa — Jhomeron S.A</div>
+        <div class="ia-chat__subtitle">
+          @(usuario?.nombreCompleto ?? usuario?.username) · @(dashboard?.Area ?? usuario?.rol)
+        </div>
+      </div>
+    </div>
+
+    <div class="ia-chat__area" id="chat-area">
+      @if (!mensajes.Any())
+      {
+        <div class="ia-welcome" id="ia-welcome">
+          <div class="ia-welcome__logo">🤖</div>
+          <div class="ia-welcome__title">¿En qué te puedo ayudar?</div>
+          <div class="ia-welcome__sub">Consulta datos, genera reportes y obtén análisis de tu área.</div>
+          <div class="ia-sugerencias">
+            @{
+              var rol = usuario?.rol ?? "";
+              var sugs = new List<string>();
+              if (rol is "Admin" || usuario?.username == "danitza")
+              {
+                sugs.Add("¿Cuántos empleados activos hay por cargo?");
+                sugs.Add("Dame un resumen del estado de la flota vehicular");
+                sugs.Add("¿Qué equipos TI están sin asignar?");
+                sugs.Add("Muéstrame los mantenimientos pendientes");
+              }
+              else if (rol == "SoporteTI")
+              {
+                sugs.Add("¿Cuántos equipos hay por tipo?");
+                sugs.Add("¿Qué equipos están sin asignar?");
+                sugs.Add("Dame el listado de asignaciones activas");
+                sugs.Add("Quiero exportar el inventario de equipos");
+              }
+              else if (rol == "Transporte")
+              {
+                sugs.Add("¿Cuántos carros están activos?");
+                sugs.Add("¿Qué mantenimientos están pendientes?");
+                sugs.Add("¿Qué seguros están próximos a vencer?");
+                sugs.Add("Quiero un reporte de la flota vehicular");
+              }
+              else if (rol == "Produccion")
+              {
+                sugs.Add("¿Cuántas máquinas están operativas?");
+                sugs.Add("Dame el listado de máquinas por estado");
+                sugs.Add("¿Qué máquinas están en mantenimiento?");
+                sugs.Add("Quiero exportar el inventario de máquinas");
+              }
+              else if (rol == "SSOMA")
+              {
+                sugs.Add("¿Cuántos extintores hay en total?");
+                sugs.Add("¿Qué extintores están próximos a vencer?");
+                sugs.Add("Dame el estado de los botiquines");
+                sugs.Add("Quiero un reporte de inspecciones");
+              }
+              else if (rol == "Logistica")
+              {
+                sugs.Add("¿Cuántos chips están asignados?");
+                sugs.Add("Dame el listado de chips por estado");
+                sugs.Add("Quiero exportar el inventario de chips");
+              }
+              foreach (var s in sugs)
+              {
+                <button class="ia-sug" onclick="usarSugerencia(this)">@s</button>
+              }
+            }
+          </div>
+        </div>
+      }
+      else
+      {
+        @foreach (var msg in mensajes)
+        {
+          if (msg.Rol == "user")
+          {
+            <div class="msg msg--user">
+              <div class="msg__avatar">@avatarUser</div>
+              <div class="msg__body">
+                <div class="msg__burbuja">@msg.Contenido</div>
+              </div>
+            </div>
+          }
+          else
+          {
+            <div class="msg msg--assistant">
+              <div class="msg__avatar">🤖</div>
+              <div class="msg__body">
+                <div class="msg__burbuja marked-content">@msg.Contenido</div>
+                @if (!string.IsNullOrEmpty(msg.Recomendacion))
+                { <div class="msg__recomendacion">@msg.Recomendacion</div> }
+                @if (!string.IsNullOrEmpty(msg.GraficoJson))
+                {
+                  var g = System.Text.Json.JsonSerializer.Deserialize<PROYJHOME2026.Services.IAGraficoDto>(msg.GraficoJson, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                  if (g?.Tipo != "ninguno")
+                  {
+                    <div class="msg__grafico">
+                      <div class="msg__grafico-titulo">@g?.Titulo</div>
+                      <canvas id="chart-@msg.IdMensaje" class="chart-canvas" data-chart="@msg.GraficoJson"></canvas>
+                    </div>
+                  }
+                }
+                @if (msg.TieneExportacion && !string.IsNullOrEmpty(msg.DatosExportacionJson))
+                {
+                  <div class="msg__exportar">
+                    <button class="btn-export btn-export--excel" data-export="@msg.DatosExportacionJson" onclick="exportarDesdeBtn(event,'excel')">📊 Exportar Excel</button>
+                    <button class="btn-export btn-export--pdf"   data-export="@msg.DatosExportacionJson" onclick="exportarDesdeBtn(event,'pdf')">📄 Exportar PDF</button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+
+    <div class="ia-chat__input-area">
+      <div class="ia-input-wrap">
+        <textarea id="ia-input" placeholder="Escribe tu consulta..." rows="1"
+                  onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="btn-send" id="btn-send" onclick="enviarMensaje()">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="ia-hint">Enter para enviar · Shift+Enter para nueva línea</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="ia-dashboard">
+    <div class="dash-header">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#94a3b8;fill:none;stroke-width:2;">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+      </svg>
+      Panel de resumen
+    </div>
+    <div class="dash-area-badge">@(dashboard?.Area ?? "Mi área")</div>
+    <div id="dash-contenido">
+    @{ await Html.RenderPartialAsync("_DashboardPartial", dashboard); }
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+var ID_CONV_ACTIVA = @convActiva!.IdConversacion;
+var AVATAR_USER    = "@avatarUser";
+var chatArea       = document.getElementById('chat-area');
+
+// Render markdown en mensajes existentes
+document.querySelectorAll('.marked-content').forEach(el => {
+    el.innerHTML = marked.parse(el.textContent || '');
+});
+
+// Render gráficos existentes
+document.querySelectorAll('.chart-canvas').forEach(canvas => {
+    try { renderGrafico(canvas.id, JSON.parse(canvas.dataset.chart)); } catch(e){}
+});
+
+chatArea.scrollTop = chatArea.scrollHeight;
+
+// ── ENVIAR ───────────────────────────────────────────────────
+async function enviarMensaje() {
+    const input = document.getElementById('ia-input');
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    document.getElementById('ia-welcome')?.remove();
+    agregarMsgUsuario(texto);
+    input.value = '';
+    autoResize(input);
+
+    const typing = agregarTyping();
+    document.getElementById('btn-send').disabled = true;
+
+    try {
+        const res  = await fetch('/IA/Mensaje', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ idConversacion: ID_CONV_ACTIVA, mensaje: texto })
+        });
+        const json = await res.json();
+        typing.remove();
+        document.getElementById('btn-send').disabled = false;
+
+        if (json.ok) agregarMsgIA(json.data);
+        else         agregarError(json.error || 'Error desconocido.');
+    } catch(e) {
+        typing.remove();
+        document.getElementById('btn-send').disabled = false;
+        agregarError('Error de conexión. Intenta nuevamente.');
+    }
+}
+
+function agregarMsgUsuario(texto) {
+    const div = document.createElement('div');
+    div.className = 'msg msg--user';
+    div.innerHTML = '<div class="msg__avatar">' + AVATAR_USER + '</div><div class="msg__body"><div class="msg__burbuja">' + escHtml(texto) + '</div></div>';
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function agregarMsgIA(data) {
+    const id  = 'chart-' + Date.now();
+    const div = document.createElement('div');
+    div.className = 'msg msg--assistant';
+
+    var graficoHtml = '';
+    if (data.grafico && data.grafico.tipo && data.grafico.tipo !== 'ninguno') {
+        graficoHtml = '<div class="msg__grafico"><div class="msg__grafico-titulo">' + escHtml(data.grafico.titulo || '') + '</div><canvas id="' + id + '"></canvas></div>';
+    }
+
+    var exportHtml = '';
+    if (data.tieneExportacion && data.datosExportacion) {
+        var dStr = escAttr(JSON.stringify(data.datosExportacion));
+        exportHtml = '<div class="msg__exportar">'
+            + '<button class="btn-export btn-export--excel" data-export="' + dStr + '" onclick="exportarDesdeBtn(event,\'excel\')">📊 Exportar Excel</button>'
+            + '<button class="btn-export btn-export--pdf"   data-export="' + dStr + '" onclick="exportarDesdeBtn(event,\'pdf\')">📄 Exportar PDF</button>'
+            + '</div>';
+    }
+
+    div.innerHTML = '<div class="msg__avatar">🤖</div><div class="msg__body">'
+        + '<div class="msg__burbuja marked-content">' + escHtml(data.respuesta || '') + '</div>'
+        + (data.recomendacion ? '<div class="msg__recomendacion">' + escHtml(data.recomendacion) + '</div>' : '')
+        + graficoHtml
+        + exportHtml
+        + '</div>';
+
+    chatArea.appendChild(div);
+
+    div.querySelectorAll('.marked-content').forEach(el => {
+        el.innerHTML = marked.parse(el.textContent || '');
+    });
+
+    if (data.grafico && data.grafico.tipo !== 'ninguno')
+        setTimeout(() => renderGrafico(id, data.grafico), 100);
+
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function agregarTyping() {
+    const div = document.createElement('div');
+    div.className = 'msg msg--assistant';
+    div.innerHTML = '<div class="msg__avatar">🤖</div><div class="msg__body"><div class="msg__burbuja"><div class="typing"><span></span><span></span><span></span></div></div></div>';
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return div;
+}
+
+function agregarError(msg) {
+    const div = document.createElement('div');
+    div.className = 'msg msg--assistant';
+    div.innerHTML = '<div class="msg__avatar">🤖</div><div class="msg__body"><div class="msg__error">❌ ' + escHtml(msg) + '</div></div>';
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// ── GRÁFICO ──────────────────────────────────────────────────
+function renderGrafico(canvasId, grafico) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var cols = grafico.colores || ['#0d3393','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#f97316'];
+    var opts = {
+        responsive: true,
+        animation:  { duration: 600, easing: 'easeOutQuart' },
+        plugins: {
+            legend:  { display: grafico.tipo === 'dona', position: 'bottom', labels: { color:'#64748b', padding:10, font:{size:11} } },
+            tooltip: { backgroundColor:'#fff', titleColor:'#1e293b', bodyColor:'#64748b', borderColor:'#e2e8f0', borderWidth:1, padding:10 }
+        }
+    };
+    var scaleOpts = { x:{grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',font:{size:10}}}, y:{grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',font:{size:10}}} };
+
+    var type, dataset;
+    if (grafico.tipo === 'dona') {
+        type = 'doughnut';
+        dataset = { data: grafico.datos||[], backgroundColor: cols, borderWidth:0 };
+        opts.cutout = '60%';
+    } else if (grafico.tipo === 'lineal') {
+        type = 'line';
+        dataset = { data: grafico.datos||[], borderColor: cols[0], backgroundColor: cols[0]+'20', borderWidth:2, pointRadius:4, pointHoverRadius:6, fill:true, tension:0.4 };
+        opts.plugins.legend.display = false;
+        opts.scales = scaleOpts;
+    } else {
+        type = 'bar';
+        dataset = { data: grafico.datos||[], backgroundColor: cols[0], borderRadius:6, borderSkipped:false };
+        opts.plugins.legend.display = false;
+        opts.scales = scaleOpts;
+    }
+
+    new Chart(canvas, { type, data:{ labels: grafico.labels||[], datasets:[dataset] }, options: opts });
+}
+
+// ── EXPORTAR ─────────────────────────────────────────────────
+function exportarDesdeBtn(event, tipo) {
+    var btn   = event.currentTarget;
+    var datos = JSON.parse(btn.dataset.export || '{}');
+    exportar(tipo, datos);
+}
+
+async function exportar(tipo, datos) {
+    var ruta = tipo === 'excel' ? '/IA/ExportarExcel' : '/IA/ExportarPdf';
+    var res  = await fetch(ruta, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos) });
+    if (res.ok) {
+        var blob = await res.blob();
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        a.href   = url;
+        a.download = (datos.titulo || 'Reporte') + (tipo==='excel' ? '.csv' : '.pdf');
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+}
+
+// ── NUEVA CONVERSACIÓN ───────────────────────────────────────
+async function nuevaConversacion() {
+    var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    var res   = await fetch('/IA/NuevaConversacion', { method:'POST', headers:{'RequestVerificationToken':token} });
+    var json  = await res.json();
+    if (json.ok) {
+        ID_CONV_ACTIVA = json.idConversacion;
+        chatArea.innerHTML = '<div class="ia-welcome" id="ia-welcome"><div class="ia-welcome__logo">🤖</div><div class="ia-welcome__title">¿En qué te puedo ayudar?</div><div class="ia-welcome__sub">Nueva conversación iniciada.</div></div>';
+    }
+}
+
+// ── CARGAR HISTORIAL ─────────────────────────────────────────
+async function cargarConversacion(id) {
+    var res  = await fetch('/IA/CargarConversacion?id=' + id);
+    var json = await res.json();
+    if (!json.ok) return;
+    chatArea.innerHTML = '';
+    for (var msg of json.mensajes) {
+        if (msg.rol === 'user') agregarMsgUsuario(msg.contenido);
+        else agregarMsgIA({
+            respuesta:        msg.contenido,
+            recomendacion:    msg.recomendacion,
+            grafico:          msg.graficoJson ? JSON.parse(msg.graficoJson) : null,
+            tieneExportacion: msg.tieneExportacion,
+            datosExportacion: msg.datosExportacionJson ? JSON.parse(msg.datosExportacionJson) : null
+        });
+    }
+}
+
+// ── SUGERENCIAS ──────────────────────────────────────────────
+function usarSugerencia(btn) {
+    document.getElementById('ia-input').value = btn.textContent.trim();
+    enviarMensaje();
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function handleKey(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); enviarMensaje(); } }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+function escHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s)  { return String(s).replace(/"/g,'&quot;'); }
+</script>
+}

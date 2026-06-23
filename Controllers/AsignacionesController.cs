@@ -24,18 +24,17 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ────────────────────────────────────────────────
-       public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, int pagina = 1)
+        public async Task<IActionResult> Index(string? buscar, string? estado, int? tipoId, int pagina = 1)
         {
             int porPagina = 10;
- 
+
             var query = _context.Asignaciones
                 .Include(a => a.Empleado)
                 .Include(a => a.Equipo).ThenInclude(e => e.TipoEquipo)
                 .Include(a => a.Chip)
                 .Include(a => a.Grupo)
                 .AsQueryable();
- 
-            // Filtro por rol
+
             var rolIdx = HttpContext.Session.GetString("UsuarioRol") ?? "";
             if (rolIdx == "SoporteTI")
                 query = query.Where(a => a.Equipo.TipoEquipo == null ||
@@ -47,8 +46,8 @@ namespace PROYJHOME2026.Controllers
             if (tipoId.HasValue)
                 query = query.Where(a => a.Equipo.idTipoEquipo == tipoId);
 
-            ViewBag.TipoId       = tipoId;
-            ViewBag.Tipos        = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
+            ViewBag.TipoId = tipoId;
+            ViewBag.Tipos  = await _context.TiposEquipo.OrderBy(t => t.tipo).ToListAsync();
 
             if (!string.IsNullOrWhiteSpace(buscar))
                 query = query.Where(a =>
@@ -95,11 +94,13 @@ namespace PROYJHOME2026.Controllers
                 .FirstOrDefaultAsync(a => a.IdAsignacion == id);
 
             if (asignacion == null) return NotFound();
+
             ViewBag.HistorialCambios = await _context.AuditoriaLogs
-            .Where(l => l.Entidad == "Asignacion" && l.IdEntidad == id)
-            .OrderByDescending(l => l.FechaHora)
-            .Take(50)
-            .ToListAsync();
+                .Where(l => l.Entidad == "Asignacion" && l.IdEntidad == id)
+                .OrderByDescending(l => l.FechaHora)
+                .Take(50)
+                .ToListAsync();
+
             return View(asignacion);
         }
 
@@ -127,34 +128,32 @@ namespace PROYJHOME2026.Controllers
 
             if (ModelState.IsValid)
             {
-                // ── Validar restricciones por rol ──────────────────
                 var rol    = HttpContext.Session.GetString("UsuarioRol") ?? "";
                 var equipo = await _context.Equipos
                     .Include(e => e.TipoEquipo)
                     .FirstOrDefaultAsync(e => e.idEquipo == asignacion.IdEquipo);
                 var tipoEquipo = equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
 
-                // Yanet (Logistica) solo puede asignar Celulares
-                if (rol.Equals("Logistica", StringComparison.OrdinalIgnoreCase) &&
-                    !tipoEquipo.Contains("CELULAR"))
+                if (rol.Equals("Logistica", StringComparison.OrdinalIgnoreCase) && !tipoEquipo.Contains("CELULAR"))
                 {
                     ModelState.AddModelError("IdEquipo", "Solo puedes asignar equipos de tipo Celular.");
                     await CargarListas(asignacion.IdEmpleado, asignacion.IdEquipo, asignacion.IdChip, asignacion.IdGrupo);
                     return View(asignacion);
                 }
 
-                // Oliver (SoporteTI) no puede asignar Celulares
-                if (rol.Equals("SoporteTI", StringComparison.OrdinalIgnoreCase) &&
-                    tipoEquipo.Contains("CELULAR"))
+                if (rol.Equals("SoporteTI", StringComparison.OrdinalIgnoreCase) && tipoEquipo.Contains("CELULAR"))
                 {
                     ModelState.AddModelError("IdEquipo", "No tienes permiso para asignar equipos de tipo Celular.");
                     await CargarListas(asignacion.IdEmpleado, asignacion.IdEquipo, asignacion.IdChip, asignacion.IdGrupo);
                     return View(asignacion);
                 }
 
+                // ── Limpiar chip si el equipo no es celular (server-side) ──
+                if (asignacion.IdChip.HasValue && !tipoEquipo.Contains("CELULAR"))
+                    asignacion.IdChip = null;
+
                 bool equipoOcupado = await _context.Asignaciones
                     .AnyAsync(a => a.IdEquipo == asignacion.IdEquipo && a.EstadoAsignacion == "Activo");
-
                 if (equipoOcupado)
                 {
                     ModelState.AddModelError("IdEquipo", "Este equipo ya tiene una asignación activa.");
@@ -176,10 +175,8 @@ namespace PROYJHOME2026.Controllers
 
                 _context.Add(asignacion);
 
-                // ✅ Cambiar estado del equipo a "Asignado"
                 var equipoEstado = await _context.Equipos.FindAsync(asignacion.IdEquipo);
-                if (equipoEstado != null)
-                    equipoEstado.estado_equipo = "Asignado";
+                if (equipoEstado != null) equipoEstado.estado_equipo = "Asignado";
 
                 await _context.SaveChangesAsync();
 
@@ -242,6 +239,17 @@ namespace PROYJHOME2026.Controllers
                     return View(asignacion);
                 }
 
+                // ── Limpiar chip si el equipo no es celular (server-side) ──
+                if (asignacion.IdChip.HasValue)
+                {
+                    var equipoEdit = await _context.Equipos
+                        .Include(e => e.TipoEquipo)
+                        .FirstOrDefaultAsync(e => e.idEquipo == asignacion.IdEquipo);
+                    var tipoEdit = equipoEdit?.TipoEquipo?.tipo?.ToUpper() ?? "";
+                    if (!tipoEdit.Contains("CELULAR"))
+                        asignacion.IdChip = null;
+                }
+
                 if (asignacion.IdChip.HasValue)
                 {
                     bool chipOcupado = await _context.Asignaciones
@@ -261,7 +269,6 @@ namespace PROYJHOME2026.Controllers
                     var existing = await _context.Asignaciones.FindAsync(id);
                     if (existing == null) return NotFound();
 
-                    // Si cambió el equipo, restaurar el anterior a "Activo" y marcar el nuevo como "Asignado"
                     if (existing.IdEquipo != asignacion.IdEquipo)
                     {
                         var equipoAnterior = await _context.Equipos.FindAsync(existing.IdEquipo);
@@ -271,23 +278,22 @@ namespace PROYJHOME2026.Controllers
                         if (equipoNuevo != null) equipoNuevo.estado_equipo = "Asignado";
                     }
 
-                    existing.IdEmpleado      = asignacion.IdEmpleado;
-                    existing.IdEquipo        = asignacion.IdEquipo;
-                    existing.IdChip          = asignacion.IdChip;
-                    existing.IdGrupo         = asignacion.IdGrupo;
-                    existing.FechaAsignacion = asignacion.FechaAsignacion;
-                    existing.CorreoEquipo    = asignacion.CorreoEquipo;
-                    existing.NumeroCargo     = asignacion.NumeroCargo;
-                    existing.Observacion     = asignacion.Observacion;
+                    existing.IdEmpleado       = asignacion.IdEmpleado;
+                    existing.IdEquipo         = asignacion.IdEquipo;
+                    existing.IdChip           = asignacion.IdChip;
+                    existing.IdGrupo          = asignacion.IdGrupo;
+                    existing.FechaAsignacion  = asignacion.FechaAsignacion;
+                    existing.CorreoEquipo     = asignacion.CorreoEquipo;
+                    existing.NumeroCargo      = asignacion.NumeroCargo;
+                    existing.Observacion      = asignacion.Observacion;
                     existing.EstadoAsignacion = asignacion.EstadoAsignacion;
 
                     await _context.SaveChangesAsync();
 
-                     // Capturar datos anteriores
                     var asigAnterior = await _context.Asignaciones.AsNoTracking()
                         .Include(a => a.Empleado).Include(a => a.Equipo).Include(a => a.Grupo)
                         .FirstOrDefaultAsync(a => a.IdAsignacion == id);
- 
+
                     var cambiosAsig = new List<string>();
                     if (asigAnterior != null)
                     {
@@ -306,7 +312,7 @@ namespace PROYJHOME2026.Controllers
                         if (asigAnterior.Observacion != asignacion.Observacion)
                             cambiosAsig.Add($"Observación: '{asigAnterior.Observacion ?? "—"}' → '{asignacion.Observacion ?? "—"}'");
                     }
- 
+
                     var datosAsigAnt = cambiosAsig.Any() ? string.Join(" | ", cambiosAsig) : "Sin cambios detectados";
                     await _auditoriaService.RegistrarAsync("Editar", "Asignacion", id,
                         $"Editó asignación #{id}", datosAsigAnt);
@@ -354,7 +360,6 @@ namespace PROYJHOME2026.Controllers
 
             try
             {
-                // ✅ Restaurar equipo a "Activo" al eliminar asignación
                 var equipo = await _context.Equipos.FindAsync(asignacion.IdEquipo);
                 if (equipo != null && equipo.estado_equipo == "Asignado")
                     equipo.estado_equipo = "Activo";
@@ -378,10 +383,13 @@ namespace PROYJHOME2026.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── HELPER ───────────────────────────────────────────────
+        // ── HELPER: CARGAR LISTAS ─────────────────────────────────
         private async Task CargarListas(int? empleadoSel = null, int? equipoSel = null,
             int? chipSel = null, int? grupoSel = null)
         {
+            var rol      = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var username = HttpContext.Session.GetString("UsuarioUsername") ?? "";
+
             // Empleados activos
             var empleados = await _context.Empleados
                 .Where(e => e.estado == "Activo")
@@ -403,41 +411,50 @@ namespace PROYJHOME2026.Controllers
             var equipos = await _context.Equipos
                 .Include(e => e.TipoEquipo)
                 .Where(e =>
-                    // Equipos disponibles (Activos y no ocupados por otra asignación)
                     (e.estado_equipo == "Activo" && !equiposOcupados.Contains(e.idEquipo))
-                    // O el equipo actualmente asignado (para que aparezca en el dropdown al editar)
                     || (equipoSel.HasValue && e.idEquipo == equipoSel.Value))
                 .OrderBy(e => e.marca)
                 .Select(e => new {
                     e.idEquipo,
-                    e.idTipoEquipo,
-                    TipoNombre   = e.TipoEquipo != null ? e.TipoEquipo.tipo : "",
-                    Descripcion  = (e.TipoEquipo != null ? e.TipoEquipo.tipo + " — " : "") +
-                                   (e.TipoEquipo != null && e.TipoEquipo.tipo != null &&
-                                    e.TipoEquipo.tipo.ToUpper().Contains("PC COMPLETO") && e.NombrePc != null
-                                       ? e.NombrePc
-                                       : e.marca + " " + e.modelo) +
-                                   (e.numero_serie != null ? " [" + e.numero_serie + "]" : "")
+                    TipoNombre  = e.TipoEquipo != null ? e.TipoEquipo.tipo : "",
+                    Descripcion = (e.TipoEquipo != null ? e.TipoEquipo.tipo + " — " : "") +
+                                  (e.TipoEquipo != null && e.TipoEquipo.tipo != null &&
+                                   e.TipoEquipo.tipo.ToUpper().Contains("PC COMPLETO") && e.NombrePc != null
+                                      ? e.NombrePc
+                                      : e.marca + " " + e.modelo) +
+                                  (e.numero_serie != null ? " [" + e.numero_serie + "]" : "")
                 })
                 .ToListAsync();
 
-            ViewBag.EquiposList  = new SelectList(equipos, "idEquipo", "Descripcion", equipoSel);
-            // JSON para detectar si el equipo seleccionado es celular en el JS
-            ViewBag.EquiposJson  = System.Text.Json.JsonSerializer.Serialize(
-                equipos.Select(e => new { id = e.idEquipo, tipo = e.TipoNombre })
-            );
+            ViewBag.EquiposList = new SelectList(equipos, "idEquipo", "Descripcion", equipoSel);
+            ViewBag.EquiposJson = System.Text.Json.JsonSerializer.Serialize(
+                equipos.Select(e => new { id = e.idEquipo, tipo = e.TipoNombre }));
 
-            // Chips disponibles
-            var chipsOcupados = await _context.Asignaciones
-                .Where(a => a.EstadoAsignacion == "Activo" && a.IdChip != chipSel && a.IdChip != null)
-                .Select(a => a.IdChip!.Value)
-                .ToListAsync();
+            // ── Chips: solo Admin, Logistica y danitza (NO SoporteTI/Oliver) ──
+            var puedeVerChips = rol == "Admin" || rol == "Logistica" ||
+                                username.Equals("danitza", StringComparison.OrdinalIgnoreCase);
 
-            var chips = await _context.Chips
-                .Where(c => !chipsOcupados.Contains(c.IdChip))
-                .OrderBy(c => c.NumeroCelular)
-                .ToListAsync();
-            ViewBag.ChipsList = new SelectList(chips, "IdChip", "NumeroCelular", chipSel);
+            if (puedeVerChips)
+            {
+                var chipsOcupados = await _context.Asignaciones
+                    .Where(a => a.EstadoAsignacion == "Activo" && a.IdChip != chipSel && a.IdChip != null)
+                    .Select(a => a.IdChip!.Value)
+                    .ToListAsync();
+
+                var chips = await _context.Chips
+                    .Where(c => !chipsOcupados.Contains(c.IdChip))
+                    .OrderBy(c => c.NumeroCelular)
+                    .ToListAsync();
+
+                ViewBag.ChipsList = new SelectList(chips, "IdChip", "NumeroCelular", chipSel);
+            }
+            else
+            {
+                // Lista vacía — la sección chip ni se renderiza para estos roles
+                ViewBag.ChipsList = new SelectList(Enumerable.Empty<object>(), "IdChip", "NumeroCelular");
+            }
+
+            ViewBag.PuedeVerChips = puedeVerChips;
 
             // Grupos
             var grupos = await _context.Grupos
@@ -457,36 +474,32 @@ namespace PROYJHOME2026.Controllers
 
             if (asignacion == null) return NotFound();
 
-            // Yanet solo puede imprimir cargos de Celulares
-            var rolPdf    = HttpContext.Session.GetString("UsuarioRol") ?? "";
-            var tipoPdf   = asignacion.Equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
+            var rolPdf  = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            var tipoPdf = asignacion.Equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
+
             if (rolPdf.Equals("Logistica", StringComparison.OrdinalIgnoreCase) && !tipoPdf.Contains("CELULAR"))
                 return RedirectToAction("Denegado", "Auth");
-            // Oliver no puede imprimir cargos de Celulares
             if (rolPdf.Equals("SoporteTI", StringComparison.OrdinalIgnoreCase) && tipoPdf.Contains("CELULAR"))
                 return RedirectToAction("Denegado", "Auth");
 
-            var username       = HttpContext.Session.GetString("UsuarioUsername") ?? "admin";
-            var usuarioNombre  = HttpContext.Session.GetString("UsuarioNombre") ?? "Juan Torvisco";
+            var username      = HttpContext.Session.GetString("UsuarioUsername") ?? "admin";
+            var usuarioNombre = HttpContext.Session.GetString("UsuarioNombre") ?? "Juan Torvisco";
             var firmante = username.ToLower() switch {
                 "oliver"  => "Oliver Orlando Amaricua Olivo",
                 "admin"   => "Juan Torvisco",
                 "danitza" => "Juan Torvisco",
                 "yanet"   => usuarioNombre,
-                _          => usuarioNombre
+                _         => usuarioNombre
             };
 
             var logoPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "logo.png");
             byte[]? logoBytes = System.IO.File.Exists(logoPath)
                 ? await System.IO.File.ReadAllBytesAsync(logoPath) : null;
 
-            // Celular con rol Yanet/Admin/Danitza → formato especial
-            var rolPdf2   = HttpContext.Session.GetString("UsuarioRol") ?? "";
-            var tipoPdf2  = asignacion.Equipo?.TipoEquipo?.tipo?.ToUpper() ?? "";
-            bool esCelPdf = tipoPdf2.Contains("CELULAR");
+            bool esCelPdf = tipoPdf.Contains("CELULAR");
             bool usaFormatoCelular = esCelPdf && (
-                rolPdf2.Equals("Logistica", StringComparison.OrdinalIgnoreCase) ||
-                rolPdf2.Equals("Admin",     StringComparison.OrdinalIgnoreCase));
+                rolPdf.Equals("Logistica", StringComparison.OrdinalIgnoreCase) ||
+                rolPdf.Equals("Admin",     StringComparison.OrdinalIgnoreCase));
             if (usaFormatoCelular)
                 return await CargoPdfCelularAsync(asignacion, firmante, logoBytes);
 
@@ -516,15 +529,12 @@ namespace PROYJHOME2026.Controllers
                     page.MarginTop(40); page.MarginBottom(30); page.MarginHorizontal(50);
                     page.DefaultTextStyle(t => t.FontSize(11).FontFamily("Arial"));
 
-                    // HEADER
                     page.Header().Column(col =>
                     {
                         col.Item().Row(row =>
                         {
-                            if (logoBytes != null)
-                                row.ConstantItem(140).Image(logoBytes).FitWidth();
-                            else
-                                row.ConstantItem(140).Text("JHOMERON").Bold().FontSize(20).FontColor(Color.FromHex("1A3A6B"));
+                            if (logoBytes != null) row.ConstantItem(140).Image(logoBytes).FitWidth();
+                            else row.ConstantItem(140).Text("JHOMERON").Bold().FontSize(20).FontColor(Color.FromHex("1A3A6B"));
                             row.RelativeItem();
                         });
                         col.Item().PaddingTop(18).PaddingBottom(6)
@@ -533,7 +543,6 @@ namespace PROYJHOME2026.Controllers
                             .Text("Cargo de Equipo").Bold().FontSize(13).FontColor(Color.FromHex("1A3A6B"));
                     });
 
-                    // CONTENIDO
                     page.Content().PaddingTop(24).Column(col =>
                     {
                         void Memo(string label, string valor) =>
@@ -552,7 +561,6 @@ namespace PROYJHOME2026.Controllers
                             .Text("Por medio de la presente se hace entrega de los siguientes equipos, los cuales quedan bajo su responsabilidad.")
                             .FontSize(11);
 
-                        // Nombre principal
                         col.Item().PaddingLeft(12).PaddingBottom(6)
                             .Text($"{tipo}: {nombreEquipo}   SN: {equipo.numero_serie ?? "—"}")
                             .Bold().FontSize(11);
@@ -592,24 +600,24 @@ namespace PROYJHOME2026.Controllers
                             if (!string.IsNullOrWhiteSpace(equipo.PcMonitorMarca))
                             {
                                 SeccionTitulo("Monitor");
-                                Esp("Marca",   equipo.PcMonitorMarca);
-                                Esp("Modelo",  equipo.PcMonitorModelo);
-                                Esp("N° serie",equipo.PcMonitorSerie);
+                                Esp("Marca",    equipo.PcMonitorMarca);
+                                Esp("Modelo",   equipo.PcMonitorModelo);
+                                Esp("N° serie", equipo.PcMonitorSerie);
                             }
                             if (!string.IsNullOrWhiteSpace(equipo.PcMouseMarca))
                             {
                                 SeccionTitulo("Mouse");
-                                Esp("Marca",   equipo.PcMouseMarca);
-                                Esp("Modelo",  equipo.PcMouseModelo);
-                                Esp("N° serie",equipo.PcMouseSerie);
-                                Esp("Tipo",    equipo.PcMouseEsInalambrico == true ? "Inalámbrico" : "Con cable");
+                                Esp("Marca",    equipo.PcMouseMarca);
+                                Esp("Modelo",   equipo.PcMouseModelo);
+                                Esp("N° serie", equipo.PcMouseSerie);
+                                Esp("Tipo",     equipo.PcMouseEsInalambrico == true ? "Inalámbrico" : "Con cable");
                             }
                             if (!string.IsNullOrWhiteSpace(equipo.PcTecladoMarca))
                             {
                                 SeccionTitulo("Teclado");
-                                Esp("Marca",   equipo.PcTecladoMarca);
-                                Esp("Modelo",  equipo.PcTecladoModelo);
-                                Esp("N° serie",equipo.PcTecladoSerie);
+                                Esp("Marca",    equipo.PcTecladoMarca);
+                                Esp("Modelo",   equipo.PcTecladoModelo);
+                                Esp("N° serie", equipo.PcTecladoSerie);
                             }
                             if (!string.IsNullOrWhiteSpace(equipo.PcMousepadMarca))
                             {
@@ -630,8 +638,8 @@ namespace PROYJHOME2026.Controllers
                         }
                         else if (tipo.Contains("CELULAR"))
                         {
-                            Esp("IMEI",  equipo.IMEI);
-                            Esp("S.O.",  equipo.sistema_operativo);
+                            Esp("IMEI",    equipo.IMEI);
+                            Esp("S.O.",    equipo.sistema_operativo);
                             Esp("Versión", equipo.version);
                         }
                         else
@@ -644,7 +652,6 @@ namespace PROYJHOME2026.Controllers
                         if (!string.IsNullOrWhiteSpace(equipo.Observaciones))
                             col.Item().PaddingTop(12).Text($"Nota: {equipo.Observaciones}").FontSize(11).Italic();
 
-                        // FIRMAS — solo aparecen al final del contenido (última página)
                         col.Item().ExtendVertical().AlignBottom().Column(firmasCol =>
                         {
                             firmasCol.Item().PaddingTop(10).Row(row =>
@@ -668,7 +675,6 @@ namespace PROYJHOME2026.Controllers
                         });
                     });
 
-                    // PIE DE PÁGINA — solo datos empresa (se repite en cada hoja)
                     page.Footer().Column(col =>
                     {
                         col.Item().LineHorizontal(0.5f).LineColor(Color.FromHex("1A3A6B"));
@@ -683,24 +689,25 @@ namespace PROYJHOME2026.Controllers
             var fileName = $"CargoEquipo_{nombreEmpleado.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
             return File(bytes, "application/pdf", fileName);
         }
-        // ── PDF CELULAR — formato especial Jhomeron ──────────────
+
+        // ── PDF CELULAR ───────────────────────────────────────────
         private async Task<IActionResult> CargoPdfCelularAsync(
             PROYJHOME2026.Models.Asignacion asignacion,
             string firmante, byte[]? logoBytes)
         {
-            var equipo        = asignacion.Equipo;
-            var empleado      = asignacion.Empleado;
-            var nombreEmp     = $"{empleado?.nombre} {empleado?.paterno} {empleado?.materno}".Trim().ToUpper();
-            var dniEmp        = empleado?.dni ?? "—";
-            var marca         = equipo?.marca?.ToUpper() ?? "";
-            var modelo        = equipo?.modelo?.ToUpper() ?? "";
-            var serie         = equipo?.numero_serie ?? "—";
-            var imei          = equipo?.IMEI ?? "—";
-            var so            = equipo?.sistema_operativo?.ToUpper() ?? "—";
-            var version       = equipo?.version ?? "—";
-            var observacion   = asignacion.Observacion ?? "";
-            var fechaAsig     = asignacion.FechaAsignacion;
-            var fechaTexto    = $"Comas, {fechaAsig.Day} de {fechaAsig.ToString("MMMM", new System.Globalization.CultureInfo("es-PE"))} del {fechaAsig.Year}";
+            var equipo      = asignacion.Equipo;
+            var empleado    = asignacion.Empleado;
+            var nombreEmp   = $"{empleado?.nombre} {empleado?.paterno} {empleado?.materno}".Trim().ToUpper();
+            var dniEmp      = empleado?.dni ?? "—";
+            var marca       = equipo?.marca?.ToUpper() ?? "";
+            var modelo      = equipo?.modelo?.ToUpper() ?? "";
+            var serie       = equipo?.numero_serie ?? "—";
+            var imei        = equipo?.IMEI ?? "—";
+            var so          = equipo?.sistema_operativo?.ToUpper() ?? "—";
+            var version     = equipo?.version ?? "—";
+            var observacion = asignacion.Observacion ?? "";
+            var fechaAsig   = asignacion.FechaAsignacion;
+            var fechaTexto  = $"Comas, {fechaAsig.Day} de {fechaAsig.ToString("MMMM", new System.Globalization.CultureInfo("es-PE"))} del {fechaAsig.Year}";
 
             var pdf = Document.Create(doc =>
             {
@@ -710,48 +717,38 @@ namespace PROYJHOME2026.Controllers
                     page.MarginTop(35); page.MarginBottom(30); page.MarginHorizontal(50);
                     page.DefaultTextStyle(t => t.FontSize(11).FontFamily("Arial"));
 
-                    // HEADER — logo
                     page.Header().Column(col =>
                     {
                         col.Item().Row(row =>
                         {
-                            if (logoBytes != null)
-                                row.ConstantItem(140).Image(logoBytes).FitWidth();
-                            else
-                                row.ConstantItem(140).Text("JHOMERON").Bold().FontSize(20).FontColor(Color.FromHex("1A3A6B"));
+                            if (logoBytes != null) row.ConstantItem(140).Image(logoBytes).FitWidth();
+                            else row.ConstantItem(140).Text("JHOMERON").Bold().FontSize(20).FontColor(Color.FromHex("1A3A6B"));
                             row.RelativeItem();
                         });
                     });
 
-                    // CONTENIDO
                     page.Content().PaddingTop(20).Column(col =>
                     {
-                        // Título principal
-                        col.Item().PaddingBottom(16).Text("ENTREGA DE EQUIPO CELULAR AL PERSONAL - INDUSTRIAS JHOMERON S.A.")
+                        col.Item().PaddingBottom(16)
+                            .AlignCenter()
+                            .Text("ENTREGA DE EQUIPO CELULAR AL PERSONAL - INDUSTRIAS JHOMERON S.A.")
                             .Bold().FontSize(13).FontColor(Colors.Black).Underline();
 
-                        // Datos empleado
                         col.Item().PaddingBottom(12).Column(inner =>
                         {
                             inner.Item().PaddingBottom(6).Text("Se hace entrega a:").FontSize(11);
                             inner.Item().PaddingLeft(20).Row(row =>
                             {
                                 row.AutoItem().Text(nombreEmp).Bold().FontSize(11);
-                                row.AutoItem().Text($"  identificado (a) con  ").FontSize(11);
+                                row.AutoItem().Text("  identificado (a) con  ").FontSize(11);
                                 row.AutoItem().Text($"DNI N° {dniEmp}").Bold().FontSize(11);
                             });
                         });
 
-                        // Lo siguiente
                         col.Item().PaddingBottom(8).Text("Lo siguiente:").FontSize(11);
+                        col.Item().PaddingBottom(4).Text($"UN (01) EQUIPO {marca} {modelo},").Bold().FontSize(11);
+                        col.Item().PaddingBottom(4).Text("con las siguientes características y accesorios:").FontSize(11);
 
-                        // Equipo — nombre en negrita
-                        col.Item().PaddingBottom(4).Text($"UN (01) EQUIPO {marca} {modelo},")
-                            .Bold().FontSize(11);
-                        col.Item().PaddingBottom(4).Text("con las siguientes características y accesorios:")
-                            .FontSize(11);
-
-                        // Especificaciones
                         col.Item().PaddingLeft(20).PaddingBottom(4).Row(row =>
                         {
                             row.AutoItem().Text($"{marca} {modelo}").Bold().FontSize(11);
@@ -773,39 +770,32 @@ namespace PROYJHOME2026.Controllers
                             });
                         }
 
-                        // Observaciones (accesorios numerados)
                         if (!string.IsNullOrWhiteSpace(observacion))
                         {
                             col.Item().PaddingTop(6).PaddingLeft(20).Column(obs =>
                             {
-                                var lineas = observacion.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                                foreach (var linea in lineas)
+                                foreach (var linea in observacion.Split('\n', StringSplitOptions.RemoveEmptyEntries))
                                     obs.Item().Text(linea.Trim()).FontSize(11);
                             });
                         }
 
-                        // Párrafo de responsabilidad
-                        col.Item().PaddingTop(20).PaddingBottom(10).Text(
-                            "El equipo entregado queda BAJO ENTERA RESPONSABILIDAD del personal a quien se le hace el cargo, " +
-                            "debiendo cuidarlo y conservarlo en óptimas condiciones para el mejor desempeño de la función encomendada.")
+                        col.Item().PaddingTop(20).PaddingBottom(10)
+                            .Text("El equipo entregado queda BAJO ENTERA RESPONSABILIDAD del personal a quien se le hace el cargo, " +
+                                  "debiendo cuidarlo y conservarlo en óptimas condiciones para el mejor desempeño de la función encomendada.")
                             .FontSize(11);
 
-                        col.Item().PaddingBottom(10).Text(
-                            "En casos de pérdida o robo, la empresa se encargará de reponer el equipo de la misma marca y modelo " +
-                            "y se descontará de su sueldo al trabajador el importe que corresponda por dicha compra, sin lugar a reclamo.")
+                        col.Item().PaddingBottom(10)
+                            .Text("En casos de pérdida o robo, la empresa se encargará de reponer el equipo de la misma marca y modelo " +
+                                  "y se descontará de su sueldo al trabajador el importe que corresponda por dicha compra, sin lugar a reclamo.")
                             .FontSize(11);
 
-                        col.Item().PaddingBottom(20).Text(
-                            "Lo que se comunica para conocimiento y fines pertinentes.")
-                            .FontSize(11);
+                        col.Item().PaddingBottom(20)
+                            .Text("Lo que se comunica para conocimiento y fines pertinentes.").FontSize(11);
 
-                        // Fecha
                         col.Item().PaddingBottom(30).Text(fechaTexto).FontSize(11);
 
-                        // Firma del empleado + cuadro huella
                         col.Item().Row(row =>
                         {
-                            // Izquierda — firma empleado
                             row.RelativeItem().Column(c =>
                             {
                                 c.Item().PaddingBottom(50).Text("").FontSize(11);
@@ -814,10 +804,7 @@ namespace PROYJHOME2026.Controllers
                                 c.Item().Text($"DNI N° {dniEmp}").FontSize(11);
                                 c.Item().Text("RECIBI CONFORME").FontSize(11);
                             });
-
                             row.ConstantItem(40);
-
-                            // Derecha — cuadro huella
                             row.ConstantItem(120).Column(c =>
                             {
                                 c.Item().Border(1).BorderColor(Colors.Black)
@@ -828,7 +815,6 @@ namespace PROYJHOME2026.Controllers
                         });
                     });
 
-                    // PIE DE PÁGINA
                     page.Footer().Column(col =>
                     {
                         col.Item().LineHorizontal(0.5f).LineColor(Color.FromHex("1A3A6B"));
@@ -836,10 +822,8 @@ namespace PROYJHOME2026.Controllers
                         {
                             row.RelativeItem().Text("INDUSTRIAS JHOMERON S.A.").Bold().FontSize(9).FontColor(Color.FromHex("1A3A6B"));
                         });
-                        col.Item().Text("Calle Santa Ana Mza. F Lt. 44 / Fnd. Chacra Cerro - Chillón / Comas - Lima - Perú")
-                            .FontSize(8).FontColor(Color.FromHex("555F7A"));
-                        col.Item().Text("Telfs.: 500-8202 / 500-8203 / 500-8204 / 500-8205 / 500-8206 / 500-8207 / 536-4212")
-                            .FontSize(8).FontColor(Color.FromHex("555F7A"));
+                        col.Item().Text("Calle Santa Ana Mza. F Lt. 44 / Fnd. Chacra Cerro - Chillón / Comas - Lima - Perú").FontSize(8).FontColor(Color.FromHex("555F7A"));
+                        col.Item().Text("Telfs.: 500-8202 / 500-8203 / 500-8204 / 500-8205 / 500-8206 / 500-8207 / 536-4212").FontSize(8).FontColor(Color.FromHex("555F7A"));
                     });
                 });
             });
