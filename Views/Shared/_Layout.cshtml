@@ -125,6 +125,16 @@
                         <span class="ia-badge">BETA</span>
                     </a>
                 </div>
+                <div class="sidebar__item">
+                    <a class="sidebar__link @(ctrl == "Dashboard" ? "active" : "")"
+                       asp-controller="Dashboard" asp-action="Index">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;">
+                            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                        Dashboard
+                    </a>
+                </div>
             </div>
 
             <!-- PRINCIPAL — solo Admin -->

@@ -193,7 +193,7 @@ namespace PROYJHOME2026.Services
                 foreach (var g in emps.GroupBy(e => e.Cargo ?? "Sin cargo"))
                     sb.AppendLine($"- Cargo {g.Key}: {g.Count()}");
                 foreach (var e in emps.Take(60))
-                    sb.AppendLine($"  {e.nombre} {e.paterno} | {e.Cargo ?? "—"} | {e.estado ?? "—"}");
+                    sb.AppendLine($"  {e.nombre} {e.paterno} {e.materno ?? ""} | DNI: {e.dni ?? "—"} | Cargo: {e.Cargo ?? "—"} | Estado: {e.estado ?? "—"} | Correo: {e.correo ?? "—"} | Dirección: {e.direccion ?? "—"}");
             }
 
             return sb.ToString();
@@ -230,7 +230,10 @@ namespace PROYJHOME2026.Services
                 messages   = mensajes
             };
 
-            using var http = new HttpClient();
+            var handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = 
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            using var http = new HttpClient(handler);
             http.Timeout   = TimeSpan.FromSeconds(90);
             http.DefaultRequestHeaders.Add("x-api-key", apiKey);
             http.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");

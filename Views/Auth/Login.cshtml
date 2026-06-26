@@ -322,6 +322,11 @@
 
         .field-input input::placeholder { color: var(--gris-400); }
 
+        /* Ocultar ojo nativo de Edge/Chrome en inputs password */
+        .field-input input[type="password"]::-ms-reveal,
+        .field-input input[type="password"]::-ms-clear { display: none !important; }
+        .field-input input::-webkit-credentials-auto-fill-button { visibility: hidden; pointer-events: none; }
+
         .field-input input:focus {
             background: var(--blanco);
             border-color: var(--celeste);

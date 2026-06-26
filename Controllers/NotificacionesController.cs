@@ -17,7 +17,6 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── GET: /Notificaciones/ObtenerNoLeidas ─────────────────
-        // Retorna JSON con conteo + lista para el navbar
         [HttpGet]
         public async Task<IActionResult> ObtenerNoLeidas()
         {
@@ -26,17 +25,21 @@ namespace PROYJHOME2026.Controllers
                 return Json(new { contador = 0, notificaciones = new List<object>() });
 
             var notifs = await _notifService.ObtenerUltimasAsync(idUsuario, 15);
-            var noLeidas = notifs.Count(n => !n.Leida);
 
-            var resultado = notifs.Select(n => new {
-                id           = n.IdNotificacion,
-                tipo         = n.Tipo,
-                titulo       = n.Titulo,
-                mensaje      = n.Mensaje,
-                url          = n.Url,
-                leida        = n.Leida,
-                fechaCreacion = n.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
-            });
+            // Excluir notificaciones internas de tipo "Sistema" (marcadores de email enviado)
+            var noLeidas = notifs.Count(n => !n.Leida && n.Tipo != "Sistema");
+
+            var resultado = notifs
+                .Where(n => n.Tipo != "Sistema")
+                .Select(n => new {
+                    id            = n.IdNotificacion,
+                    tipo          = n.Tipo,
+                    titulo        = n.Titulo,
+                    mensaje       = n.Mensaje,
+                    url           = n.Url,
+                    leida         = n.Leida,
+                    fechaCreacion = n.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+                });
 
             return Json(new { contador = noLeidas, notificaciones = resultado });
         }
@@ -63,7 +66,6 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── GET: /Notificaciones/Index ───────────────────────────
-        // Página completa de historial de notificaciones
         public async Task<IActionResult> Index()
         {
             var idStr = HttpContext.Session.GetString("UsuarioId");
@@ -71,7 +73,7 @@ namespace PROYJHOME2026.Controllers
                 return RedirectToAction("Login", "Auth");
 
             var notifs = await _context.Notificaciones
-                .Where(n => n.IdUsuario == idUsuario)
+                .Where(n => n.IdUsuario == idUsuario && n.Tipo != "Sistema")
                 .OrderByDescending(n => n.FechaCreacion)
                 .Take(50)
                 .ToListAsync();

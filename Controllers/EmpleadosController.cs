@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
 using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
+using System.Text;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace PROYJHOME2026.Controllers
 {
@@ -342,6 +346,51 @@ namespace PROYJHOME2026.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+        private FileContentResult GenerarCsv(List<string> columnas, List<List<string>> filas, string titulo)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("sep=;");
+            sb.AppendLine(string.Join(";", columnas.Select(c => "\"" + c + "\"")));
+            foreach (var fila in filas)
+                sb.AppendLine(string.Join(";", fila.Select(v => "\"" + (v ?? "—").Replace("\"", "'") + "\"")));
+        
+            var bom   = new byte[] { 0xEF, 0xBB, 0xBF };
+            var datos = Encoding.UTF8.GetBytes(sb.ToString());
+            var bytes = bom.Concat(datos).ToArray();
+            var nombre = titulo.Replace(" ", "_") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".csv";
+            return File(bytes, "text/csv; charset=utf-8-sig", nombre);
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportarExcel(string? buscar, string? estado)
+        {
+            var query = _context.Empleados.AsQueryable();
+        
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(e =>
+                    (e.nombre  != null && e.nombre.Contains(buscar))  ||
+                    (e.paterno != null && e.paterno.Contains(buscar)) ||
+                    (e.dni     != null && e.dni.Contains(buscar))     ||
+                    (e.correo  != null && e.correo.Contains(buscar)));
+        
+            if (!string.IsNullOrWhiteSpace(estado))
+                query = query.Where(e => e.estado == estado);
+        
+            var empleados = await query.OrderByDescending(e => e.idEmpleado).ToListAsync();
+        
+            var columnas = new List<string> { "Nombre", "Apellido", "DNI", "Cargo", "Correo", "Dirección", "Estado" };
+            var filas = empleados.Select(e => new List<string> {
+                e.nombre  ?? "—",
+                (e.paterno ?? "") + " " + (e.materno ?? ""),
+                e.dni     ?? "—",
+                e.Cargo   ?? "—",
+                e.correo  ?? "—",
+                e.direccion ?? "—",
+                e.estado  ?? "—"
+            }).ToList();
+        
+            return GenerarCsv(columnas, filas, "Empleados");
+        }
+
 
         // ── Helper privado ────────────────────────────────────────
         private async Task<List<GrupoCheckbox>> CargarGrupos(int? idEmpleado = null)
@@ -362,6 +411,114 @@ namespace PROYJHOME2026.Controllers
                     Marcado = idsActuales.Contains(g.idGrupo)
                 })
                 .ToListAsync();
+        }
+        private FileContentResult GenerarPdf(string titulo, List<string> columnas, List<List<string>> filas)
+        {
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        
+            var nombreUsuario = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema";
+        
+            var bytes = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(columnas.Count > 5 ? PageSizes.A4.Landscape() : PageSizes.A4);
+                    page.MarginHorizontal(28);
+                    page.MarginVertical(24);
+                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
+        
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("INDUSTRIAS JHOMERON S.A")
+                                    .Bold().FontSize(14).FontColor("#1e3a5f");
+                                c.Item().Text(titulo)
+                                    .FontSize(11).FontColor("#374151");
+                                c.Item().Text("Generado por: " + nombreUsuario +
+                                    "  |  " + DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
+                                    .FontSize(8).FontColor("#9ca3af");
+                            });
+                        });
+                        col.Item().PaddingTop(6).LineHorizontal(1).LineColor("#e5e7eb");
+                    });
+        
+                    page.Content().PaddingTop(14).Table(table =>
+                    {
+                        table.ColumnsDefinition(cols =>
+                        {
+                            foreach (var _ in columnas) cols.RelativeColumn();
+                        });
+        
+                        table.Header(header =>
+                        {
+                            foreach (var col in columnas)
+                                header.Cell()
+                                    .Background("#1e3a5f")
+                                    .Padding(5)
+                                    .Text(col)
+                                    .Bold().FontColor("#ffffff").FontSize(8);
+                        });
+        
+                        var alt = false;
+                        foreach (var fila in filas)
+                        {
+                            var bg = alt ? "#f9fafb" : "#ffffff";
+                            foreach (var celda in fila)
+                                table.Cell()
+                                    .Background(bg)
+                                    .BorderBottom(1).BorderColor("#f3f4f6")
+                                    .Padding(4)
+                                    .Text(celda ?? "—")
+                                    .FontSize(8);
+                            alt = !alt;
+                        }
+                    });
+        
+                    page.Footer().AlignCenter().Text(t =>
+                    {
+                        t.Span("Página ").FontSize(7).FontColor("#9ca3af");
+                        t.CurrentPageNumber().FontSize(7).FontColor("#9ca3af");
+                        t.Span(" de ").FontSize(7).FontColor("#9ca3af");
+                        t.TotalPages().FontSize(7).FontColor("#9ca3af");
+                        t.Span("  |  Industrias Jhomeron S.A  |  RUC: 20601777844")
+                            .FontSize(7).FontColor("#9ca3af");
+                    });
+                });
+            }).GeneratePdf();
+        
+            var nombre = titulo.Replace(" ", "_") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".pdf";
+            return File(bytes, "application/pdf", nombre);
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportarPdf(string? buscar, string? estado)
+        {
+            var query = _context.Empleados.AsQueryable();
+        
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(e =>
+                    (e.nombre  != null && e.nombre.Contains(buscar))  ||
+                    (e.paterno != null && e.paterno.Contains(buscar)) ||
+                    (e.dni     != null && e.dni.Contains(buscar))     ||
+                    (e.correo  != null && e.correo.Contains(buscar)));
+            if (!string.IsNullOrWhiteSpace(estado))
+                query = query.Where(e => e.estado == estado);
+        
+            var empleados = await query.OrderByDescending(e => e.idEmpleado).ToListAsync();
+        
+            var columnas = new List<string> { "Nombre", "Apellido Paterno", "DNI", "Cargo", "Correo", "Estado" };
+            var filas = empleados.Select(e => new List<string> {
+                e.nombre   ?? "—",
+                (e.paterno ?? "") + " " + (e.materno ?? ""),
+                e.dni      ?? "—",
+                e.Cargo    ?? "—",
+                e.correo   ?? "—",
+                e.estado   ?? "—"
+            }).ToList();
+        
+            return GenerarPdf("Empleados", columnas, filas);
         }
         // ── CAMBIAR ESTADO EMPLEADO POST ────────────────────────
         [HttpPost]

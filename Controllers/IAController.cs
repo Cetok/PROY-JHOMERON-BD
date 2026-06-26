@@ -147,9 +147,12 @@ namespace PROYJHOME2026.Controllers
                 sb.AppendLine(linea);
             }
 
-            var bytes  = Encoding.UTF8.GetBytes(sb.ToString());
+            // BOM UTF-8 para que Excel abra correctamente los caracteres especiales
+            var bom    = new byte[] { 0xEF, 0xBB, 0xBF };
+            var datos  = Encoding.UTF8.GetBytes(sb.ToString());
+            var bytes  = bom.Concat(datos).ToArray();
             var nombre = (req.Titulo ?? "Reporte") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".csv";
-            return File(bytes, "text/csv; charset=utf-8", nombre);
+            return File(bytes, "text/csv; charset=utf-8-sig", nombre);
         }
 
         // ── EXPORTAR PDF ─────────────────────────────────────────

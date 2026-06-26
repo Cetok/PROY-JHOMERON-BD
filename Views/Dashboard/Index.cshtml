@@ -1,0 +1,529 @@
+@{
+    ViewData["Title"]      = "Dashboard";
+    ViewData["Breadcrumb"] = "Dashboard de Análisis";
+    var tabInicial = ViewBag.TabInicial as string ?? "resumen";
+    var esAdmin    = (bool)(ViewBag.EsAdmin ?? false);
+    var rol        = ViewBag.Rol as string ?? "";
+}
+
+@section Styles {
+<style>
+/* ── TABS ─────────────────────────────────────────────────── */
+.dash-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:20px; background:#fff; padding:8px; border-radius:12px; border:1px solid #e2e8f0; }
+.dash-tab  { padding:8px 16px; border-radius:8px; border:none; background:transparent; cursor:pointer; font-size:0.82rem; font-weight:600; color:#64748b; display:flex; align-items:center; gap:6px; transition:all 0.15s; }
+.dash-tab:hover   { background:#f1f5f9; color:#1e293b; }
+.dash-tab.active  { background:linear-gradient(135deg,#0d3393,#0ea5e9); color:white; }
+.dash-tab svg     { width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2; }
+
+/* ── PANEL ────────────────────────────────────────────────── */
+.dash-panel       { display:none; }
+.dash-panel.active{ display:block; }
+
+/* ── KPIs ─────────────────────────────────────────────────── */
+.kpi-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+.kpi-box { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px; position:relative; overflow:hidden; }
+.kpi-box::before { content:''; position:absolute; left:0;top:0;bottom:0; width:4px; border-radius:12px 0 0 12px; }
+.kpi-box--azul::before    { background:#0d3393; }
+.kpi-box--celeste::before { background:#0ea5e9; }
+.kpi-box--verde::before   { background:#16a34a; }
+.kpi-box--amarillo::before{ background:#d97706; }
+.kpi-box--rojo::before    { background:#dc2626; }
+.kpi-box--purple::before  { background:#7c3aed; }
+.kpi-val  { font-size:2rem; font-weight:800; color:#0d3393; line-height:1; }
+.kpi-lbl  { font-size:0.72rem; color:#64748b; margin-top:4px; }
+.kpi-sub  { font-size:0.7rem; color:#94a3b8; margin-top:2px; }
+
+/* ── GRID GRÁFICOS ────────────────────────────────────────── */
+.chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.chart-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+.chart-grid-1 { display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:16px; }
+.chart-card   { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:18px; }
+.chart-title  { font-size:0.82rem; font-weight:700; color:#1e293b; margin-bottom:4px; }
+.chart-sub    { font-size:0.69rem; color:#94a3b8; margin-bottom:14px; }
+.chart-wrap   { position:relative; }
+
+/* ── TABLAS INTERNAS ──────────────────────────────────────── */
+.mini-table { width:100%; border-collapse:collapse; font-size:0.78rem; }
+.mini-table th { background:#f8fafc; color:#64748b; font-weight:700; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; padding:7px 10px; text-align:left; border-bottom:1px solid #e2e8f0; }
+.mini-table td { padding:7px 10px; border-bottom:1px solid #f1f5f9; color:#374151; }
+.mini-table tr:last-child td { border-bottom:none; }
+.mini-table tr:hover td { background:#f8fafc; }
+
+/* ── BADGES ───────────────────────────────────────────────── */
+.b { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.68rem; font-weight:700; }
+.b-verde    { background:#dcfce7; color:#16a34a; }
+.b-rojo     { background:#fee2e2; color:#dc2626; }
+.b-amarillo { background:#fef9c3; color:#d97706; }
+.b-azul     { background:#dbeafe; color:#1d4ed8; }
+.b-gris     { background:#f1f5f9; color:#64748b; }
+.b-purple   { background:#ede9fe; color:#7c3aed; }
+.b-naranja  { background:#ffedd5; color:#ea580c; }
+
+/* ── LOADING ──────────────────────────────────────────────── */
+.dash-loading { display:flex; align-items:center; justify-content:center; gap:10px; padding:40px; color:#94a3b8; font-size:0.85rem; }
+.spin { width:20px; height:20px; border:2px solid #e2e8f0; border-top-color:#0d3393; border-radius:50%; animation:spin 0.7s linear infinite; }
+@@keyframes spin { to { transform:rotate(360deg); } }
+
+@@media(max-width:768px) {
+    .chart-grid-2,.chart-grid-3 { grid-template-columns:1fr; }
+    .kpi-row { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+}
+
+<!-- HEADER -->
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Análisis</div>
+        <h1 class="page-header__title">Dashboard</h1>
+        <p class="page-header__subtitle">Datos en tiempo real · <span id="ultima-act"></span></p>
+    </div>
+    <div class="page-header__actions">
+        <button class="btn btn--secondary btn--sm" onclick="refrescarPanel()">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            Refrescar
+        </button>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="dash-tabs">
+    @if (esAdmin) {
+        <button class="dash-tab @(tabInicial=="resumen"?"active":"")" onclick="cambiarTab('resumen',this)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Resumen
+        </button>
+    }
+    @if (esAdmin || rol == "Transporte" || rol == "SSOMA") {
+        <button class="dash-tab @(tabInicial=="flota"?"active":"")" onclick="cambiarTab('flota',this)">
+            <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            Flota Vehicular
+        </button>
+    }
+    @if (esAdmin || rol == "SoporteTI" || rol == "Logistica") {
+        <button class="dash-tab @(tabInicial=="ti"?"active":"")" onclick="cambiarTab('ti',this)">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Equipos TI
+        </button>
+    }
+    @if (esAdmin || rol == "Produccion") {
+        <button class="dash-tab @(tabInicial=="produccion"?"active":"")" onclick="cambiarTab('produccion',this)">
+            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            Producción
+        </button>
+    }
+    @if (esAdmin || rol == "Logistica") {
+        <button class="dash-tab @(tabInicial=="logistica"?"active":"")" onclick="cambiarTab('logistica',this)">
+            <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M16 2v3M8 2v3M2 8h3M2 16h3M22 8h-3M22 16h-3M16 22v-3M8 22v-3"/></svg>
+            Logística
+        </button>
+    }
+    @if (esAdmin || rol == "SSOMA") {
+        <button class="dash-tab @(tabInicial=="ssoma"?"active":"")" onclick="cambiarTab('ssoma',this)">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            SSOMA
+        </button>
+    }
+    @if (esAdmin) {
+        <button class="dash-tab @(tabInicial=="rrhh"?"active":"")" onclick="cambiarTab('rrhh',this)">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            RR.HH
+        </button>
+    }
+</div>
+
+<!-- ── PANEL RESUMEN ──────────────────────────────────────── -->
+@if (esAdmin) {
+<div class="dash-panel @(tabInicial=="resumen"?"active":"")" id="panel-resumen">
+    <div class="dash-loading" id="load-resumen"><div class="spin"></div> Cargando datos...</div>
+    <div id="contenido-resumen" style="display:none;"></div>
+</div>
+}
+
+<!-- ── PANEL FLOTA ────────────────────────────────────────── -->
+@if (esAdmin || rol == "Transporte" || rol == "SSOMA") {
+<div class="dash-panel @(tabInicial=="flota"?"active":"")" id="panel-flota">
+    <div class="dash-loading" id="load-flota"><div class="spin"></div> Cargando datos...</div>
+    <div id="contenido-flota" style="display:none;"></div>
+</div>
+}
+
+<!-- ── PANEL TI ───────────────────────────────────────────── -->
+@if (esAdmin || rol == "SoporteTI" || rol == "Logistica") {
+<div class="dash-panel @(tabInicial=="ti"?"active":"")" id="panel-ti">
+    <div class="dash-loading" id="load-ti"><div class="spin"></div> Cargando datos...</div>
+    <div id="contenido-ti" style="display:none;"></div>
+</div>
+}
+
+<!-- ── PANEL PRODUCCIÓN ───────────────────────────────────── -->
+@if (esAdmin || rol == "Produccion") {
+<div class="dash-panel @(tabInicial=="produccion"?"active":"")" id="panel-produccion">
+    <div class="dash-loading" id="load-produccion"><div class="spin"></div> Cargando datos...</div>
+    <div id="contenido-produccion" style="display:none;"></div>
+</div>
+}
+
+<!-- ── PANEL LOGÍSTICA ────────────────────────────────────── -->
+@if (esAdmin || rol == "Logistica") {
+<div class="dash-panel @(tabInicial=="logistica"?"active":"")" id="panel-logistica">
+    <div class="dash-loading" id="load-logistica"><div class="spin"></div> Cargando datos...</div>
+    <div id="contenido-logistica" style="display:none;"></div>
+</div>
+}
+
+<!-- ── PANEL SSOMA ────────────────────────────────────────── -->
+@if (esAdmin || rol == "SSOMA") {
+<div class="dash-panel @(tabInicial=="ssoma"?"active":"")" id="panel-ssoma">
+    <div class="dash-loading" id="load-ssoma"><div class="spin"></div> Cargando datos...</div>
+    <div id="contenido-ssoma" style="display:none;"></div>
+</div>
+}
+
+<!-- ── PANEL RRHH ─────────────────────────────────────────── -->
+@if (esAdmin) {
+<div class="dash-panel @(tabInicial=="rrhh"?"active":"")" id="panel-rrhh">
+    <div class="dash-loading" id="load-rrhh"><div class="spin"></div> Cargando datos...</div>
+    <div id="contenido-rrhh" style="display:none;"></div>
+</div>
+}
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const COLORES = ['#0d3393','#0ea5e9','#16a34a','#d97706','#dc2626','#7c3aed','#06b6d4','#f97316','#ec4899','#84cc16'];
+const CHART_OPT = (tipo) => ({
+    responsive:true, maintainAspectRatio:false, animation:{duration:500},
+    plugins:{
+        legend:{ display: tipo==='doughnut', position:'bottom', labels:{color:'#64748b',padding:8,font:{size:11}} },
+        tooltip:{ backgroundColor:'#fff', titleColor:'#1e293b', bodyColor:'#64748b', borderColor:'#e2e8f0', borderWidth:1, padding:10 }
+    },
+    scales: tipo==='doughnut'?{}:{ x:{grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',font:{size:10}}}, y:{grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8',font:{size:10}}} }
+});
+
+const charts = {};
+function crearGrafico(id, tipo, labels, datos, colores) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    if (charts[id]) { charts[id].destroy(); }
+    const datasets = tipo==='doughnut'
+        ? [{ data:datos, backgroundColor:colores||COLORES, borderWidth:2, borderColor:'#fff', hoverOffset:6 }]
+        : [{ data:datos, backgroundColor:colores||COLORES[0], borderRadius:5, borderSkipped:false }];
+    charts[id] = new Chart(canvas, {
+        type: tipo,
+        data: { labels, datasets },
+        options: { ...CHART_OPT(tipo), cutout: tipo==='doughnut'?'65%':undefined }
+    });
+}
+function crearLineal(id, labels, datasets) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(canvas, {
+        type:'line',
+        data:{ labels, datasets },
+        options:{ ...CHART_OPT('line'), plugins:{...CHART_OPT('line').plugins, legend:{display:true,position:'bottom',labels:{color:'#64748b',padding:8,font:{size:11}}}} }
+    });
+}
+
+function kpi(val, lbl, sub, color) {
+    return `<div class="kpi-box kpi-box--${color}"><div class="kpi-val">${val}</div><div class="kpi-lbl">${lbl}</div>${sub?'<div class="kpi-sub">'+sub+'</div>':''}</div>`;
+}
+function badge(txt, color) { return `<span class="b b-${color}">${txt}</span>`; }
+function badgeEstado(est) {
+    const map = {
+        'Activo':'verde','Vigente':'verde','Libre':'verde','Disponible':'verde',
+        'Asignado':'azul','En proceso':'amarillo','Pendiente':'amarillo',
+        'Culminado':'verde','Cancelado':'rojo','Inactivo':'gris',
+        'Vencido':'rojo','Crítico':'rojo','Próximo':'naranja','Sin fecha':'gris',
+        'Mantenimiento':'amarillo','Registrado':'gris','Inoperativo':'rojo','Dado de Baja':'rojo',
+        'Operativo':'verde','Almacenado en stock':'amarillo'
+    };
+    return badge(est, map[est]||'gris');
+}
+function tabla(cols, filas, emptyMsg) {
+    if (!filas||!filas.length) return `<p style="text-align:center;color:#94a3b8;padding:20px;font-size:0.82rem;">${emptyMsg||'Sin datos'}</p>`;
+    const ths = cols.map(c=>`<th>${c}</th>`).join('');
+    const trs = filas.map(f=>`<tr>${f.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('');
+    return `<table class="mini-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+function card(titulo, sub, contenido) {
+    return `<div class="chart-card"><div class="chart-title">${titulo}</div><div class="chart-sub">${sub}</div>${contenido}</div>`;
+}
+function canvasWrap(id, h) {
+    return `<div class="chart-wrap" style="height:${h||200}px;"><canvas id="${id}"></canvas></div>`;
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────
+const cargados = {};
+function cambiarTab(nombre, btn) {
+    document.querySelectorAll('.dash-panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.dash-tab').forEach(b=>b.classList.remove('active'));
+    const panel = document.getElementById('panel-'+nombre);
+    if (panel) panel.classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (!cargados[nombre]) cargarPanel(nombre);
+}
+function refrescarPanel() {
+    const activo = document.querySelector('.dash-panel.active');
+    if (!activo) return;
+    const nombre = activo.id.replace('panel-','');
+    cargados[nombre] = false;
+    cargarPanel(nombre);
+}
+async function cargarPanel(nombre) {
+    cargados[nombre] = true;
+    const load     = document.getElementById('load-'+nombre);
+    const contenido= document.getElementById('contenido-'+nombre);
+    if (load)      load.style.display     = 'flex';
+    if (contenido) contenido.style.display= 'none';
+    try {
+        const rutas = { resumen:'Resumen', flota:'Flota', ti:'TI', produccion:'Produccion', logistica:'Logistica', ssoma:'SSoma', rrhh:'RRHH' };
+        const res   = await fetch('/Dashboard/Datos'+rutas[nombre]);
+        if (!res.ok) throw new Error(res.statusText);
+        const d = await res.json();
+        if (load)      load.style.display     = 'none';
+        if (contenido) { contenido.style.display = 'block'; renderPanel(nombre, d, contenido); }
+    } catch(e) {
+        if (load) load.innerHTML = `<span style="color:#dc2626;">Error al cargar datos: ${e.message}</span>`;
+    }
+    document.getElementById('ultima-act').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-PE');
+}
+
+// ── RENDERS ───────────────────────────────────────────────
+function renderPanel(nombre, d, el) {
+    const fn = {resumen:renderResumen, flota:renderFlota, ti:renderTI, produccion:renderProduccion, logistica:renderLogistica, ssoma:renderSSoma, rrhh:renderRRHH};
+    if (fn[nombre]) fn[nombre](d, el);
+}
+
+// RESUMEN
+function renderResumen(d, el) {
+    const k = d.kpis, am = d.actividadMensual;
+    el.innerHTML = `
+    <div class="kpi-row">
+        ${kpi(k.totalEmpleados,'Empleados',k.empleadosActivos+' activos','azul')}
+        ${kpi(k.totalEquipos,'Equipos TI',k.equiposAsignados+' asignados','celeste')}
+        ${kpi(k.totalCarros,'Vehículos',k.carrosActivos+' activos','verde')}
+        ${kpi(k.totalMaquinas,'Máquinas',k.maquinasActivas+' activas','purple')}
+        ${kpi(k.totalChips,'Chips/SIM',k.chipsAsignados+' asignados','celeste')}
+        ${kpi(k.mantePendientes,'Mant. Pendientes',k.manteEnProceso+' en proceso','amarillo')}
+    </div>
+    <div class="chart-grid-2">
+        ${card('Actividad mensual','Asignaciones y mantenimientos últimos 6 meses',canvasWrap('ch-resumen-act',220))}
+        ${card('Distribución de flota','Estado actual de vehículos',canvasWrap('ch-resumen-carros',220))}
+    </div>`;
+    setTimeout(()=>{
+        crearLineal('ch-resumen-act',
+            am.map(x=>x.mes),
+            [
+                {label:'Asignaciones',data:am.map(x=>x.asigs),borderColor:COLORES[0],backgroundColor:COLORES[0]+'20',fill:true,tension:0.4,borderWidth:2},
+                {label:'Mantenimientos',data:am.map(x=>x.mantes),borderColor:COLORES[2],backgroundColor:COLORES[2]+'20',fill:true,tension:0.4,borderWidth:2}
+            ]
+        );
+    },100);
+}
+
+// FLOTA
+function renderFlota(d, el) {
+    const diasColor = (d) => d<=0?'rojo':d<=7?'rojo':d<=30?'naranja':'verde';
+    el.innerHTML = `
+    <div class="kpi-row">
+        ${kpi(d.totalCarros,'Total vehículos','','azul')}
+        ${kpi(d.carrosActivos,'Activos','','verde')}
+        ${kpi(d.mantePendTotal,'Mant. pendientes','','amarillo')}
+        ${kpi(d.manteTotal,'Mant. totales','','celeste')}
+        ${kpi(d.vencimientos.length,'Venc. próx. (30d)','','rojo')}
+    </div>
+    <div class="chart-grid-3">
+        ${card('Estado de vehículos','Distribución por estado',canvasWrap('ch-flota-est',180))}
+        ${card('Mantenimientos por mes','Últimos 6 meses',canvasWrap('ch-flota-meses',180))}
+        ${card('Estado de mantenimientos','Todos los mantenimientos',canvasWrap('ch-flota-mante-est',180))}
+    </div>
+    <div class="chart-grid-2">
+        ${card('Vencimientos próximos (30 días)','Seguros, modalidades y habilitaciones',`<div style="overflow-x:auto">${tabla(
+            ['Placa','Documento','Fecha','Días rest.'],
+            d.vencimientos.map(v=>[v.placa, v.tipo, v.fecha, badge(v.diasRest+' días', diasColor(v.diasRest))]),
+            'Sin vencimientos próximos ✓'
+        )}</div>`)}
+        ${card('Top vehículos con más mantenimientos','Histórico total',canvasWrap('ch-flota-top',200))}
+    </div>
+    <div class="chart-grid-1">
+        ${card('Mantenimientos pendientes','Próximos programados',`<div style="overflow-x:auto">${tabla(
+            ['Placa','Tipo','Fecha programada','Días rest.'],
+            d.mantePendientes.map(m=>[m.placa, m.tipo, m.fecha, badge(m.diasRest+' días',diasColor(m.diasRest))]),
+            'Sin mantenimientos pendientes ✓'
+        )}</div>`)}
+    </div>`;
+    setTimeout(()=>{
+        crearGrafico('ch-flota-est','doughnut', d.estadoCarros.map(e=>e.estado), d.estadoCarros.map(e=>e.total));
+        crearGrafico('ch-flota-meses','bar', d.mantesPorMes.map(m=>m.mes), d.mantesPorMes.map(m=>m.total), COLORES[0]);
+        crearGrafico('ch-flota-mante-est','doughnut', d.manteEstado.map(e=>e.estado), d.manteEstado.map(e=>e.total));
+        crearGrafico('ch-flota-top','bar', d.topCarros.map(c=>c.placa), d.topCarros.map(c=>c.total), COLORES[2]);
+    },100);
+}
+
+// TI
+function renderTI(d, el) {
+    el.innerHTML = `
+    <div class="kpi-row">
+        ${kpi(d.totalEquipos,'Total equipos','','azul')}
+        ${kpi(d.asigActivas,'Asignaciones activas','','verde')}
+        ${kpi(d.asigInactivas,'Asignaciones inactivas','','gris')}
+        ${kpi(d.equiposSinAsignar,'Equipos disponibles','(estado Activo)','celeste')}
+    </div>
+    <div class="chart-grid-3">
+        ${card('Equipos por tipo','Distribución por categoría',canvasWrap('ch-ti-tipo',190))}
+        ${card('Estado de equipos','Distribución actual',canvasWrap('ch-ti-est',190))}
+        ${card('Asignaciones por mes','Últimos 6 meses',canvasWrap('ch-ti-meses',190))}
+    </div>
+    <div class="chart-grid-2">
+        ${card('Asignaciones activas vs inactivas','Proporción general',canvasWrap('ch-ti-asig',160))}
+        ${card('Últimas asignaciones','10 más recientes',`<div style="overflow-x:auto">${tabla(
+            ['Empleado','Equipo','Área','Estado','Fecha'],
+            d.ultimasAsig.map(a=>[a.empleado, a.equipo, a.area, badgeEstado(a.estado), a.fecha]),
+            'Sin asignaciones'
+        )}</div>`)}
+    </div>`;
+    setTimeout(()=>{
+        crearGrafico('ch-ti-tipo','bar', d.porTipo.map(t=>t.tipo), d.porTipo.map(t=>t.total), COLORES.slice(0,d.porTipo.length));
+        crearGrafico('ch-ti-est','doughnut', d.porEstado.map(e=>e.estado), d.porEstado.map(e=>e.total));
+        crearGrafico('ch-ti-meses','bar', d.asigsPorMes.map(m=>m.mes), d.asigsPorMes.map(m=>m.total), COLORES[1]);
+        crearGrafico('ch-ti-asig','doughnut', ['Activas','Inactivas'], [d.asigActivas,d.asigInactivas], [COLORES[2],COLORES[8]]);
+    },100);
+}
+
+// PRODUCCIÓN
+function renderProduccion(d, el) {
+    el.innerHTML = `
+    <div class="kpi-row">
+        ${kpi(d.totalMaquinas,'Total máquinas','','azul')}
+        ${kpi(d.maquinasActivas,'Activas','','verde')}
+        ${kpi(d.sinAsignar,'Sin asignar','','amarillo')}
+    </div>
+    <div class="chart-grid-3">
+        ${card('Máquinas por estado','Distribución actual',canvasWrap('ch-prod-est',190))}
+        ${card('Top máquinas por nombre','Cantidad por tipo de máquina',canvasWrap('ch-prod-nom',190))}
+        ${card('Encargados con más máquinas','Asignaciones actuales',canvasWrap('ch-prod-enc',190))}
+    </div>
+    <div class="chart-grid-2">
+        ${card('Detalle de máquinas','Estado y encargados actuales',`<div style="overflow-x:auto">${tabla(
+            ['N°','Nombre','Marca','Estado','Encargado'],
+            d.detalleMaquinas.map(m=>[m.numero, m.nombre, m.marca, badgeEstado(m.estado), m.encargado]),
+            'Sin máquinas'
+        )}</div>`)}
+        ${card('Últimos movimientos','Registros en auditoría',`<div style="overflow-x:auto">${tabla(
+            ['Acción','Descripción','Usuario','Fecha'],
+            d.ultimosCambios.map(c=>[badgeEstado(c.accion)||c.accion, c.descripcion||'—', c.usuario, c.fecha]),
+            'Sin movimientos'
+        )}</div>`)}
+    </div>`;
+    setTimeout(()=>{
+        crearGrafico('ch-prod-est','doughnut', d.porEstado.map(e=>e.estado), d.porEstado.map(e=>e.total));
+        crearGrafico('ch-prod-nom','bar', d.porNombre.map(n=>n.nombre), d.porNombre.map(n=>n.total), COLORES.slice(0,d.porNombre.length));
+        crearGrafico('ch-prod-enc','bar', d.encargados.map(e=>e.nombre), d.encargados.map(e=>e.total), COLORES[4]);
+    },100);
+}
+
+// LOGÍSTICA
+function renderLogistica(d, el) {
+    el.innerHTML = `
+    <div class="kpi-row">
+        ${kpi(d.totalChips,'Total chips/SIM','','azul')}
+        ${kpi(d.asignados,'Asignados','','verde')}
+        ${kpi(d.libres,'Disponibles','','celeste')}
+    </div>
+    <div class="chart-grid-2">
+        ${card('Estado chips/SIM','Asignados vs disponibles',canvasWrap('ch-log-dona',200))}
+        ${card('Asignaciones de chips por mes','Últimos 6 meses',canvasWrap('ch-log-meses',200))}
+    </div>
+    <div class="chart-grid-1">
+        ${card('Detalle chips/SIM','Estado y empleado asignado',`<div style="overflow-x:auto">${tabla(
+            ['Número','Estado','Empleado asignado','Fecha asignación'],
+            d.tablaChips.map(c=>[c.numero, badgeEstado(c.estado), c.empleado, c.fecha]),
+            'Sin chips registrados'
+        )}</div>`)}
+    </div>`;
+    setTimeout(()=>{
+        crearGrafico('ch-log-dona','doughnut', ['Asignados','Libres'], [d.asignados,d.libres], [COLORES[0],COLORES[2]]);
+        crearGrafico('ch-log-meses','bar', d.historialMensual.map(m=>m.mes), d.historialMensual.map(m=>m.total), COLORES[1]);
+    },100);
+}
+
+// SSOMA
+function renderSSoma(d, el) {
+    el.innerHTML = `
+    <div class="kpi-row">
+        ${kpi(d.totalExtintores,'Total extintores','','azul')}
+        ${kpi(d.extinEstado.vencidos,'Vencidos','','rojo')}
+        ${kpi(d.extinEstado.criticos,'Críticos (≤7d)','','rojo')}
+        ${kpi(d.extinEstado.proximos,'Próximos (≤30d)','','amarillo')}
+        ${kpi(d.extinEstado.vigentes,'Vigentes','','verde')}
+        ${kpi(d.totalBotiquines,'Botiquines','','celeste')}
+        ${kpi(d.totalChecklists,'Checklists total',d.checklistsMes+' último mes','purple')}
+    </div>
+    <div class="chart-grid-3">
+        ${card('Estado extintores','Distribución por vencimiento',canvasWrap('ch-ssoma-ext',180))}
+        ${card('Botiquines por vehículo','Cantidad por placa',canvasWrap('ch-ssoma-bot',180))}
+        ${card('Extintores próx. a vencer','Próximos 30 días',`<div style="overflow-x:auto">${tabla(
+            ['Placa','Tipo','Peso','Fecha','Días'],
+            d.extintosPorVencer.map(e=>[e.placa, e.tipo, e.peso, e.fecha, badge(e.diasRest+' días', e.diasRest<=7?'rojo':'naranja')]),
+            '✓ Sin extintores próximos a vencer'
+        )}</div>`)}
+    </div>
+    <div class="chart-grid-2">
+        ${card('Estado completo de extintores','Todos los extintores registrados',`<div style="overflow-x:auto">${tabla(
+            ['Placa','Tipo','Peso','Vencimiento','Estado'],
+            d.tablaExtintores.map(e=>[e.placa, e.tipo, e.peso, e.fecha, badgeEstado(e.estado)]),
+            'Sin extintores'
+        )}</div>`)}
+        ${card('Inspecciones recientes','Últimas 10 inspecciones',`<div style="overflow-x:auto">${tabla(
+            ['Tipo','Placa','Fecha','Observaciones'],
+            d.inspeccionesRecientes.map(i=>[badge(i.tipo,i.tipo==='Extintor'?'rojo':'verde'), i.placa, i.fecha, i.obs]),
+            'Sin inspecciones'
+        )}</div>`)}
+    </div>`;
+    setTimeout(()=>{
+        crearGrafico('ch-ssoma-ext','doughnut',
+            ['Vencidos','Críticos','Próximos','Vigentes','Sin fecha'],
+            [d.extinEstado.vencidos, d.extinEstado.criticos, d.extinEstado.proximos, d.extinEstado.vigentes, d.extinEstado.sinFecha],
+            ['#dc2626','#ea580c','#d97706','#16a34a','#94a3b8']);
+        crearGrafico('ch-ssoma-bot','bar',
+            d.botiquinesPorCarro.map(b=>b.placa),
+            d.botiquinesPorCarro.map(b=>b.total), COLORES[2]);
+    },100);
+}
+
+// RRHH
+function renderRRHH(d, el) {
+    el.innerHTML = `
+    <div class="kpi-row">
+        ${kpi(d.totalEmpleados,'Total empleados','','azul')}
+        ${kpi(d.empleadosActivos,'Activos','','verde')}
+        ${kpi(d.totalEmpleados-d.empleadosActivos,'Inactivos','','rojo')}
+        ${kpi(d.totalGrupos,'Grupos/Áreas','','celeste')}
+    </div>
+    <div class="chart-grid-3">
+        ${card('Estado empleados','Activos vs inactivos',canvasWrap('ch-rrhh-est',190))}
+        ${card('Empleados por cargo','Top 10 cargos',canvasWrap('ch-rrhh-cargo',190))}
+        ${card('Empleados por área/grupo','Distribución por grupo',canvasWrap('ch-rrhh-grupo',190))}
+    </div>
+    <div class="chart-grid-1">
+        ${card('Últimos empleados registrados','10 más recientes',`<div style="overflow-x:auto">${tabla(
+            ['Nombre','Cargo','DNI','Estado'],
+            d.ultimosRegistrados.map(e=>[e.nombre, e.cargo, e.dni, badgeEstado(e.estado)]),
+            'Sin empleados'
+        )}</div>`)}
+    </div>`;
+    setTimeout(()=>{
+        crearGrafico('ch-rrhh-est','doughnut', d.porEstado.map(e=>e.estado), d.porEstado.map(e=>e.total), [COLORES[2], COLORES[4], COLORES[6]]);
+        crearGrafico('ch-rrhh-cargo','bar', d.porCargo.map(c=>c.cargo), d.porCargo.map(c=>c.total), COLORES[0]);
+        crearGrafico('ch-rrhh-grupo','bar', d.porGrupo.map(g=>g.area), d.porGrupo.map(g=>g.total), COLORES[1]);
+    },100);
+}
+
+// ── INIT ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    cargarPanel('@tabInicial');
+});
+</script>
+}

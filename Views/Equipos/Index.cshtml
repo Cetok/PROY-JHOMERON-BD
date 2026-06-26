@@ -254,49 +254,27 @@
 
 @section Scripts {
 <script>
-function exportarTabla(tituloReporte, tipo) {
-    var tabla = document.querySelector("table");
-    if (!tabla) { alert("No hay datos para exportar."); return; }
-
-    var ths = Array.from(tabla.querySelectorAll("thead th"));
-    var idxAcciones = ths.findIndex(function(th) { return th.innerText.trim() === "Acciones"; });
-    var idxNum      = ths.findIndex(function(th) { return th.innerText.trim() === "#"; });
-
-    var columnas = ths
-        .filter(function(_, i) { return i !== idxAcciones && i !== idxNum; })
-        .map(function(th) { return th.innerText.trim(); })
-        .filter(function(t) { return t.length > 0; });
-
-    var filas = Array.from(tabla.querySelectorAll("tbody tr")).map(function(tr) {
-        return Array.from(tr.querySelectorAll("td"))
-            .filter(function(_, i) { return i !== idxAcciones && i !== idxNum; })
-            .map(function(td) { return td.innerText.trim().replace(/\s+/g, " "); });
-    });
-
-    if (filas.length === 0) { alert("No hay filas para exportar."); return; }
-
-    var payload = { titulo: tituloReporte, columnas: columnas, filas: filas };
-    var ruta    = tipo === "excel" ? "/IA/ExportarExcel" : "/IA/ExportarPdf";
-    var ext     = tipo === "excel" ? ".csv" : ".pdf";
-
-    fetch(ruta, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    })
-    .then(function(res) {
-        if (!res.ok) throw new Error("Error al exportar");
-        return res.blob();
-    })
-    .then(function(blob) {
-        var url = URL.createObjectURL(blob);
-        var a   = document.createElement("a");
-        a.href     = url;
-        a.download = tituloReporte.replace(/\s+/g, "_") + "_" + new Date().toISOString().slice(0,10) + ext;
-        a.click();
-        URL.revokeObjectURL(url);
-    })
-    .catch(function(e) { alert("Error al exportar: " + e.message); });
+function exportarTabla(titulo, tipo) {
+    var params = 'buscar='+encodeURIComponent(document.querySelector('[name="buscar"]')?.value||'')
+        +'&estado='+encodeURIComponent(document.querySelector('[name="estado"]')?.value||'');
+    var base = tipo === 'pdf' ? '/Empleados/ExportarPdf' : '/Empleados/ExportarExcel';
+    fetch(base + '?' + params)
+        .then(function(res) {
+            if (!res.ok) throw new Error('Error ' + res.status);
+            return res.blob();
+        })
+        .then(function(blob) {
+            var u = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = u;
+            a.download = titulo.replace(/ /g,'_') + '_' + new Date().toISOString().slice(0,10)
+                       + (tipo === 'pdf' ? '.pdf' : '.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(u);
+        })
+        .catch(function(e) { alert('Error al exportar: ' + e.message); });
 }
 </script>
 }

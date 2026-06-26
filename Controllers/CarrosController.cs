@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
 using PROYJHOME2026.Models;
 using PROYJHOME2026.Services;
+using System.Text;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace PROYJHOME2026.Controllers
 {
@@ -399,6 +403,174 @@ namespace PROYJHOME2026.Controllers
             var carro = await _context.Carros.FirstOrDefaultAsync(c => c.IdCarro == id);
             if (carro == null) return NotFound();
             return View(carro);
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportarExcel(string? buscar, string? estado, string? categoria)
+        {
+            var query = _context.Carros
+                .Include(c => c.EmpleadosCarros).ThenInclude(ec => ec.Empleado)
+                .AsQueryable();
+        
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(c =>
+                    c.Placa.Contains(buscar) || c.Marca.Contains(buscar) || c.Modelo.Contains(buscar) ||
+                    (c.NumeroMotor != null && c.NumeroMotor.Contains(buscar)) ||
+                    c.EmpleadosCarros.Any(ec =>
+                        (ec.Empleado.nombre != null && ec.Empleado.nombre.Contains(buscar)) ||
+                        (ec.Empleado.paterno != null && ec.Empleado.paterno.Contains(buscar))));
+        
+            if (!string.IsNullOrWhiteSpace(estado))
+                query = query.Where(c => c.Estado == estado);
+            if (!string.IsNullOrWhiteSpace(categoria))
+                query = query.Where(c => c.Categoria == categoria);
+        
+            var carros = await query.OrderByDescending(c => c.IdCarro).ToListAsync();
+        
+            var columnas = new List<string> { "Placa", "Marca", "Modelo", "Año", "Categoría", "Ejes", "Color", "Estado", "Conductor" };
+            var filas = carros.Select(c => new List<string> {
+                c.Placa ?? "—",
+                c.Marca ?? "—",
+                c.Modelo ?? "—",
+                c.FechaCarro?.Year.ToString() ?? "—",
+                c.Categoria ?? "—",
+                c.Ejes?.ToString() ?? "—",
+                c.Color ?? "—",
+                c.Estado ?? "—",
+                c.EmpleadosCarros.FirstOrDefault()?.Empleado is var emp && emp != null
+                    ? emp.nombre + " " + emp.paterno : "Sin conductor"
+            }).ToList();
+        
+            return GenerarCsv(columnas, filas, "Vehiculos");
+}
+        // Genera CSV con BOM UTF-8
+        private FileContentResult GenerarCsv(List<string> columnas, List<List<string>> filas, string titulo)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("sep=;");
+            sb.AppendLine(string.Join(";", columnas.Select(c => "\"" + c + "\"")));
+            foreach (var fila in filas)
+                sb.AppendLine(string.Join(";", fila.Select(v => "\"" + (v ?? "—").Replace("\"", "'") + "\"")));
+        
+            var bom   = new byte[] { 0xEF, 0xBB, 0xBF };
+            var datos = Encoding.UTF8.GetBytes(sb.ToString());
+            var bytes = bom.Concat(datos).ToArray();
+            var nombre = titulo.Replace(" ", "_") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".csv";
+            return File(bytes, "text/csv; charset=utf-8-sig", nombre);
+        }
+        private FileContentResult GenerarPdf(string titulo, List<string> columnas, List<List<string>> filas)
+        {
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        
+            var nombreUsuario = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema";
+        
+            var bytes = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(columnas.Count > 5 ? PageSizes.A4.Landscape() : PageSizes.A4);
+                    page.MarginHorizontal(28);
+                    page.MarginVertical(24);
+                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
+        
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("INDUSTRIAS JHOMERON S.A")
+                                    .Bold().FontSize(14).FontColor("#1e3a5f");
+                                c.Item().Text(titulo)
+                                    .FontSize(11).FontColor("#374151");
+                                c.Item().Text("Generado por: " + nombreUsuario +
+                                    "  |  " + DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
+                                    .FontSize(8).FontColor("#9ca3af");
+                            });
+                        });
+                        col.Item().PaddingTop(6).LineHorizontal(1).LineColor("#e5e7eb");
+                    });
+        
+                    page.Content().PaddingTop(14).Table(table =>
+                    {
+                        table.ColumnsDefinition(cols =>
+                        {
+                            foreach (var _ in columnas) cols.RelativeColumn();
+                        });
+        
+                        table.Header(header =>
+                        {
+                            foreach (var col in columnas)
+                                header.Cell()
+                                    .Background("#1e3a5f")
+                                    .Padding(5)
+                                    .Text(col)
+                                    .Bold().FontColor("#ffffff").FontSize(8);
+                        });
+        
+                        var alt = false;
+                        foreach (var fila in filas)
+                        {
+                            var bg = alt ? "#f9fafb" : "#ffffff";
+                            foreach (var celda in fila)
+                                table.Cell()
+                                    .Background(bg)
+                                    .BorderBottom(1).BorderColor("#f3f4f6")
+                                    .Padding(4)
+                                    .Text(celda ?? "—")
+                                    .FontSize(8);
+                            alt = !alt;
+                        }
+                    });
+        
+                    page.Footer().AlignCenter().Text(t =>
+                    {
+                        t.Span("Página ").FontSize(7).FontColor("#9ca3af");
+                        t.CurrentPageNumber().FontSize(7).FontColor("#9ca3af");
+                        t.Span(" de ").FontSize(7).FontColor("#9ca3af");
+                        t.TotalPages().FontSize(7).FontColor("#9ca3af");
+                        t.Span("  |  Industrias Jhomeron S.A  |  RUC: 20601777844")
+                            .FontSize(7).FontColor("#9ca3af");
+                    });
+                });
+            }).GeneratePdf();
+        
+            var nombre = titulo.Replace(" ", "_") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".pdf";
+            return File(bytes, "application/pdf", nombre);
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportarPdf(string? buscar, string? estado, string? categoria)
+        {
+            var query = _context.Carros
+                .Include(c => c.EmpleadosCarros).ThenInclude(ec => ec.Empleado)
+                .AsQueryable();
+        
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(c =>
+                    c.Placa.Contains(buscar) || c.Marca.Contains(buscar) || c.Modelo.Contains(buscar) ||
+                    c.EmpleadosCarros.Any(ec =>
+                        (ec.Empleado.nombre != null && ec.Empleado.nombre.Contains(buscar)) ||
+                        (ec.Empleado.paterno != null && ec.Empleado.paterno.Contains(buscar))));
+            if (!string.IsNullOrWhiteSpace(estado))
+                query = query.Where(c => c.Estado == estado);
+            if (!string.IsNullOrWhiteSpace(categoria))
+                query = query.Where(c => c.Categoria == categoria);
+        
+            var carros = await query.OrderByDescending(c => c.IdCarro).ToListAsync();
+        
+            var columnas = new List<string> { "Placa", "Marca", "Modelo", "Año", "Categoría", "Ejes", "Estado", "Conductor" };
+            var filas = carros.Select(c => new List<string> {
+                c.Placa ?? "—",
+                c.Marca ?? "—",
+                c.Modelo ?? "—",
+                c.FechaCarro?.Year.ToString() ?? "—",
+                c.Categoria ?? "—",
+                c.Ejes?.ToString() ?? "—",
+                c.Estado ?? "—",
+                c.EmpleadosCarros.FirstOrDefault()?.Empleado is var emp && emp != null
+                    ? emp.nombre + " " + emp.paterno : "Sin conductor"
+            }).ToList();
+        
+            return GenerarPdf("Vehículos", columnas, filas);
         }
 
         // ── DELETE POST ──────────────────────────────────────────

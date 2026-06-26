@@ -18,6 +18,7 @@ namespace PROYJHOME2026.Filters
                 "Asignaciones", "Asignaciones.CargoPdf", "Historiales", "Motivos",
                 "Notificaciones",
                 "IA",
+                "Dashboard",
             };
 
         // ── Transporte (Silvana, Ayde) ────────────────────────────
@@ -35,6 +36,7 @@ namespace PROYJHOME2026.Filters
                 "InspeccionBotiquinGrupo", "InspeccionExtintor",
                 "Notificaciones",
                 "IA",
+                "Dashboard",
             };
 
         // ── Produccion (Eusebio) ──────────────────────────────────
@@ -46,6 +48,7 @@ namespace PROYJHOME2026.Filters
                 "Maquinas", "MaquinaAsignaciones",
                 "Notificaciones",
                 "IA",
+                "Dashboard",
             };
 
         // ── Logistica (Yanet) ─────────────────────────────────────
@@ -63,6 +66,7 @@ namespace PROYJHOME2026.Filters
                 "Historiales.Index", "Historiales.Details",
                 "Notificaciones",
                 "IA",
+                "Dashboard",
             };
 
         private static readonly HashSet<string> EmpleadosBloqueados =
@@ -123,7 +127,8 @@ namespace PROYJHOME2026.Filters
 
         private static bool TienePermisoSSoma(string ctrl, string accion)
         {
-            if (ctrl.Equals("IA", StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("IA",        StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Dashboard", StringComparison.OrdinalIgnoreCase)) return true;
 
             if (ctrl.Equals("Empleados", StringComparison.OrdinalIgnoreCase))
                 return AccionesSoloVer.Contains(accion);
@@ -151,7 +156,8 @@ namespace PROYJHOME2026.Filters
 
         private static bool TienePermisoLogistica(string ctrl, string accion)
         {
-            if (ctrl.Equals("IA", StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("IA",        StringComparison.OrdinalIgnoreCase)) return true;
+            if (ctrl.Equals("Dashboard", StringComparison.OrdinalIgnoreCase)) return true;
 
             var soloVer = new[] { "Index", "Details" };
             if (ctrl.Equals("Grupos",      StringComparison.OrdinalIgnoreCase) && soloVer.Contains(accion, StringComparer.OrdinalIgnoreCase)) return true;
