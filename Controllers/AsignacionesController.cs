@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using PROYJHOME2026.Data;
 using PROYJHOME2026.Services;
 using PROYJHOME2026.Models;
+using System.Text;
+
 
 namespace PROYJHOME2026.Controllers
 {
@@ -831,6 +833,144 @@ namespace PROYJHOME2026.Controllers
             var bytes    = pdf.GeneratePdf();
             var fileName = $"EntregaCelular_{nombreEmp.Replace(" ", "_")}_{fechaAsig:yyyyMMdd}.pdf";
             return File(bytes, "application/pdf", fileName);
+        }
+        private FileContentResult GenerarCsv(List<string> columnas, List<List<string>> filas, string titulo)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("sep=;");
+            sb.AppendLine(string.Join(";", columnas.Select(c => "\"" + c + "\"")));
+            foreach (var fila in filas)
+                sb.AppendLine(string.Join(";", fila.Select(v => "\"" + (v ?? "—").Replace("\"", "'") + "\"")));
+        
+            var bom   = new byte[] { 0xEF, 0xBB, 0xBF };
+            var datos = Encoding.UTF8.GetBytes(sb.ToString());
+            var bytes = bom.Concat(datos).ToArray();
+            var nombre = titulo.Replace(" ", "_") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".csv";
+            return File(bytes, "text/csv; charset=utf-8-sig", nombre);
+        }
+        
+        private FileContentResult GenerarPdf(string titulo, List<string> columnas, List<List<string>> filas)
+        {
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+            var nombreUsuario = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema";
+        
+            var bytes = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(columnas.Count > 5 ? PageSizes.A4.Landscape() : PageSizes.A4);
+                    page.MarginHorizontal(28);
+                    page.MarginVertical(24);
+                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
+        
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("INDUSTRIAS JHOMERON S.A").Bold().FontSize(14).FontColor("#1e3a5f");
+                                c.Item().Text(titulo).FontSize(11).FontColor("#374151");
+                                c.Item().Text("Generado por: " + nombreUsuario + "  |  " + DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
+                                    .FontSize(8).FontColor("#9ca3af");
+                            });
+                        });
+                        col.Item().PaddingTop(6).LineHorizontal(1).LineColor("#e5e7eb");
+                    });
+        
+                    page.Content().PaddingTop(14).Table(table =>
+                    {
+                        table.ColumnsDefinition(cols => { foreach (var _ in columnas) cols.RelativeColumn(); });
+        
+                        table.Header(header =>
+                        {
+                            foreach (var col in columnas)
+                                header.Cell().Background("#1e3a5f").Padding(5).Text(col).Bold().FontColor("#ffffff").FontSize(8);
+                        });
+        
+                        var alt = false;
+                        foreach (var fila in filas)
+                        {
+                            var bg = alt ? "#f9fafb" : "#ffffff";
+                            foreach (var celda in fila)
+                                table.Cell().Background(bg).BorderBottom(1).BorderColor("#f3f4f6").Padding(4).Text(celda ?? "—").FontSize(8);
+                            alt = !alt;
+                        }
+                    });
+        
+                    page.Footer().AlignCenter().Text(t =>
+                    {
+                        t.Span("Página ").FontSize(7).FontColor("#9ca3af");
+                        t.CurrentPageNumber().FontSize(7).FontColor("#9ca3af");
+                        t.Span(" de ").FontSize(7).FontColor("#9ca3af");
+                        t.TotalPages().FontSize(7).FontColor("#9ca3af");
+                        t.Span("  |  Industrias Jhomeron S.A  |  RUC: 20601777844").FontSize(7).FontColor("#9ca3af");
+                    });
+                });
+            }).GeneratePdf();
+        
+            var nombre = titulo.Replace(" ", "_") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".pdf";
+            return File(bytes, "application/pdf", nombre);
+        }
+        private async Task<List<List<string>>> ObtenerFilasAsignaciones(string? buscar, string? estado, int? tipoId)
+        {
+            var query = _context.Asignaciones
+                .Include(a => a.Empleado)
+                .Include(a => a.Equipo).ThenInclude(e => e.TipoEquipo)
+                .Include(a => a.Chip)
+                .Include(a => a.Grupo)
+                .AsQueryable();
+        
+            var rolIdx = HttpContext.Session.GetString("UsuarioRol") ?? "";
+            if (rolIdx == "SoporteTI")
+                query = query.Where(a => a.Equipo.TipoEquipo == null || !a.Equipo.TipoEquipo.tipo.ToUpper().Contains("CELULAR"));
+            else if (rolIdx == "Logistica")
+                query = query.Where(a => a.Equipo.TipoEquipo != null && a.Equipo.TipoEquipo.tipo.ToUpper().Contains("CELULAR"));
+        
+            if (tipoId.HasValue)
+                query = query.Where(a => a.Equipo.idTipoEquipo == tipoId);
+        
+            if (!string.IsNullOrWhiteSpace(buscar))
+                query = query.Where(a =>
+                    (a.Empleado.nombre  != null && a.Empleado.nombre.Contains(buscar))  ||
+                    (a.Empleado.paterno != null && a.Empleado.paterno.Contains(buscar)) ||
+                    (a.Empleado.dni     != null && a.Empleado.dni.Contains(buscar))     ||
+                    (a.Equipo.marca     != null && a.Equipo.marca.Contains(buscar))     ||
+                    (a.Equipo.modelo    != null && a.Equipo.modelo.Contains(buscar))    ||
+                    (a.CorreoEquipo     != null && a.CorreoEquipo.Contains(buscar))     ||
+                    (a.Chip != null && a.Chip.NumeroCelular != null && a.Chip.NumeroCelular.Contains(buscar)) ||
+                    (a.Grupo != null && a.Grupo.area != null && a.Grupo.area.Contains(buscar)));
+        
+            if (!string.IsNullOrWhiteSpace(estado))
+                query = query.Where(a => a.EstadoAsignacion == estado);
+        
+            var asignaciones = await query.OrderByDescending(a => a.IdAsignacion).ToListAsync();
+        
+            return asignaciones.Select(a => new List<string> {
+                a.Empleado != null ? a.Empleado.nombre + " " + a.Empleado.paterno : "—",
+                a.Equipo?.TipoEquipo?.tipo ?? "—",
+                a.Equipo != null ? (a.Equipo.marca ?? "") + " " + (a.Equipo.modelo ?? "") : "—",
+                a.Chip?.NumeroCelular ?? "—",
+                a.Grupo?.area ?? "—",
+                a.FechaAsignacion.ToString("dd/MM/yyyy"),
+                a.EstadoAsignacion ?? "—"
+            }).ToList();
+        }
+        
+        [HttpGet]
+        public async Task<IActionResult> ExportarExcel(string? buscar, string? estado, int? tipoId)
+        {
+            var columnas = new List<string> { "Empleado", "Tipo Equipo", "Equipo", "Chip", "Grupo", "Fecha Asignación", "Estado" };
+            var filas = await ObtenerFilasAsignaciones(buscar, estado, tipoId);
+            return GenerarCsv(columnas, filas, "Asignaciones");
+        }
+        
+        [HttpGet]
+        public async Task<IActionResult> ExportarPdf(string? buscar, string? estado, int? tipoId)
+        {
+            var columnas = new List<string> { "Empleado", "Tipo Equipo", "Equipo", "Chip", "Grupo", "Fecha Asig.", "Estado" };
+            var filas = await ObtenerFilasAsignaciones(buscar, estado, tipoId);
+            return GenerarPdf("Asignaciones", columnas, filas);
         }
     }
 }

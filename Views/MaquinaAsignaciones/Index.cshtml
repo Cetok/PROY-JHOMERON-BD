@@ -16,11 +16,11 @@
         <p class="page-header__subtitle">@total asignación(es) encontrada(s)</p>
     </div>
     <div class="page-header__actions">
-        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Asignaciones de Maquinas', 'excel')" title="Exportar a Excel">
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Asignaciones_Maquinas', 'excel')" title="Exportar a Excel">
             <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
             Excel
         </button>
-        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Asignaciones de Maquinas', 'pdf')" title="Exportar a PDF">
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Asignaciones_Maquinas', 'pdf')" title="Exportar a PDF">
             <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             PDF
         </button>
@@ -101,23 +101,34 @@
 
 @section Scripts {
 <script>
-function exportarTabla(tituloReporte, tipo) {
-    var tabla = document.querySelector("table");
-    if (!tabla) { alert("No hay datos para exportar."); return; }
-    var ths = Array.from(tabla.querySelectorAll("thead th"));
-    var idxAcc = ths.findIndex(function(th){ return th.innerText.trim()==="Acciones"; });
-    var idxNum = ths.findIndex(function(th){ return th.innerText.trim()==="#"; });
-    var columnas = ths.filter(function(_,i){ return i!==idxAcc&&i!==idxNum; }).map(function(th){ return th.innerText.trim(); }).filter(function(t){ return t.length>0; });
-    var filas = Array.from(tabla.querySelectorAll("tbody tr")).map(function(tr){
-        return Array.from(tr.querySelectorAll("td")).filter(function(_,i){ return i!==idxAcc&&i!==idxNum; }).map(function(td){ return td.innerText.trim().replace(/\s+/g," "); });
-    });
-    if (!filas.length){ alert("No hay filas para exportar."); return; }
-    fetch(tipo==="excel"?"/IA/ExportarExcel":"/IA/ExportarPdf",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({titulo:tituloReporte,columnas:columnas,filas:filas})
-    }).then(function(r){if(!r.ok)throw new Error();return r.blob();})
-    .then(function(b){var u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=tituloReporte.replace(/\s+/g,"_")+"_"+new Date().toISOString().slice(0,10)+(tipo==="excel"?".csv":".pdf");a.click();URL.revokeObjectURL(u);})
-    .catch(function(){alert("Error al exportar.");});
+function exportarTabla(titulo, tipo) {
+    var params = 'nombreMaquina='+encodeURIComponent(document.querySelector('[name="nombreMaquina"]')?.value||'')
+        +'&numeroDesde='+encodeURIComponent(document.querySelector('[name="numeroDesde"]')?.value||'')
+        +'&numeroHasta='+encodeURIComponent(document.querySelector('[name="numeroHasta"]')?.value||'')
+        +'&estadoOp='+encodeURIComponent(document.querySelector('[name="estadoOp"]')?.value||'')
+        +'&marca='+encodeURIComponent(document.querySelector('[name="marca"]')?.value||'')
+        +'&encargado='+encodeURIComponent(document.querySelector('[name="encargado"]')?.value||'')
+        +'&areaEspecifica='+encodeURIComponent(document.querySelector('[name="areaEspecifica"]')?.value||'')
+        +'&fechaDesde='+encodeURIComponent(document.querySelector('[name="fechaDesde"]')?.value||'')
+        +'&fechaHasta='+encodeURIComponent(document.querySelector('[name="fechaHasta"]')?.value||'');
+    var base = tipo === 'pdf' ? '/MaquinaAsignaciones/ExportarPdf' : '/MaquinaAsignaciones/ExportarExcel';
+    fetch(base + '?' + params)
+        .then(function(res) {
+            if (!res.ok) throw new Error('Error ' + res.status);
+            return res.blob();
+        })
+        .then(function(blob) {
+            var u = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = u;
+            a.download = titulo.replace(/ /g,'_') + '_' + new Date().toISOString().slice(0,10)
+                       + (tipo === 'pdf' ? '.pdf' : '.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(u);
+        })
+        .catch(function(e) { alert('Error al exportar: ' + e.message); });
 }
 </script>
 }
