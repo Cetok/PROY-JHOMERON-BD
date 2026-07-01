@@ -74,6 +74,25 @@ namespace PROYJHOME2026.Controllers
                 });
             }
 
+            // Últimos movimientos del sistema (máx 100, paginados de a 10)
+            const int porPaginaMov = 10;
+            const int maxMov       = 100;
+            var totalMovReal = await _context.AuditoriaLogs.CountAsync();
+            var totalMov     = Math.Min(totalMovReal, maxMov);
+
+            var ultimosMovimientos = await _context.AuditoriaLogs
+                .OrderByDescending(l => l.FechaHora)
+                .Take(maxMov)
+                .Take(porPaginaMov)
+                .Select(l => new {
+                    fecha       = l.FechaHora.ToString("dd/MM/yyyy HH:mm"),
+                    l.Accion,
+                    l.Entidad,
+                    l.Descripcion,
+                    l.NombreUsuario
+                })
+                .ToListAsync();
+
             return Json(new {
                 kpis = new {
                     totalEmpleados, empleadosActivos,
@@ -83,7 +102,45 @@ namespace PROYJHOME2026.Controllers
                     totalChips, chipsAsignados,
                     mantePendientes, manteEnProceso
                 },
-                actividadMensual
+                actividadMensual,
+                ultimosMovimientos,
+                totalMovimientos      = totalMov,
+                totalPaginasMov       = (int)Math.Ceiling((double)totalMov / porPaginaMov)
+            });
+        }
+
+        // ── AJAX: movimientos del sistema paginados (para el dashboard) ──
+        [HttpGet]
+        public async Task<IActionResult> MovimientosData(int pagina = 1)
+        {
+            if (!EsAdmin) return Forbid();
+
+            const int porPagina  = 10;
+            const int maxPaginas = 10;
+            const int totalMax   = porPagina * maxPaginas; // máx 100
+
+            var totalReal = await _context.AuditoriaLogs.CountAsync();
+            var total     = Math.Min(totalReal, totalMax);
+
+            var movimientos = await _context.AuditoriaLogs
+                .OrderByDescending(l => l.FechaHora)
+                .Take(totalMax)
+                .Skip((pagina - 1) * porPagina)
+                .Take(porPagina)
+                .Select(l => new {
+                    fecha        = l.FechaHora.ToString("dd/MM/yyyy HH:mm"),
+                    l.Accion,
+                    l.Entidad,
+                    l.Descripcion,
+                    l.NombreUsuario
+                })
+                .ToListAsync();
+
+            return Json(new {
+                total,
+                pagina,
+                totalPaginas = (int)Math.Ceiling((double)total / porPagina),
+                registros    = movimientos
             });
         }
 

@@ -308,9 +308,15 @@ function renderResumen(d, el) {
         ${kpi(k.totalChips,'Chips/SIM',k.chipsAsignados+' asignados','celeste')}
         ${kpi(k.mantePendientes,'Mant. Pendientes',k.manteEnProceso+' en proceso','amarillo')}
     </div>
-    <div class="chart-grid-2">
+    <div class="chart-grid-1">
         ${card('Actividad mensual','Asignaciones y mantenimientos últimos 6 meses',canvasWrap('ch-resumen-act',220))}
-        ${card('Distribución de flota','Estado actual de vehículos',canvasWrap('ch-resumen-carros',220))}
+    </div>
+    <div class="chart-grid-1">
+        ${card('Últimos movimientos del sistema', d.totalMovimientos+' registro(s)', `<div style="overflow-x:auto">${tabla(
+            ['Fecha / Hora','Acción','Entidad','Descripción','Usuario'],
+            d.ultimosMovimientos.map(m=>[m.fecha, badge(m.accion, m.accion==='Login'?'verde':m.accion==='Logout'?'gris':m.accion==='Eliminar'?'rojo':'azul'), m.entidad, m.descripcion||'—', `<a href="#" style="color:#0d3393;text-decoration:none;font-weight:600;">${m.nombreUsuario||'—'}</a>`]),
+            'Sin movimientos registrados'
+        )}</div>`)}
     </div>`;
     setTimeout(()=>{
         crearLineal('ch-resumen-act',
