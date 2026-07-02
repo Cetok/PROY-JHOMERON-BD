@@ -120,7 +120,7 @@
 
     </div>
 
-    <!-- FILA 2: Conductor -->
+     <!-- FILA 2: Conductor -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--gris-200);">
             <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900);">
@@ -130,13 +130,15 @@
         </div>
 
         @{
-            var conductor = Model.EmpleadosCarros.FirstOrDefault()?.Empleado;
+            var ec        = Model.EmpleadosCarros.FirstOrDefault();
+            var conductor = ec?.Empleado;
         }
 
-        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
-            @if (conductor != null)
-            {
-                <div style="display:flex; align-items:center; gap:12px;">
+        <!-- ── SECCIÓN 1: Ver conductor + sus licencias guardadas ── -->
+        @if (conductor != null)
+        {
+            <div style="display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--gris-100);">
+                <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:200px;">
                     <div class="emp-avatar-md">
                         @((conductor.nombre?.Length > 0 ? conductor.nombre[0].ToString() : "?").ToUpper())@((conductor.paterno?.Length > 0 ? conductor.paterno[0].ToString() : "").ToUpper())
                     </div>
@@ -145,64 +147,220 @@
                         <div style="font-size:0.78rem; color:var(--gris-400);">DNI: @(conductor.dni ?? "—")</div>
                     </div>
                 </div>
-            }
-            else
-            {
-                <div style="font-size:0.85rem; color:var(--gris-400);">Sin conductor asignado.</div>
-            }
 
-            <!-- Formulario para asignar/cambiar/quitar conductor -->
-            <form asp-action="AsignarConductor" method="post" id="formConductor"
-                  style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="idCarro" value="@Model.IdCarro" />
-                <input type="hidden" name="sinConductor" id="sinConductorInput" value="false" />
-                <select name="idEmpleado" id="selectConductor" class="form-control" style="min-width:220px;">
-                    <option value="">— Seleccionar conductor —</option>
-                    @foreach (var item in ViewBag.EmpleadosList as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                <!-- Tarjetas de licencias actuales -->
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    @if (ec!.TieneLicencia)
                     {
-                        if (conductor != null && item.Value == conductor.idEmpleado.ToString()) {
-                            <option value="@item.Value" selected>@item.Text</option>
-                        } else {
-                            <option value="@item.Value">@item.Text</option>
-                        }
+                        var expLic  = ec.LicenciaExpiracion;
+                        var diasLic = expLic.HasValue ? (expLic.Value.ToDateTime(TimeOnly.MinValue) - DateTime.Today).Days : (int?)null;
+                        var cLic    = diasLic.HasValue ? (diasLic < 0 ? "#dc2626" : diasLic <= 30 ? "#d97706" : "#16a34a") : "#64748b";
+                        var bLic    = diasLic.HasValue ? (diasLic < 0 ? "rgba(220,38,38,0.06)" : diasLic <= 30 ? "rgba(217,119,6,0.06)" : "rgba(22,163,74,0.06)") : "#f8fafc";
+                        <div style="border:1.5px solid @cLic; border-radius:10px; padding:10px 14px; background:@bLic; min-width:180px;">
+                            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; color:@cLic; margin-bottom:4px;">🪪 Licencia de conducir</div>
+                            <div style="font-weight:700; font-size:0.95rem; color:var(--gris-900);">@(ec.ClaseLicencia ?? "—")</div>
+                            @if (ec.LicenciaEmision.HasValue) {
+                                <div style="font-size:0.75rem; color:var(--gris-500); margin-top:4px;">Emisión: <strong>@ec.LicenciaEmision.Value.ToString("dd/MM/yyyy")</strong></div>
+                            }
+                            @if (expLic.HasValue) {
+                                var etiq = diasLic < 0  ? $"⛔ Vencida hace {Math.Abs(diasLic.Value)} días"
+                                         : diasLic == 0 ? "⚠️ Vence HOY"
+                                         : diasLic <= 30? $"⚠️ Vence en {diasLic} días"
+                                                        : $"✅ Vence: {expLic.Value:dd/MM/yyyy}";
+                                <div style="font-size:0.75rem; margin-top:2px; font-weight:600; color:@cLic;">@etiq</div>
+                            }
+                        </div>
                     }
-                </select>
-                <button type="submit" class="btn btn--celeste btn--sm"
-                        onclick="return validarConductor()">
-                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    @(conductor != null ? "Cambiar" : "Asignar")
-                </button>
-                @if (conductor != null)
-                {
-                    <button type="button" class="btn btn--secondary btn--sm"
-                            onclick="confirmarSinConductor()">
-                        Sin conductor
-                    </button>
-                }
-            </form>
+                    @if (ec!.TieneLicenciaEspecial)
+                    {
+                        var expEsp  = ec.LicenciaEspecialExpiracion;
+                        var diasEsp = expEsp.HasValue ? (expEsp.Value.ToDateTime(TimeOnly.MinValue) - DateTime.Today).Days : (int?)null;
+                        var cEsp    = diasEsp.HasValue ? (diasEsp < 0 ? "#dc2626" : diasEsp <= 30 ? "#d97706" : "#7c3aed") : "#64748b";
+                        var bEsp    = diasEsp.HasValue ? (diasEsp < 0 ? "rgba(220,38,38,0.06)" : diasEsp <= 30 ? "rgba(217,119,6,0.06)" : "rgba(124,58,237,0.06)") : "#f8fafc";
+                        <div style="border:1.5px solid @cEsp; border-radius:10px; padding:10px 14px; background:@bEsp; min-width:180px;">
+                            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; color:@cEsp; margin-bottom:4px;">⭐ Licencia especial</div>
+                            <div style="font-weight:700; font-size:0.95rem; color:var(--gris-900);">@(ec.ClaseLicenciaEspecial ?? "—")</div>
+                            @if (ec.LicenciaEspecialEmision.HasValue) {
+                                <div style="font-size:0.75rem; color:var(--gris-500); margin-top:4px;">Emisión: <strong>@ec.LicenciaEspecialEmision.Value.ToString("dd/MM/yyyy")</strong></div>
+                            }
+                            @if (expEsp.HasValue) {
+                                var etiq = diasEsp < 0  ? $"⛔ Vencida hace {Math.Abs(diasEsp.Value)} días"
+                                         : diasEsp == 0 ? "⚠️ Vence HOY"
+                                         : diasEsp <= 30? $"⚠️ Vence en {diasEsp} días"
+                                                        : $"✅ Vence: {expEsp.Value:dd/MM/yyyy}";
+                                <div style="font-size:0.75rem; margin-top:2px; font-weight:600; color:@cEsp;">@etiq</div>
+                            }
+                        </div>
+                    }
+                    @if (!ec!.TieneLicencia && !ec.TieneLicenciaEspecial)
+                    {
+                        <div style="font-size:0.82rem; color:var(--gris-400); padding:8px 0;">Sin licencias registradas aún.</div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div style="font-size:0.85rem; color:var(--gris-400); margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--gris-100);">
+                Sin conductor asignado.
+            </div>
+        }
 
-            <!-- Historial de conductores -->
-            @if (conductorLog.Any())
-            {
-                <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--gris-200);">
-                    <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:8px;">Historial de conductores</div>
-                    <div style="display:flex; flex-direction:column; gap:5px;">
-                        @foreach (var log in conductorLog)
-                        {
-                            <div style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200); font-size:0.78rem; flex-wrap:wrap;">
-                                <span style="color:var(--gris-400); font-size:0.7rem; flex-shrink:0;">@log.FechaHora.ToString("dd/MM/yy HH:mm")</span>
-                                <span style="color:var(--gris-600);">@(log.NombreConductorAnterior ?? "Sin conductor")</span>
-                                <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:var(--gris-400);fill:none;stroke-width:2;flex-shrink:0;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                                <span style="font-weight:600; color:var(--azul);">@(log.NombreConductorNuevo ?? "Sin conductor")</span>
-                                <span style="margin-left:auto; color:var(--gris-400); font-size:0.7rem;">@(log.NombreUsuario ?? "—")</span>
-                            </div>
-                        }
+        <!-- ── SECCIÓN 2: FORM 1 — Asignar/cambiar conductor (registra historial) ── -->
+        <div style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid var(--gris-100);">
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:10px;">
+                @(conductor != null ? "Cambiar conductor" : "Asignar conductor")
+            </div>
+            <form asp-action="AsignarConductor" method="post" id="formConductor">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="idCarro"       value="@Model.IdCarro" />
+                <input type="hidden" name="sinConductor"  id="sinConductorInput" value="false" />
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <div style="min-width:280px; flex:1; max-width:420px;">
+                        <select name="idEmpleado" id="selectConductor" class="form-control select2-conductor">
+                            <option value="">— Seleccionar conductor —</option>
+                            @foreach (var item in (ViewBag.EmpleadosList as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>()).OrderBy(x => x.Text))
+                            {
+                                if (conductor != null && item.Value == conductor.idEmpleado.ToString()) {
+                                    <option value="@item.Value" selected>@item.Text</option>
+                                } else {
+                                    <option value="@item.Value">@item.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn--celeste btn--sm" onclick="return validarConductor()">
+                        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        @(conductor != null ? "Cambiar conductor" : "Asignar conductor")
+                    </button>
+                    @if (conductor != null)
+                    {
+                        <button type="button" class="btn btn--secondary btn--sm" onclick="confirmarSinConductor()">
+                            Sin conductor
+                        </button>
+                    }
+                </div>
+                <div style="font-size:0.72rem; color:var(--gris-400); margin-top:6px;">
+                    ⚠️ Cambiar conductor queda registrado en el historial. Las licencias se limpian al cambiar.
+                </div>
+            </form>
+        </div>
+
+        <!-- ── SECCIÓN 3: FORM 2 — Licencias (NO registra historial de conductor) ── -->
+        @if (conductor != null)
+        {
+            <div style="margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400);">
+                        Licencias del conductor
+                    </div>
+                    <div style="font-size:0.72rem; color:var(--gris-400);">
+                        Editar y guardar no afecta el historial de conductores
                     </div>
                 </div>
-            }
-        </div>
+                <form asp-action="GuardarLicencias" method="post" id="formLicencias">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idCarro" value="@Model.IdCarro" />
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+
+                        <!-- Licencia de conducir -->
+                        <div style="border:1.5px solid var(--gris-200); border-radius:10px; padding:14px; background:var(--gris-50);" id="card-licencia">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:0.85rem; color:var(--gris-900); margin-bottom:10px;">
+                                <input type="checkbox" name="tieneLicencia" id="chkLicencia" value="true"
+                                       onchange="toggleLicencia()"
+                                       @(ec?.TieneLicencia == true ? "checked" : "")
+                                       style="width:16px;height:16px;accent-color:var(--azul);cursor:pointer;" />
+                                🪪 Tiene licencia de conducir
+                            </label>
+                            <div id="campos-licencia" style="display:@(ec?.TieneLicencia == true ? "grid" : "none"); grid-template-columns:1fr 1fr; gap:10px;">
+                                <div style="grid-column:1/-1;">
+                                    <label class="form-label">Clase de licencia</label>
+                                    <input type="text" name="claseLicencia" class="form-control"
+                                           value="@(ec?.ClaseLicencia ?? "")"
+                                           placeholder="Ej: A-I, A-IIa, A-IIb, A-IIIa..." maxlength="50" />
+                                    <div class="form-hint">Clases: A-I, A-IIa, A-IIb, A-IIIa, A-IIIb, A-IIIc, B-I, B-IIa, B-IIb</div>
+                                </div>
+                                <div>
+                                    <label class="form-label">Fecha de emisión</label>
+                                    <input type="date" name="licenciaEmision" class="form-control"
+                                           value="@(ec?.LicenciaEmision?.ToString("yyyy-MM-dd") ?? "")" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Fecha de expiración</label>
+                                    <input type="date" name="licenciaExpiracion" class="form-control"
+                                           value="@(ec?.LicenciaExpiracion?.ToString("yyyy-MM-dd") ?? "")" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Licencia especial -->
+                        <div style="border:1.5px solid var(--gris-200); border-radius:10px; padding:14px; background:var(--gris-50);" id="card-licencia-especial">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:0.85rem; color:var(--gris-900); margin-bottom:10px;">
+                                <input type="checkbox" name="tieneLicenciaEspecial" id="chkLicenciaEspecial" value="true"
+                                       onchange="toggleLicenciaEspecial()"
+                                       @(ec?.TieneLicenciaEspecial == true ? "checked" : "")
+                                       style="width:16px;height:16px;accent-color:#7c3aed;cursor:pointer;" />
+                                ⭐ Tiene licencia especial
+                            </label>
+                            <div id="campos-licencia-especial" style="display:@(ec?.TieneLicenciaEspecial == true ? "grid" : "none"); grid-template-columns:1fr 1fr; gap:10px;">
+                                <div style="grid-column:1/-1;">
+                                    <label class="form-label">Clase de licencia especial</label>
+                                    <input type="text" name="claseLicenciaEspecial" class="form-control"
+                                           value="@(ec?.ClaseLicenciaEspecial ?? "")"
+                                           placeholder="Ej: Materiales peligrosos, SCTR..." maxlength="50" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Fecha de emisión</label>
+                                    <input type="date" name="licenciaEspecialEmision" class="form-control"
+                                           value="@(ec?.LicenciaEspecialEmision?.ToString("yyyy-MM-dd") ?? "")" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Fecha de expiración</label>
+                                    <input type="date" name="licenciaEspecialExpiracion" class="form-control"
+                                           value="@(ec?.LicenciaEspecialExpiracion?.ToString("yyyy-MM-dd") ?? "")" />
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Botón guardar licencias -->
+                    <button type="submit" class="btn btn--primary btn--sm">
+                        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Guardar licencias
+                    </button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <div style="font-size:0.82rem; color:var(--gris-400); padding:8px; background:var(--gris-50); border-radius:8px; border:1px solid var(--gris-200);">
+                Asigna un conductor primero para poder registrar sus licencias.
+            </div>
+        }
+
+        <!-- ── SECCIÓN 4: Historial de conductores ── -->
+        @if (conductorLog.Any())
+        {
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--gris-200);">
+                <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:8px;">Historial de conductores</div>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    @foreach (var log in conductorLog)
+                    {
+                        <div style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--gris-50); border-radius:var(--r-sm); border:1px solid var(--gris-200); font-size:0.78rem; flex-wrap:wrap;">
+                            <span style="color:var(--gris-400); font-size:0.7rem; flex-shrink:0;">@log.FechaHora.ToString("dd/MM/yy HH:mm")</span>
+                            <span style="color:var(--gris-600);">@(log.NombreConductorAnterior ?? "Sin conductor")</span>
+                            <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:var(--gris-400);fill:none;stroke-width:2;flex-shrink:0;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                            <span style="font-weight:600; color:var(--azul);">@(log.NombreConductorNuevo ?? "Sin conductor")</span>
+                            <span style="margin-left:auto; color:var(--gris-400); font-size:0.7rem;">@(log.NombreUsuario ?? "—")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     </div>
+
 
     <!-- FILA 3: Cambio de estado -->
     <div class="card">
@@ -988,7 +1146,161 @@ else if (historial != null)
 }
 
 @section Scripts {
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<style>
+/* Select2 integrado con el estilo del sistema */
+.select2-container--default .select2-selection--single {
+    height: 40px !important;
+    border: 1.5px solid var(--gris-300) !important;
+    border-radius: 8px !important;
+    background: var(--gris-100) !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 4px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--gris-900) !important;
+    font-size: 0.88rem !important;
+    line-height: 38px !important;
+    padding-left: 10px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 38px !important;
+}
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--celeste) !important;
+    box-shadow: 0 0 0 3px rgba(59,155,232,0.12) !important;
+    background: white !important;
+}
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1.5px solid var(--gris-300) !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    font-size: 0.85rem !important;
+    outline: none !important;
+}
+.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+    border-color: var(--celeste) !important;
+}
+.select2-dropdown {
+    border: 1.5px solid var(--gris-300) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+    overflow: hidden !important;
+}
+.select2-results__option {
+    font-size: 0.85rem !important;
+    padding: 8px 12px !important;
+    color: var(--gris-900) !important;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background: #0d3393 !important;
+    color: white !important;
+}
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background: #eff6ff !important;
+    color: #0d3393 !important;
+    font-weight: 600 !important;
+}
+</style>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar Select2 con búsqueda
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $('.select2-conductor').select2({
+            placeholder: '— Buscar conductor por nombre o apellido —',
+            allowClear: true,
+            language: {
+                noResults: function() { return 'No se encontraron resultados'; },
+                searching: function() { return 'Buscando...'; }
+            },
+            width: '100%'
+        });
+    } else {
+        // Fallback si jQuery/Select2 no carga (servidor sin internet)
+        // Implementar búsqueda nativa
+        iniciarBusquedaNativa();
+    }
+
+    // Aplicar estilos iniciales de licencias
+    if (document.getElementById('chkLicencia')?.checked)        toggleLicencia();
+    if (document.getElementById('chkLicenciaEspecial')?.checked) toggleLicenciaEspecial();
+});
+
+// ── Búsqueda nativa (fallback sin CDN) ──────────────────
+function iniciarBusquedaNativa() {
+    const sel = document.getElementById('selectConductor');
+    if (!sel) return;
+
+    // Crear contenedor de búsqueda personalizado
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative; min-width:280px; flex:1; max-width:420px;';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Buscar conductor...';
+    input.className = 'form-control';
+    input.style.cssText = 'margin-bottom:4px;';
+
+    const dropdown = document.createElement('div');
+    dropdown.style.cssText = 'position:absolute; z-index:9999; width:100%; background:white; border:1.5px solid #e2e8f0; border-radius:8px; max-height:280px; overflow-y:auto; display:none; box-shadow:0 8px 24px rgba(0,0,0,0.1); top:46px;';
+
+    // Recopilar opciones
+    const opciones = Array.from(sel.options)
+        .filter(o => o.value)
+        .map(o => ({ value: o.value, text: o.text, selected: o.selected }))
+        .sort((a, b) => a.text.localeCompare(b, 'es'));
+
+    // Conductor actual seleccionado
+    const selActual = opciones.find(o => o.selected);
+    if (selActual) input.value = selActual.text;
+
+    function renderOpciones(filtro) {
+        dropdown.innerHTML = '';
+        const f = (filtro || '').trim().toLowerCase();
+        const filtradas = f
+            ? opciones.filter(o => o.text.toLowerCase().includes(f))
+            : opciones;
+
+        if (!filtradas.length) {
+            dropdown.innerHTML = '<div style="padding:10px 12px;color:#94a3b8;font-size:0.82rem;">Sin resultados</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+
+        filtradas.forEach(op => {
+            const div = document.createElement('div');
+            div.textContent = op.text;
+            div.style.cssText = 'padding:8px 12px;font-size:0.85rem;cursor:pointer;color:#1e293b;transition:background 0.1s;';
+            div.addEventListener('mouseenter', () => { div.style.background = '#eff6ff'; div.style.color = '#0d3393'; });
+            div.addEventListener('mouseleave', () => { div.style.background = ''; div.style.color = '#1e293b'; });
+            div.addEventListener('click', () => {
+                sel.value = op.value;
+                input.value = op.text;
+                dropdown.style.display = 'none';
+            });
+            dropdown.appendChild(div);
+        });
+        dropdown.style.display = 'block';
+    }
+
+    input.addEventListener('input', () => renderOpciones(input.value));
+    input.addEventListener('focus', () => renderOpciones(input.value));
+    input.addEventListener('click', () => renderOpciones(input.value));
+    document.addEventListener('click', e => {
+        if (!wrap.contains(e.target)) dropdown.style.display = 'none';
+    });
+
+    // Reemplazar el select original con el buscador
+    sel.style.display = 'none';
+    wrap.appendChild(input);
+    wrap.appendChild(dropdown);
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+}
+
 function validarConductor() {
     const sel = document.getElementById('selectConductor');
     if (!sel.value) {
@@ -1004,6 +1316,24 @@ function confirmarSinConductor() {
         document.getElementById('selectConductor').value   = '';
         document.getElementById('formConductor').submit();
     }
+}
+
+function toggleLicencia() {
+    const chk    = document.getElementById('chkLicencia');
+    const campos = document.getElementById('campos-licencia');
+    const card   = document.getElementById('card-licencia');
+    campos.style.display   = chk.checked ? 'grid' : 'none';
+    card.style.borderColor = chk.checked ? '#0d3393' : 'var(--gris-200)';
+    card.style.background  = chk.checked ? 'rgba(13,51,147,0.03)' : 'var(--gris-50)';
+}
+
+function toggleLicenciaEspecial() {
+    const chk    = document.getElementById('chkLicenciaEspecial');
+    const campos = document.getElementById('campos-licencia-especial');
+    const card   = document.getElementById('card-licencia-especial');
+    campos.style.display   = chk.checked ? 'grid' : 'none';
+    card.style.borderColor = chk.checked ? '#7c3aed' : 'var(--gris-200)';
+    card.style.background  = chk.checked ? 'rgba(124,58,237,0.03)' : 'var(--gris-50)';
 }
 </script>
 }

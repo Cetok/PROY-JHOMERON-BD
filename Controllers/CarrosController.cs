@@ -135,27 +135,38 @@ namespace PROYJHOME2026.Controllers
         // ── ASIGNAR CONDUCTOR POST ───────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AsignarConductor(int idCarro, int? idEmpleado, bool sinConductor = false)
+        public async Task<IActionResult> AsignarConductor(
+            int idCarro, int? idEmpleado, bool sinConductor = false,
+            // Licencia
+            bool tieneLicencia = false,
+            string? claseLicencia = null,
+            string? licenciaEmision = null,
+            string? licenciaExpiracion = null,
+            // Licencia especial
+            bool tieneLicenciaEspecial = false,
+            string? claseLicenciaEspecial = null,
+            string? licenciaEspecialEmision = null,
+            string? licenciaEspecialExpiracion = null)
         {
             // 1. Obtener conductor ANTERIOR antes de borrar
             var actual = await _context.EmpleadosCarros
                 .Include(ec => ec.Empleado)
                 .FirstOrDefaultAsync(ec => ec.IdCarro == idCarro);
-
-            int?    idAnterior      = actual?.IdEmpleado;
-            string? nombreAnterior  = actual?.Empleado != null
+        
+            int?    idAnterior     = actual?.IdEmpleado;
+            string? nombreAnterior = actual?.Empleado != null
                 ? $"{actual.Empleado.nombre} {actual.Empleado.paterno} {actual.Empleado.materno}".Trim()
                 : null;
-
+        
             // 2. Remover conductor actual
             var actuales = await _context.EmpleadosCarros
                 .Where(ec => ec.IdCarro == idCarro).ToListAsync();
             _context.EmpleadosCarros.RemoveRange(actuales);
-
+        
             // 3. Asignar nuevo conductor (si no se pulsó "Sin conductor")
-            int?    idNuevo      = null;
-            string? nombreNuevo  = null;
-
+            int?    idNuevo     = null;
+            string? nombreNuevo = null;
+        
             if (!sinConductor && idEmpleado.HasValue && idEmpleado.Value > 0)
             {
                 var empleado = await _context.Empleados.FindAsync(idEmpleado.Value);
@@ -163,14 +174,30 @@ namespace PROYJHOME2026.Controllers
                 nombreNuevo = empleado != null
                     ? $"{empleado.nombre} {empleado.paterno} {empleado.materno}".Trim()
                     : null;
-
+        
+                // Parsear fechas DateOnly
+                DateOnly? ParseFecha(string? s) =>
+                    DateOnly.TryParse(s, out var d) ? d : null;
+        
                 _context.EmpleadosCarros.Add(new EmpleadoCarro
                 {
                     IdCarro    = idCarro,
-                    IdEmpleado = idEmpleado.Value
+                    IdEmpleado = idEmpleado.Value,
+        
+                    // Licencia
+                    TieneLicencia      = tieneLicencia,
+                    ClaseLicencia      = tieneLicencia ? claseLicencia?.Trim() : null,
+                    LicenciaEmision    = tieneLicencia ? ParseFecha(licenciaEmision) : null,
+                    LicenciaExpiracion = tieneLicencia ? ParseFecha(licenciaExpiracion) : null,
+        
+                    // Licencia especial
+                    TieneLicenciaEspecial      = tieneLicenciaEspecial,
+                    ClaseLicenciaEspecial      = tieneLicenciaEspecial ? claseLicenciaEspecial?.Trim() : null,
+                    LicenciaEspecialEmision    = tieneLicenciaEspecial ? ParseFecha(licenciaEspecialEmision) : null,
+                    LicenciaEspecialExpiracion = tieneLicenciaEspecial ? ParseFecha(licenciaEspecialExpiracion) : null,
                 });
             }
-
+        
             // 4. Registrar en CarroConductorLog SOLO si hubo cambio real
             bool huboCambio = idAnterior != idNuevo;
             if (huboCambio)
@@ -178,7 +205,7 @@ namespace PROYJHOME2026.Controllers
                 var idStr      = HttpContext.Session.GetString("UsuarioId");
                 var nombre     = HttpContext.Session.GetString("UsuarioNombre");
                 int? idUsuario = int.TryParse(idStr, out int uid) ? uid : null;
-
+        
                 _context.CarroConductorLogs.Add(new CarroConductorLog
                 {
                     IdCarro                 = idCarro,
@@ -191,24 +218,64 @@ namespace PROYJHOME2026.Controllers
                     FechaHora               = DateTime.Now
                 });
             }
-
+        
             await _context.SaveChangesAsync();
-
+        
             await _auditoriaService.RegistrarAsync("Editar", "Carro", idCarro,
                 idNuevo.HasValue
                     ? $"Asignó conductor '{nombreNuevo}' al vehículo #{idCarro}"
                     : $"Removió conductor del vehículo #{idCarro}");
-
+        
             await _notifService.NotificarAccionAsync(
                 idNuevo.HasValue ? "Creacion" : "Eliminacion",
                 "Conductor",
                 idNuevo.HasValue ? "Conductor asignado a vehículo" : "Conductor removido del vehículo",
                 idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _ca0) ? _ca0 : null);
-
+        
             TempData["Success"] = idNuevo.HasValue
                 ? $"Conductor asignado: {nombreNuevo}."
                 : "Conductor removido del vehículo.";
-
+        
+            return RedirectToAction(nameof(Details), new { id = idCarro });
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GuardarLicencias(
+            int idCarro,
+            bool tieneLicencia = false,
+            string? claseLicencia = null,
+            string? licenciaEmision = null,
+            string? licenciaExpiracion = null,
+            bool tieneLicenciaEspecial = false,
+            string? claseLicenciaEspecial = null,
+            string? licenciaEspecialEmision = null,
+            string? licenciaEspecialExpiracion = null)
+        {
+            var ec = await _context.EmpleadosCarros
+                .FirstOrDefaultAsync(e => e.IdCarro == idCarro);
+        
+            if (ec == null)
+            {
+                TempData["Error"] = "No hay conductor asignado a este vehículo. Asigna uno primero.";
+                return RedirectToAction(nameof(Details), new { id = idCarro });
+            }
+        
+            DateOnly? ParseFecha(string? s) =>
+                DateOnly.TryParse(s, out var d) ? d : null;
+        
+            ec.TieneLicencia      = tieneLicencia;
+            ec.ClaseLicencia      = tieneLicencia ? claseLicencia?.Trim() : null;
+            ec.LicenciaEmision    = tieneLicencia ? ParseFecha(licenciaEmision) : null;
+            ec.LicenciaExpiracion = tieneLicencia ? ParseFecha(licenciaExpiracion) : null;
+        
+            ec.TieneLicenciaEspecial      = tieneLicenciaEspecial;
+            ec.ClaseLicenciaEspecial      = tieneLicenciaEspecial ? claseLicenciaEspecial?.Trim() : null;
+            ec.LicenciaEspecialEmision    = tieneLicenciaEspecial ? ParseFecha(licenciaEspecialEmision) : null;
+            ec.LicenciaEspecialExpiracion = tieneLicenciaEspecial ? ParseFecha(licenciaEspecialExpiracion) : null;
+        
+            await _context.SaveChangesAsync();
+        
+            TempData["Success"] = "Licencias actualizadas correctamente.";
             return RedirectToAction(nameof(Details), new { id = idCarro });
         }
 
