@@ -734,7 +734,14 @@ tbody td:first-child { color: var(--gris-900); font-weight: 600; }
     stroke-linejoin: round;
     flex-shrink: 0;
 }
-
+.btn--rojo {
+    background: #dc2626;
+    color: white;
+    border: none;
+}
+.btn--rojo:hover {
+    background: #b91c1c;
+}
 /* Primary — azul sólido */
 .btn--primary {
     background: var(--azul);

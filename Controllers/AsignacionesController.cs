@@ -972,5 +972,110 @@ namespace PROYJHOME2026.Controllers
             var filas = await ObtenerFilasAsignaciones(buscar, estado, tipoId);
             return GenerarPdf("Asignaciones", columnas, filas);
         }
+        // ── GET: Confirmar desactivación ─────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> Desactivar(int id)
+        {
+            var asignacion = await _context.Asignaciones
+                .Include(a => a.Empleado)
+                .Include(a => a.Equipo).ThenInclude(e => e.TipoEquipo)
+                .Include(a => a.Chip)
+                .Include(a => a.Grupo)
+                .FirstOrDefaultAsync(a => a.IdAsignacion == id);
+
+            if (asignacion == null) return NotFound();
+            if (asignacion.EstadoAsignacion != "Activo")
+            {
+                TempData["Error"] = "Esta asignación ya no está activa.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            ViewBag.Motivos     = await _context.Motivos.OrderBy(m => m.TipoMotivo).ToListAsync();
+            ViewBag.FechaHoy    = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+            return View(asignacion);
+        }
+
+        // ── POST: Confirmar desactivación ────────────────────────
+        [HttpPost, ActionName("Desactivar")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DesactivarConfirmed(
+            int id,
+            int? idMotivoDesactivacion,
+            string? observaciones,
+            DateTime? fechaDevolucion)
+        {
+            var asignacion = await _context.Asignaciones
+                .Include(a => a.Equipo)
+                .Include(a => a.Chip)
+                .Include(a => a.Historiales)
+                .FirstOrDefaultAsync(a => a.IdAsignacion == id);
+
+            if (asignacion == null) return NotFound();
+            if (asignacion.EstadoAsignacion != "Activo")
+            {
+                TempData["Error"] = "Esta asignación ya no está activa.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            var fecha = fechaDevolucion ?? DateTime.Now;
+
+            // 1. Marcar asignación como Inactiva con fecha
+            asignacion.EstadoAsignacion = "Inactivo";
+            asignacion.FechaDevolucion  = fecha;
+
+            // 2. Liberar equipo → vuelve a "Activo"
+            if (asignacion.Equipo != null)
+                asignacion.Equipo.estado_equipo = "Activo";
+
+            // 3. Liberar chip si tenía
+            if (asignacion.Chip != null)
+                asignacion.IdChip = null;
+
+            // 4. Registrar en Bitácora (Historiales) automáticamente
+            if (idMotivoDesactivacion.HasValue)
+            {
+                _context.Historiales.Add(new Historial
+                {
+                    IdAsignacion  = id,
+                    IdMotivo      = idMotivoDesactivacion.Value,
+                    Fecha         = fecha,
+                    Observaciones = observaciones?.Trim()
+                });
+            }
+            else
+            {
+                // Si no eligió motivo, igual registra con el primer motivo disponible
+                // o crea un registro genérico buscando el motivo "Devolución" o similar
+                var motivoGenerico = await _context.Motivos
+                    .FirstOrDefaultAsync(m => m.TipoMotivo.Contains("Devol") || m.TipoMotivo.Contains("devol"));
+                if (motivoGenerico != null)
+                {
+                    _context.Historiales.Add(new Historial
+                    {
+                        IdAsignacion  = id,
+                        IdMotivo      = motivoGenerico.IdMotivo,
+                        Fecha         = fecha,
+                        Observaciones = string.IsNullOrWhiteSpace(observaciones)
+                            ? "Asignación desactivada"
+                            : observaciones.Trim()
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            // 5. Auditoría y notificación
+            var nombreUsuario = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema";
+            await _auditoriaService.RegistrarAsync("Editar", "Asignacion", id,
+                $"Asignación #{id} desactivada por {nombreUsuario}. Fecha devolución: {fecha:dd/MM/yyyy HH:mm}." +
+                (string.IsNullOrEmpty(observaciones) ? "" : " Obs: " + observaciones));
+
+            await _notifService.NotificarAccionAsync("Eliminacion", "Asignacion",
+                $"Asignación #{id} desactivada — equipo liberado",
+                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int uid) ? uid : null);
+
+            TempData["Success"] = "Asignación desactivada. El equipo fue liberado correctamente.";
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

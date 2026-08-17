@@ -137,6 +137,11 @@ namespace PROYJHOME2026.Controllers
             .OrderByDescending(l => l.FechaHora)
             .Take(50)
             .ToListAsync();
+
+            ViewBag.Bitacora = await _context.EquipoBitacoras
+            .Where(b => b.IdEquipo == id)
+            .OrderByDescending(b => b.Fecha)
+            .ToListAsync();
             return View(equipo);
         }
 
@@ -833,6 +838,88 @@ namespace PROYJHOME2026.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
             return RedirectToAction(nameof(Index));
+        }
+        // ════════════════════════════════════════════════════════════════
+        // BITÁCORA DE EQUIPOS — agregar dentro de EquiposController
+        // Requiere: _context.EquipoBitacoras (DbSet<EquipoBitacora>)
+        // ════════════════════════════════════════════════════════════════
+
+        // ── POST: Registrar evento en Bitácora ───────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegistrarBitacora(
+            int idEquipo,
+            string estadoNuevo,
+            string motivo,
+            DateTime fecha,
+            bool esProgramado = false,
+            string? observaciones = null)
+        {
+            var equipo = await _context.Equipos.FindAsync(idEquipo);
+            if (equipo == null) return NotFound();
+
+            var estadoAnterior = equipo.estado_equipo;
+
+            // Actualizar estado del equipo solo si NO es programado (futuro)
+            if (!esProgramado || fecha.Date <= DateTime.Today)
+            {
+                equipo.estado_equipo = estadoNuevo;
+            }
+
+            var nombreUsuario = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema";
+            var idStr         = HttpContext.Session.GetString("UsuarioId");
+            int? idUsuario    = int.TryParse(idStr, out int uid) ? uid : null;
+
+            _context.EquipoBitacoras.Add(new EquipoBitacora
+            {
+                IdEquipo       = idEquipo,
+                EstadoAnterior = estadoAnterior,
+                EstadoNuevo    = estadoNuevo,
+                Motivo         = motivo.Trim(),
+                Fecha          = fecha,
+                EsProgramado   = esProgramado,
+                Completado     = false,
+                RegistradoPor  = nombreUsuario,
+                IdUsuario      = idUsuario,
+                FechaRegistro  = DateTime.Now
+            });
+
+            await _context.SaveChangesAsync();
+
+            await _auditoriaService.RegistrarAsync("Editar", "Equipo", idEquipo,
+                esProgramado
+                    ? $"Mantenimiento programado para {fecha:dd/MM/yyyy} — {motivo}"
+                    : $"Estado cambiado de '{estadoAnterior}' a '{estadoNuevo}' — {motivo}");
+
+            TempData["Success"] = esProgramado
+                ? $"Mantenimiento programado para el {fecha:dd/MM/yyyy}."
+                : "Evento registrado en la Bitácora.";
+
+            return RedirectToAction(nameof(Details), new { id = idEquipo });
+        }
+
+        // ── POST: Marcar mantenimiento programado como completado ─
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CompletarMantenimiento(int idBitacora)
+        {
+            var bitacora = await _context.EquipoBitacoras
+                .Include(b => b.Equipo)
+                .FirstOrDefaultAsync(b => b.IdBitacora == idBitacora);
+
+            if (bitacora == null) return NotFound();
+
+            bitacora.Completado      = true;
+            bitacora.EsProgramado    = false;
+
+            // Actualizar estado del equipo al estado registrado
+            if (bitacora.Equipo != null)
+                bitacora.Equipo.estado_equipo = bitacora.EstadoNuevo;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Mantenimiento marcado como completado.";
+            return RedirectToAction(nameof(Details), new { id = bitacora.IdEquipo });
         }
 
         // ── HELPER ───────────────────────────────────────────────

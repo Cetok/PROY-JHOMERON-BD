@@ -23,6 +23,9 @@ namespace PROYJHOME2026.Models
         [Required]
         public DateTime FechaAsignacion { get; set; }
 
+        /// <summary>Fecha en que se devolvió/desactivó la asignación.</summary>
+        public DateTime? FechaDevolucion { get; set; }
+
         [StringLength(150)]
         public string? CorreoEquipo { get; set; }
 

@@ -416,6 +416,235 @@ else if (historial != null)
 }
 
 </div>
+@{
+    var bitacora = ViewBag.Bitacora as List<PROYJHOME2026.Models.EquipoBitacora>
+                   ?? new List<PROYJHOME2026.Models.EquipoBitacora>();
+    var hoy      = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+
+    // Estados disponibles para el equipo
+    var estadosEquipo = new[] {
+        "Activo", "Asignado", "Mantenimiento", "Malogrado",
+        "Defectuoso", "En reparación", "Dado de baja", "En revisión"
+    };
+}
+
+<!-- ── BITÁCORA ── -->
+<div class="card" style="margin-top:20px; padding:0; overflow:hidden;">
+
+    <!-- Encabezado -->
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--gris-200);">
+        <div>
+            <div style="font-weight:700; font-size:0.9rem; color:var(--gris-900); display:flex; align-items:center; gap:8px;">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:1.8;">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                Bitácora del equipo
+            </div>
+            <div style="font-size:0.75rem; color:var(--gris-400); margin-top:2px;">Registro de cambios de estado y mantenimientos</div>
+        </div>
+        <button type="button" class="btn btn--celeste btn--sm"
+                onclick="document.getElementById('form-bitacora').style.display = document.getElementById('form-bitacora').style.display === 'none' ? 'block' : 'none'">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Registrar evento
+        </button>
+    </div>
+
+    <!-- Formulario nuevo evento (oculto por defecto) -->
+    <div id="form-bitacora" style="display:none; padding:20px; background:var(--gris-50); border-bottom:1px solid var(--gris-200);">
+        <form asp-controller="Equipos" asp-action="RegistrarBitacora" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="idEquipo" value="@Model.idEquipo" />
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+
+                <!-- Tipo de evento -->
+                <div>
+                    <label class="form-label">Tipo de evento</label>
+                    <select id="tipoEvento" class="form-control" onchange="actualizarFormBitacora()">
+                        <option value="estado">Cambio de estado</option>
+                        <option value="mantenimiento">Programar mantenimiento</option>
+                        <option value="mantenimiento_hoy">Realizar mantenimiento hoy</option>
+                    </select>
+                </div>
+
+                <!-- Estado nuevo -->
+                <div id="campo-estado">
+                    <label class="form-label">Nuevo estado del equipo</label>
+                    <select name="estadoNuevo" class="form-control">
+                        @foreach (var est in estadosEquipo)
+                        {
+                            <option value="@est">@est</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Fecha -->
+                <div>
+                    <label class="form-label" id="lbl-fecha">Fecha del evento</label>
+                    <input type="datetime-local" name="fecha" id="input-fecha"
+                           class="form-control" value="@hoy" required />
+                    <div class="form-hint" id="hint-fecha">Se carga con la fecha actual. Puedes modificarla.</div>
+                </div>
+
+                <!-- Motivo -->
+                <div>
+                    <label class="form-label">Motivo / Descripción</label>
+                    <input type="text" name="motivo" class="form-control"
+                           placeholder="Ej: Pantalla rota, limpieza interna, falla de batería..." required maxlength="500" />
+                </div>
+
+            </div>
+
+            <!-- Checkbox programado (oculto, se maneja por JS) -->
+            <input type="hidden" name="esProgramado" id="input-programado" value="false" />
+
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn btn--primary btn--sm">
+                    <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
+                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                    </svg>
+                    Guardar en Bitácora
+                </button>
+                <button type="button" class="btn btn--secondary btn--sm"
+                        onclick="document.getElementById('form-bitacora').style.display='none'">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista de eventos -->
+    @if (bitacora.Any())
+    {
+        <div style="padding:16px 20px;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                @foreach (var b in bitacora)
+                {
+                    var esFuturo   = b.EsProgramado && !b.Completado && b.Fecha > DateTime.Now;
+                    var bgCard     = esFuturo ? "#f0fdf4" : "#fff";
+                    var borderCard = esFuturo ? "#86efac" : "var(--gris-200)";
+
+                    string badgeEstado;
+                    if (esFuturo)                                         badgeEstado = "badge--verde";
+                    else if (b.EstadoNuevo == "Malogrado" ||
+                             b.EstadoNuevo == "Defectuoso" ||
+                             b.EstadoNuevo == "Dado de baja")             badgeEstado = "badge--rojo";
+                    else if (b.EstadoNuevo == "Mantenimiento" ||
+                             b.EstadoNuevo == "En reparación" ||
+                             b.EstadoNuevo == "En revisión")              badgeEstado = "badge--amarillo";
+                    else                                                   badgeEstado = "badge--azul";
+
+                    <div style="border:1.5px solid @borderCard; border-radius:10px; padding:12px 16px; background:@bgCard;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <!-- Ícono tipo -->
+                                @if (esFuturo)
+                                {
+                                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#16a34a;fill:none;stroke-width:2;flex-shrink:0;" title="Mantenimiento programado">
+                                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--azul);fill:none;stroke-width:2;flex-shrink:0;">
+                                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                }
+
+                                <div>
+                                    <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">
+                                        @if (b.EstadoAnterior != null && b.EstadoAnterior != b.EstadoNuevo)
+                                        {
+                                            <span style="color:var(--gris-500);">@b.EstadoAnterior</span>
+                                            <span style="margin:0 6px; color:var(--gris-300);">→</span>
+                                        }
+                                        <span class="badge @badgeEstado">@b.EstadoNuevo</span>
+                                        @if (esFuturo)
+                                        {
+                                            <span style="margin-left:8px; font-size:0.72rem; color:#16a34a; font-weight:700;">📅 PROGRAMADO</span>
+                                        }
+                                    </div>
+                                    <div style="font-size:0.8rem; color:var(--gris-600); margin-top:3px;">@b.Motivo</div>
+                                </div>
+                            </div>
+
+                            <div style="text-align:right; flex-shrink:0;">
+                                <div style="font-size:0.78rem; font-weight:600; color:var(--gris-700);">
+                                    @b.Fecha.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                                <div style="font-size:0.7rem; color:var(--gris-400);">
+                                    @(b.RegistradoPor ?? "—")
+                                </div>
+                                @if (esFuturo)
+                                {
+                                    <form asp-controller="Equipos" asp-action="CompletarMantenimiento" method="post" style="display:inline; margin-top:6px;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="idBitacora" value="@b.IdBitacora" />
+                                        <button type="submit" class="btn btn--verde btn--sm"
+                                                style="font-size:0.7rem; padding:3px 10px;"
+                                                onclick="return confirm('¿Marcar este mantenimiento como completado?')">
+                                            ✓ Completar
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state" style="padding:30px;">
+            <div class="empty-state__icon">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="empty-state__title">Sin eventos registrados</div>
+            <div class="empty-state__text">Registra el primer evento de este equipo.</div>
+        </div>
+    }
+</div>
+
+@* JS para el formulario de bitácora — agregar dentro del @section Scripts *@
+<script>
+function actualizarFormBitacora() {
+    var tipo     = document.getElementById('tipoEvento').value;
+    var lblFecha = document.getElementById('lbl-fecha');
+    var hintFecha= document.getElementById('hint-fecha');
+    var prog     = document.getElementById('input-programado');
+    var campoEst = document.getElementById('campo-estado');
+    var inputFecha = document.getElementById('input-fecha');
+    var hoy      = new Date();
+    var pad      = n => String(n).padStart(2,'0');
+    var ahora    = hoy.getFullYear()+'-'+pad(hoy.getMonth()+1)+'-'+pad(hoy.getDate())+'T'+pad(hoy.getHours())+':'+pad(hoy.getMinutes());
+
+    if (tipo === 'mantenimiento') {
+        lblFecha.textContent  = 'Fecha programada del mantenimiento';
+        hintFecha.textContent = 'Elige una fecha futura para programar el mantenimiento.';
+        prog.value            = 'true';
+        inputFecha.value      = '';
+        campoEst.querySelector('select').value = 'Mantenimiento';
+    } else if (tipo === 'mantenimiento_hoy') {
+        lblFecha.textContent  = 'Fecha del mantenimiento';
+        hintFecha.textContent = 'Se registra el mantenimiento con la fecha actual.';
+        prog.value            = 'false';
+        inputFecha.value      = ahora;
+        campoEst.querySelector('select').value = 'Mantenimiento';
+    } else {
+        lblFecha.textContent  = 'Fecha del evento';
+        hintFecha.textContent = 'Se carga con la fecha actual. Puedes modificarla.';
+        prog.value            = 'false';
+        inputFecha.value      = ahora;
+    }
+}
+</script>
 
 @section Styles {
 <style>

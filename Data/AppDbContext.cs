@@ -50,6 +50,7 @@ namespace PROYJHOME2026.Data
         public DbSet<CarroModalidadLog>       CarroModalidadLogs        { get; set; }
         public DbSet<HabilitacionVehicular>   HabilitacionesVehiculares { get; set; }
         public DbSet<LunaPolarizada>          LunasPolarizadas          { get; set; }
+        public DbSet<EquipoBitacora> EquipoBitacoras { get; set; }
 
         // ── Tablas de relación (many-to-many) ───────────────────
         public DbSet<EmpleadoGrupo> EmpleadoGrupos { get; set; }

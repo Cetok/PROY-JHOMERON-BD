@@ -1,0 +1,115 @@
+@model PROYJHOME2026.Models.Asignacion
+@{
+    ViewData["Title"]      = "Quitar asignación";
+    ViewData["Breadcrumb"] = "Asignaciones / Quitar";
+    var motivos  = ViewBag.Motivos  as List<PROYJHOME2026.Models.Motivo> ?? new();
+    var fechaHoy = ViewBag.FechaHoy as string ?? DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+}
+
+<div class="page-header">
+    <div class="page-header__info">
+        <div class="page-header__eyebrow">Equipos TI</div>
+        <h1 class="page-header__title">Quitar asignación</h1>
+        <p class="page-header__subtitle">Esta acción libera el equipo y/o chip asignado</p>
+    </div>
+    <div class="page-header__actions">
+        <a asp-action="Details" asp-route-id="@Model.IdAsignacion" class="btn btn--secondary">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Cancelar
+        </a>
+    </div>
+</div>
+
+<!-- Alerta -->
+<div style="background:#fff7ed; border:1.5px solid #fed7aa; border-radius:12px; padding:16px 20px; margin-bottom:20px; display:flex; gap:12px; align-items:flex-start;">
+    <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#d97706;fill:none;stroke-width:2;flex-shrink:0;margin-top:2px;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>
+        <div style="font-weight:700; color:#92400e; font-size:0.9rem; margin-bottom:4px;">¿Confirmas quitar esta asignación?</div>
+        <div style="font-size:0.82rem; color:#b45309;">
+            El equipo volverá al estado <strong>Activo</strong> y podrá ser reasignado.
+            @if (Model.IdChip.HasValue) { <span>El chip/SIM también quedará <strong>libre</strong>.</span> }
+            El evento quedará registrado en la <strong>Bitácora</strong>.
+        </div>
+    </div>
+</div>
+
+<!-- Detalle -->
+<div class="card" style="margin-bottom:20px; padding:20px;">
+    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:14px;">Detalle de la asignación</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;">
+        <div>
+            <div style="font-size:0.72rem; color:var(--gris-400); margin-bottom:4px;">Empleado</div>
+            <div style="font-weight:600; font-size:0.88rem; color:var(--gris-900);">@(Model.Empleado?.nombre) @(Model.Empleado?.paterno) @(Model.Empleado?.materno)</div>
+            <div style="font-size:0.75rem; color:var(--gris-400);">DNI: @(Model.Empleado?.dni ?? "—")</div>
+        </div>
+        <div>
+            <div style="font-size:0.72rem; color:var(--gris-400); margin-bottom:4px;">Equipo</div>
+            <div style="font-weight:600; font-size:0.88rem; color:var(--gris-900);">@(Model.Equipo?.TipoEquipo?.tipo ?? "—")</div>
+            <div style="font-size:0.75rem; color:var(--gris-400);">@(Model.Equipo?.marca ?? "") @(Model.Equipo?.modelo ?? "") · @(Model.Equipo?.numero_serie ?? "—")</div>
+        </div>
+        @if (Model.IdChip.HasValue)
+        {
+            <div>
+                <div style="font-size:0.72rem; color:var(--gris-400); margin-bottom:4px;">Chip / SIM</div>
+                <div style="font-weight:600; font-size:0.88rem; color:var(--gris-900);">@(Model.Chip?.NumeroCelular ?? "—")</div>
+            </div>
+        }
+        <div>
+            <div style="font-size:0.72rem; color:var(--gris-400); margin-bottom:4px;">Asignado desde</div>
+            <div style="font-weight:600; font-size:0.88rem; color:var(--gris-900);">@Model.FechaAsignacion.ToString("dd/MM/yyyy")</div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario -->
+<div class="card" style="padding:20px;">
+    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--gris-400); margin-bottom:16px;">Registrar devolución en Bitácora</div>
+
+    <form asp-action="Desactivar" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.IdAsignacion" />
+
+        <div style="display:grid; gap:14px; max-width:520px;">
+
+            <!-- Fecha de devolución -->
+            <div>
+                <label class="form-label">Fecha y hora de devolución</label>
+                <input type="datetime-local" name="fechaDevolucion" class="form-control"
+                       value="@fechaHoy" required />
+                <div class="form-hint">Se carga automáticamente con la fecha y hora actual. Puedes modificarla.</div>
+            </div>
+
+            <!-- Motivo -->
+            @if (motivos.Any())
+            {
+                <div>
+                    <label class="form-label">Motivo de devolución</label>
+                    <select name="idMotivoDesactivacion" class="form-control">
+                        <option value="">— Sin motivo específico —</option>
+                        @foreach (var m in motivos)
+                        {
+                            <option value="@m.IdMotivo">@m.TipoMotivo</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <!-- Observaciones -->
+            <div>
+                <label class="form-label">Observaciones</label>
+                <textarea name="observaciones" class="form-control" rows="3"
+                          placeholder="Descripción del motivo de devolución, estado del equipo al devolver..."></textarea>
+            </div>
+
+            <!-- Botones -->
+            <div style="display:flex; gap:10px; margin-top:4px;">
+                <button type="submit" class="btn btn--rojo"
+                        onclick="return confirm('¿Confirmas quitar esta asignación?')">
+                    <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                    Sí, quitar asignación
+                </button>
+                <a asp-action="Details" asp-route-id="@Model.IdAsignacion" class="btn btn--secondary">Cancelar</a>
+            </div>
+        </div>
+    </form>
+</div>
