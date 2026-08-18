@@ -28,57 +28,47 @@ namespace PROYJHOME2026.Controllers
         }
 
         // ── INDEX ─────────────────────────────────────────────────
-        public async Task<IActionResult> Index(string? buscar, int? motivoId, int? asignacionId, string? orden = "za", int pagina = 1)
+        // Solo lectura: lista los eventos de la Bitácora de todos los
+        // equipos, excluyendo los estados "Activo" e "Inactivo" (esos no
+        // aportan al historial — solo interesan mantenimientos, averías,
+        // reemplazos, etc.). Ya no lee de la tabla Historial/Motivo.
+        private static readonly string[] EstadosExcluidosHistorial = { "Activo", "Inactivo" };
+
+        public async Task<IActionResult> Index(string? buscar, string? estado, string? orden = "za", int pagina = 1)
         {
             int porPagina = 10;
 
-            var query = _context.Historiales
-                .Include(h => h.Asignacion).ThenInclude(a => a.Empleado)
-                .Include(h => h.Asignacion).ThenInclude(a => a.Equipo)
-                .Include(h => h.Motivo)
+            var query = _context.EquipoBitacoras
+                .Include(b => b.Equipo).ThenInclude(e => e.TipoEquipo)
+                .Where(b => !EstadosExcluidosHistorial.Contains(b.EstadoNuevo))
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(buscar))
-                query = query.Where(h =>
-                    (h.Observaciones != null && h.Observaciones.Contains(buscar)) ||
-                    h.Motivo.TipoMotivo.Contains(buscar) ||
-                    (h.Asignacion.Empleado.nombre  != null && h.Asignacion.Empleado.nombre.Contains(buscar))  ||
-                    (h.Asignacion.Empleado.paterno != null && h.Asignacion.Empleado.paterno.Contains(buscar)));
+                query = query.Where(b =>
+                    (b.Motivo != null && b.Motivo.Contains(buscar)) ||
+                    (b.Equipo.marca   != null && b.Equipo.marca.Contains(buscar))   ||
+                    (b.Equipo.modelo  != null && b.Equipo.modelo.Contains(buscar))  ||
+                    (b.Equipo.NombrePc!= null && b.Equipo.NombrePc.Contains(buscar)));
 
-            if (motivoId.HasValue)
-                query = query.Where(h => h.IdMotivo == motivoId);
-
-            if (asignacionId.HasValue)
-                query = query.Where(h => h.IdAsignacion == asignacionId);
+            if (!string.IsNullOrWhiteSpace(estado))
+                query = query.Where(b => b.EstadoNuevo == estado);
 
             int total = await query.CountAsync();
 
-            var historiales = await query
-                .OrderByDescending(h => h.Fecha)
+            var bitacoraItems = await query
+                .OrderByDescending(b => b.Fecha)
                 .Skip((pagina - 1) * porPagina)
                 .Take(porPagina)
                 .ToListAsync();
 
-            var motivos = await _context.Motivos.OrderBy(m => m.TipoMotivo).ToListAsync();
-
             ViewBag.Buscar       = buscar;
-            ViewBag.MotivoId     = motivoId;
-            ViewBag.AsignacionId = asignacionId;
-            ViewBag.Motivos      = motivos;
+            ViewBag.Estado       = estado;
             ViewBag.Orden        = orden;
             ViewBag.Pagina       = pagina;
             ViewBag.Total        = total;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)total / porPagina);
 
-            if (asignacionId.HasValue)
-            {
-                ViewBag.AsignacionCtx = await _context.Asignaciones
-                    .Include(a => a.Empleado)
-                    .Include(a => a.Equipo)
-                    .FirstOrDefaultAsync(a => a.IdAsignacion == asignacionId);
-            }
-
-            return View(historiales);
+            return View(bitacoraItems);
         }
 
         // ── DETAILS ───────────────────────────────────────────────
@@ -417,51 +407,51 @@ namespace PROYJHOME2026.Controllers
             var nombre = titulo.Replace(" ", "_") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".pdf";
             return File(bytes, "application/pdf", nombre);
         }
-        private async Task<List<List<string>>> ObtenerFilasHistoriales(string? buscar, int? motivoId, int? asignacionId)
+        private async Task<List<List<string>>> ObtenerFilasHistoriales(string? buscar, string? estado)
         {
-            var query = _context.Historiales
-                .Include(h => h.Asignacion).ThenInclude(a => a.Empleado)
-                .Include(h => h.Asignacion).ThenInclude(a => a.Equipo)
-                .Include(h => h.Motivo)
+            var query = _context.EquipoBitacoras
+                .Include(b => b.Equipo).ThenInclude(e => e.TipoEquipo)
+                .Where(b => !EstadosExcluidosHistorial.Contains(b.EstadoNuevo))
                 .AsQueryable();
-        
+
             if (!string.IsNullOrWhiteSpace(buscar))
-                query = query.Where(h =>
-                    (h.Observaciones != null && h.Observaciones.Contains(buscar)) ||
-                    h.Motivo.TipoMotivo.Contains(buscar) ||
-                    (h.Asignacion.Empleado.nombre  != null && h.Asignacion.Empleado.nombre.Contains(buscar)) ||
-                    (h.Asignacion.Empleado.paterno != null && h.Asignacion.Empleado.paterno.Contains(buscar)));
-        
-            if (motivoId.HasValue)
-                query = query.Where(h => h.IdMotivo == motivoId);
-            if (asignacionId.HasValue)
-                query = query.Where(h => h.IdAsignacion == asignacionId);
-        
-            var historiales = await query.OrderByDescending(h => h.Fecha).ToListAsync();
-        
-            return historiales.Select(h => new List<string> {
-                h.Asignacion?.Empleado != null ? h.Asignacion.Empleado.nombre + " " + h.Asignacion.Empleado.paterno : "—",
-                h.Asignacion?.Equipo != null ? (h.Asignacion.Equipo.marca ?? "") + " " + (h.Asignacion.Equipo.modelo ?? "") : "—",
-                h.Motivo?.TipoMotivo ?? "—",
-                h.Fecha.ToString("dd/MM/yyyy"),
-                h.Observaciones ?? "—"
+                query = query.Where(b =>
+                    (b.Motivo != null && b.Motivo.Contains(buscar)) ||
+                    (b.Equipo.marca   != null && b.Equipo.marca.Contains(buscar))   ||
+                    (b.Equipo.modelo  != null && b.Equipo.modelo.Contains(buscar))  ||
+                    (b.Equipo.NombrePc!= null && b.Equipo.NombrePc.Contains(buscar)));
+
+            if (!string.IsNullOrWhiteSpace(estado))
+                query = query.Where(b => b.EstadoNuevo == estado);
+
+            var items = await query.OrderByDescending(b => b.Fecha).ToListAsync();
+
+            return items.Select(b => new List<string> {
+                b.Equipo?.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true
+                    ? (b.Equipo.NombrePc ?? "—")
+                    : $"{b.Equipo?.marca} {b.Equipo?.modelo}".Trim(),
+                b.EstadoAnterior ?? "—",
+                b.EstadoNuevo,
+                b.Motivo,
+                b.Fecha.ToString("dd/MM/yyyy"),
+                b.RegistradoPor ?? "—"
             }).ToList();
         }
-        
+
         [HttpGet]
-        public async Task<IActionResult> ExportarExcel(string? buscar, int? motivoId, int? asignacionId)
+        public async Task<IActionResult> ExportarExcel(string? buscar, string? estado)
         {
-            var columnas = new List<string> { "Empleado", "Equipo", "Motivo", "Fecha", "Observaciones" };
-            var filas = await ObtenerFilasHistoriales(buscar, motivoId, asignacionId);
-            return GenerarCsv(columnas, filas, "Historiales");
+            var columnas = new List<string> { "Equipo", "Estado anterior", "Estado nuevo", "Motivo", "Fecha", "Registrado por" };
+            var filas = await ObtenerFilasHistoriales(buscar, estado);
+            return GenerarCsv(columnas, filas, "Historial_Equipos");
         }
-        
+
         [HttpGet]
-        public async Task<IActionResult> ExportarPdf(string? buscar, int? motivoId, int? asignacionId)
+        public async Task<IActionResult> ExportarPdf(string? buscar, string? estado)
         {
-            var columnas = new List<string> { "Empleado", "Equipo", "Motivo", "Fecha", "Observaciones" };
-            var filas = await ObtenerFilasHistoriales(buscar, motivoId, asignacionId);
-            return GenerarPdf("Historiales", columnas, filas);
+            var columnas = new List<string> { "Equipo", "Estado anterior", "Estado nuevo", "Motivo", "Fecha", "Registrado por" };
+            var filas = await ObtenerFilasHistoriales(buscar, estado);
+            return GenerarPdf("Historial de Equipos", columnas, filas);
         }
     }
 }

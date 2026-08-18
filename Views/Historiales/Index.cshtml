@@ -1,111 +1,77 @@
-@model IEnumerable<PROYJHOME2026.Models.Historial>
+@model IEnumerable<PROYJHOME2026.Models.EquipoBitacora>
 @{
-    ViewData["Title"]      = "Historiales";
-    ViewData["Breadcrumb"] = "Historiales";
+    ViewData["Title"]      = "Historial de equipos";
+    ViewData["Breadcrumb"] = "Historial de equipos";
     int pagina       = ViewBag.Pagina;
     int totalPaginas = ViewBag.TotalPaginas;
     int total        = ViewBag.Total;
     string buscar    = ViewBag.Buscar ?? "";
     string orden     = ViewBag.Orden  ?? "za";
-    int? motivoId    = ViewBag.MotivoId;
-    int? asigId      = ViewBag.AsignacionId;
-    var motivos      = ViewBag.Motivos as List<PROYJHOME2026.Models.Motivo> ?? new();
-    var asigCtx      = ViewBag.AsignacionCtx as PROYJHOME2026.Models.Asignacion;
+    string? estado   = ViewBag.Estado;
+
+    var estadosFiltro = new[] {
+        "Mantenimiento", "Malogrado", "Defectuoso", "En reparación", "Dado de baja", "En revisión"
+    };
 }
 
 <div class="page-header">
     <div class="page-header__info">
         <div class="page-header__eyebrow">Equipos TI</div>
-        <h1 class="page-header__title">Historiales</h1>
-        <p class="page-header__subtitle">
-            @if (asigCtx != null)
-            {
-                <span>Asignación #@asigCtx.IdAsignacion — @(asigCtx.Empleado?.nombre) @(asigCtx.Empleado?.paterno) / @(asigCtx.Equipo?.marca) @(asigCtx.Equipo?.modelo)</span>
-            }
-            else
-            {
-                <span>@total registro(s) encontrado(s)</span>
-            }
-        </p>
+        <h1 class="page-header__title">Historial de equipos</h1>
+        <p class="page-header__subtitle">@total registro(s) de bitácora — solo lectura</p>
     </div>
     <div class="page-header__actions">
-        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Historiales', 'excel')" title="Exportar a Excel">
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Historial_Equipos', 'excel')" title="Exportar a Excel">
             <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Excel
         </button>
-        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Historiales', 'pdf')" title="Exportar a PDF">
+        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Historial_Equipos', 'pdf')" title="Exportar a PDF">
             <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             PDF
         </button>
-        @if (asigCtx != null)
-        {
-            <a asp-action="Create" asp-route-asignacionId="@asigCtx.IdAsignacion" class="btn btn--celeste">
-                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Agregar registro
-            </a>
-            <a asp-controller="Asignaciones" asp-action="Details" asp-route-id="@asigCtx.IdAsignacion"
-               class="btn btn--secondary">
-                <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-                Volver a asignación
-            </a>
-        }
-        else
-        {
-            <a asp-controller="Motivos" asp-action="Index" class="btn btn--secondary">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Ver motivos
-            </a>
-            <a asp-action="Create" class="btn btn--celeste">
-                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Nuevo registro
-            </a>
-        }
     </div>
 </div>
 
-<!-- FILTROS — solo si no viene filtrado por asignación -->
-@if (asigCtx == null)
-{
-    <div class="card" style="margin-bottom:20px; padding:16px 20px;">
-        <form method="get" asp-action="Index" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-            <div style="flex:1; min-width:180px;">
-                <label class="form-label">Buscar</label>
-                <div style="position:relative;">
-                    <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" name="buscar" value="@buscar" class="form-control"
-                           style="padding-left:34px;" placeholder="Empleado, motivo, observaciones..." />
-                </div>
+<!-- FILTROS -->
+<div class="card" style="margin-bottom:20px; padding:16px 20px;">
+    <form method="get" asp-action="Index" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div style="flex:1; min-width:180px;">
+            <label class="form-label">Buscar</label>
+            <div style="position:relative;">
+                <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--gris-400);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" name="buscar" value="@buscar" class="form-control"
+                       style="padding-left:32px;" placeholder="Equipo, motivo..." />
             </div>
-            <div style="min-width:180px;">
-                <label class="form-label">Motivo</label>
-                <select name="motivoId" class="form-control">
-                    <option value="">Todos</option>
-                    @foreach (var m in motivos)
-                    {
-                        if (motivoId == m.IdMotivo)
-                        {
-                            <option value="@m.IdMotivo" selected>@m.TipoMotivo</option>
-                        }
-                        else
-                        {
-                            <option value="@m.IdMotivo">@m.TipoMotivo</option>
-                        }
-                    }
-                </select>
-            </div>
-            <div style="display:flex; gap:8px;">
-                <button type="submit" class="btn btn--primary">
-                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    Buscar
-                </button>
-                @if (!string.IsNullOrEmpty(buscar) || motivoId.HasValue)
+        </div>
+        <div style="min-width:180px;">
+            <label class="form-label">Estado</label>
+            <select name="estado" class="form-control">
+                <option value="">Todos</option>
+                @foreach (var e in estadosFiltro)
                 {
-                    <a asp-action="Index" class="btn btn--secondary">Limpiar</a>
+                    if (estado == e)
+                    {
+                        <option value="@e" selected>@e</option>
+                    }
+                    else
+                    {
+                        <option value="@e">@e</option>
+                    }
                 }
-            </div>
-        </form>
-    </div>
-}
+            </select>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button type="submit" class="btn btn--primary">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Buscar
+            </button>
+            @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estado))
+            {
+                <a asp-action="Index" class="btn btn--secondary">Limpiar</a>
+            }
+        </div>
+    </form>
+</div>
 
 <!-- TABLA -->
 <div class="card" style="padding:0; overflow:hidden;">
@@ -115,61 +81,56 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width:50px;">#</th>
-                        <th>Asignación</th>
+                        <th>Equipo</th>
+                        <th>Estado</th>
                         <th>Motivo</th>
                         <th>Fecha</th>
-                        <th>Observaciones</th>
-                        <th style="text-align:center;">Acciones</th>
+                        <th>Registrado por</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var h in Model)
+                    @foreach (var b in Model)
                     {
+                        var nombreEq = b.Equipo?.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true
+                            ? b.Equipo.NombrePc
+                            : $"{b.Equipo?.marca} {b.Equipo?.modelo}";
                         <tr>
-                            <td style="color:var(--gris-400); font-size:0.78rem; font-weight:400;">
-                                @h.IdHistoria
-                            </td>
                             <td>
                                 <div style="font-weight:600; font-size:0.85rem; color:var(--gris-900);">
-                                    @(h.Asignacion?.Empleado?.nombre ?? "—") @(h.Asignacion?.Empleado?.paterno ?? "")
+                                    @(nombreEq ?? "—")
                                 </div>
                                 <div style="font-size:0.75rem; color:var(--gris-500);">
-                                    @(h.Asignacion?.Equipo?.marca ?? "—") @(h.Asignacion?.Equipo?.modelo ?? "") ·
-                                    <a asp-controller="Asignaciones" asp-action="Details"
-                                       asp-route-id="@h.IdAsignacion"
-                                       style="color:var(--celeste);">Asig. #@h.IdAsignacion</a>
+                                    <a asp-controller="Equipos" asp-action="Details" asp-route-id="@b.IdEquipo"
+                                       style="color:var(--celeste);">Equipo #@b.IdEquipo</a>
+                                    · @(b.Equipo?.TipoEquipo?.tipo ?? "—")
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge--azul">@(h.Motivo?.TipoMotivo ?? "—")</span>
+                                @{
+                                    var badgeEstado = b.EstadoNuevo switch {
+                                        "Mantenimiento" => "badge--amarillo",
+                                        "Inactivo"      => "badge--rojo",
+                                        "Asignado"      => "badge--celeste",
+                                        "Activo"        => "badge--verde",
+                                        _               => "badge--gris"
+                                    };
+                                }
+                                <span class="badge @badgeEstado">@b.EstadoNuevo</span>
+                                @if (!string.IsNullOrEmpty(b.EstadoAnterior) && b.EstadoAnterior != b.EstadoNuevo)
+                                {
+                                    <div style="font-size:0.72rem; color:var(--gris-400); margin-top:3px;">desde @b.EstadoAnterior</div>
+                                }
+                            </td>
+                            <td style="font-size:0.82rem; color:var(--gris-600); max-width:260px;">
+                                <span style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                                    @b.Motivo
+                                </span>
                             </td>
                             <td style="font-size:0.82rem; color:var(--gris-600); white-space:nowrap;">
-                                @h.Fecha.ToString("dd/MM/yyyy")
+                                @b.Fecha.ToString("dd/MM/yyyy")
                             </td>
-                            <td style="font-size:0.82rem; color:var(--gris-600); max-width:220px;">
-                                @if (!string.IsNullOrEmpty(h.Observaciones))
-                                {
-                                    <span style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
-                                        @h.Observaciones
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span style="color:var(--gris-300);">Sin observaciones</span>
-                                }
-                            </td>
-                            <td>
-                                <div style="display:flex; gap:6px; justify-content:center;">
-                                    <a asp-action="Details" asp-route-id="@h.IdHistoria"
-                                       class="btn btn--ghost btn--icon" title="Ver detalle">
-                                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    </a>
-                                    <a asp-action="Edit" asp-route-id="@h.IdHistoria"
-                                       class="btn btn--secondary btn--icon" title="Editar">
-                                        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                    </a>
-                                </div>
+                            <td style="font-size:0.78rem; color:var(--gris-400);">
+                                @(b.RegistradoPor ?? "—")
                             </td>
                         </tr>
                     }
@@ -186,19 +147,19 @@
                 @if (pagina > 1)
                 {
                     <a asp-action="Index" asp-route-pagina="@(pagina-1)"
-                       asp-route-buscar="@buscar" asp-route-motivoId="@motivoId" asp-route-asignacionId="@asigId" asp-route-orden="@orden"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
                        class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
                 }
                 @for (int i = Math.Max(1, pagina-2); i <= Math.Min(totalPaginas, pagina+2); i++)
                 {
                     <a asp-action="Index" asp-route-pagina="@i"
-                       asp-route-buscar="@buscar" asp-route-motivoId="@motivoId" asp-route-asignacionId="@asigId" asp-route-orden="@orden"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
                        class="pagination__btn @(i == pagina ? "active" : "")">@i</a>
                 }
                 @if (pagina < totalPaginas)
                 {
                     <a asp-action="Index" asp-route-pagina="@(pagina+1)"
-                       asp-route-buscar="@buscar" asp-route-motivoId="@motivoId" asp-route-asignacionId="@asigId" asp-route-orden="@orden"
+                       asp-route-buscar="@buscar" asp-route-estado="@estado" asp-route-orden="@orden"
                        class="pagination__btn"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
                 }
             </div>
@@ -212,9 +173,9 @@
             </div>
             <div class="empty-state__title">Sin registros de historial</div>
             <div class="empty-state__text">
-                @if (!string.IsNullOrEmpty(buscar) || motivoId.HasValue)
+                @if (!string.IsNullOrEmpty(buscar) || !string.IsNullOrEmpty(estado))
                 { <span>Intenta con otros filtros.</span> }
-                else { <span>Aún no hay eventos registrados.</span> }
+                else { <span>Aún no hay eventos de bitácora registrados (fuera de Activo/Inactivo).</span> }
             </div>
         </div>
     }
@@ -224,7 +185,7 @@
 <script>
 function exportarTabla(titulo, tipo) {
     var params = 'buscar='+encodeURIComponent(document.querySelector('[name="buscar"]')?.value||'')
-        +'&motivoId='+encodeURIComponent(document.querySelector('[name="motivoId"]')?.value||'');
+        +'&estado='+encodeURIComponent(document.querySelector('[name="estado"]')?.value||'');
     var base = tipo === 'pdf' ? '/Historiales/ExportarPdf' : '/Historiales/ExportarExcel';
     fetch(base + '?' + params)
         .then(function(res) {

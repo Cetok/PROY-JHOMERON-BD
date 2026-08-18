@@ -36,6 +36,10 @@ namespace PROYJHOME2026.Models
         public string? Observaciones { get; set; }
 
         // ── Campos técnicos (CPU y Laptop) ───────────────────────
+        // NOTA: estos campos son "piezas" — nunca se registran como Equipo
+        // propio, solo se editan in-place vía CambiarComponente() y quedan
+        // en EquipoComponenteLogs. Aplica igual para la CPU cuando está
+        // dentro de un PC Completo (es un Equipo TipoEquipo=CPU normal).
         [StringLength(200)]
         public string? Procesador { get; set; }
 
@@ -63,69 +67,67 @@ namespace PROYJHOME2026.Models
         // ── Campos Mouse ──────────────────────────────────────────
         public bool? EsInalambrico { get; set; }
 
-        // ── Campos PC Completo ────────────────────────────────────
+        /// <summary>Solo aplica a TipoEquipo = Mouse. Indica si trae mousepad
+        /// asociado. El mousepad YA NO se registra como Equipo propio.</summary>
+        public bool? TieneMousepad { get; set; }
+
+        [StringLength(100)]
+        public string? MousepadMarca { get; set; }
+
+        // ── PC COMPLETO: agrupación de equipos ya existentes ──────
+        // Un "PC Completo" es un Equipo contenedor (TipoEquipo = PC COMPLETO)
+        // sin specs propias. Sus componentes (CPU, Monitor, Mouse, Teclado)
+        // son Equipos normales, independientes, que apuntan a este contenedor
+        // mediante IdEquipoPadre. Cuando IdEquipoPadre es null, el equipo
+        // está "suelto" en inventario y se puede asignar/reemplazar libremente.
         [StringLength(100)]
         public string? NombrePc { get; set; }
-        // CPU
-        [StringLength(100)]
-        public string? PcCpuMarca { get; set; }
-        [StringLength(100)]
-        public string? PcCpuModelo { get; set; }
-        [StringLength(100)]
-        public string? PcCpuSerie { get; set; }
-        [StringLength(200)]
-        public string? PcCpuProcesador { get; set; }
-        [StringLength(200)]
-        public string? PcCpuTarjetaMadre { get; set; }
-        [StringLength(100)]
-        public string? PcCpuRam { get; set; }
-        [StringLength(200)]
-        public string? PcCpuDisco { get; set; }
-        [StringLength(200)]
-        public string? PcCpuFuenteEnergia { get; set; }
-        public bool? PcCpuGraficosIntegrados { get; set; }
-        [StringLength(200)]
-        public string? PcCpuTarjetaGrafica { get; set; }
-        [StringLength(100)]
-        public string? PcCpuSistemaOperativo { get; set; }
-        [StringLength(100)]
-        public string? PcCpuVersionSO { get; set; }
 
-        // Monitor
-        [StringLength(100)]
-        public string? PcMonitorMarca { get; set; }
-        [StringLength(100)]
-        public string? PcMonitorModelo { get; set; }
-        [StringLength(100)]
-        public string? PcMonitorSerie { get; set; }
+        public int? IdEquipoPadre { get; set; }
 
-        // Mouse
-        [StringLength(100)]
-        public string? PcMouseMarca { get; set; }
-        [StringLength(100)]
-        public string? PcMouseModelo { get; set; }
-        [StringLength(100)]
-        public string? PcMouseSerie { get; set; }
-        public bool? PcMouseEsInalambrico { get; set; }
+        [ForeignKey("IdEquipoPadre")]
+        public Equipo? EquipoPadre { get; set; }
 
-        // Teclado
-        [StringLength(100)]
-        public string? PcTecladoMarca { get; set; }
-        [StringLength(100)]
-        public string? PcTecladoModelo { get; set; }
-        [StringLength(100)]
-        public string? PcTecladoSerie { get; set; }
+        /// <summary>Componentes actualmente montados en este PC Completo
+        /// (solo tiene contenido cuando este Equipo ES un PC Completo).</summary>
+        public ICollection<Equipo> Componentes { get; set; } = new List<Equipo>();
 
-        // Mousepad
-        [StringLength(100)]
-        public string? PcMousepadMarca { get; set; }
-
-        // Navegación
+        // ── Navegación ─────────────────────────────────────────────
         public ICollection<Asignacion> Asignaciones { get; set; } = new List<Asignacion>();
         public ICollection<EquipoComponenteLog> ComponenteLogs { get; set; } = new List<EquipoComponenteLog>();
+
+        // ══════════════════════════════════════════════════════════
+        // CAMPOS OBSOLETOS — se mantienen solo para no romper la BD
+        // existente durante la migración. Ya no se usan para registrar
+        // PC Completo nuevos: usar IdEquipoPadre en su lugar.
+        // Bórralos con una migración aparte una vez migrados los datos.
+        // ══════════════════════════════════════════════════════════
+        [StringLength(100)] public string? PcCpuMarca { get; set; }
+        [StringLength(100)] public string? PcCpuModelo { get; set; }
+        [StringLength(100)] public string? PcCpuSerie { get; set; }
+        [StringLength(200)] public string? PcCpuProcesador { get; set; }
+        [StringLength(200)] public string? PcCpuTarjetaMadre { get; set; }
+        [StringLength(100)] public string? PcCpuRam { get; set; }
+        [StringLength(200)] public string? PcCpuDisco { get; set; }
+        [StringLength(200)] public string? PcCpuFuenteEnergia { get; set; }
+        public bool? PcCpuGraficosIntegrados { get; set; }
+        [StringLength(200)] public string? PcCpuTarjetaGrafica { get; set; }
+        [StringLength(100)] public string? PcCpuSistemaOperativo { get; set; }
+        [StringLength(100)] public string? PcCpuVersionSO { get; set; }
+        [StringLength(100)] public string? PcMonitorMarca { get; set; }
+        [StringLength(100)] public string? PcMonitorModelo { get; set; }
+        [StringLength(100)] public string? PcMonitorSerie { get; set; }
+        [StringLength(100)] public string? PcMouseMarca { get; set; }
+        [StringLength(100)] public string? PcMouseModelo { get; set; }
+        [StringLength(100)] public string? PcMouseSerie { get; set; }
+        public bool? PcMouseEsInalambrico { get; set; }
+        [StringLength(100)] public string? PcTecladoMarca { get; set; }
+        [StringLength(100)] public string? PcTecladoModelo { get; set; }
+        [StringLength(100)] public string? PcTecladoSerie { get; set; }
+        [StringLength(100)] public string? PcMousepadMarca { get; set; }
     }
 
-    // ── Historial de cambios de componentes ──────────────────────
+    // ── Historial de cambios de componentes / reemplazos ─────────
     [Table("EquipoComponenteLogs")]
     public class EquipoComponenteLog
     {
@@ -140,6 +142,8 @@ namespace PROYJHOME2026.Models
         [StringLength(100)]
         public string? NombreUsuario { get; set; }
 
+        /// <summary>CambioComponente | ActualizacionSO | Mantenimiento |
+        /// ReemplazoComponentePc</summary>
         [Required]
         [StringLength(50)]
         public string TipoEvento { get; set; } = string.Empty;

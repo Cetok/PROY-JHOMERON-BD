@@ -356,10 +356,11 @@ namespace PROYJHOME2026.Controllers
                 .Select(g => new { nombre = g.Key, total = g.Count() })
                 .OrderByDescending(x => x.total).Take(8).ToList();
 
-            // Detalle máquinas
+            // Detalle máquinas — últimas 10 registradas
             var detalleMaquinas = maquinas
                 .Where(m => m.Estado != "Dado de Baja")
-                .OrderBy(m => m.NumeroCompleto)
+                .OrderByDescending(m => m.FechaRegistro)
+                .Take(10)
                 .Select(m => new {
                     numero    = m.NumeroCompleto,
                     nombre    = m.NombreMaquina,

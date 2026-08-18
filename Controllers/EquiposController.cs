@@ -458,159 +458,14 @@ namespace PROYJHOME2026.Controllers
 
             await _context.SaveChangesAsync();
 
-            await _auditoriaService.RegistrarAsync("CambioComponente", "Equipo", idEquipo,
-                $"Cambió {componente} de equipo #{idEquipo}: {valorAnterior} → {valorNuevo}");
-
-           await _notifService.NotificarAccionAsync("CambioEstado", "Equipo",
+            // NOTA: no se llama a _auditoriaService aquí a propósito — el cambio
+            // ya queda registrado en EquipoComponenteLogs.
+            await _notifService.NotificarAccionAsync("CambioEstado", "Equipo",
                 $"Cambio de {componente} en equipo {equipo.marca} {equipo.modelo}: {valorAnterior} → {valorNuevo}",
                 $"/Equipos/Details/{idEquipo}",
                 idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq3) ? _eq3 : null);
 
             TempData["Success"] = $"{componente} actualizado correctamente. Cambio registrado en historial.";
-            return RedirectToAction(nameof(Details), new { id = idEquipo });
-        }
-
-        // ── MANTENIMIENTO POST ───────────────────────────────────
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> IniciarMantenimiento(int idEquipo, string? observaciones)
-        {
-            var equipo = await _context.Equipos
-                .Include(e => e.TipoEquipo)
-                .Include(e => e.Asignaciones)
-                .FirstOrDefaultAsync(e => e.idEquipo == idEquipo);
-            if (equipo == null) return NotFound();
-
-            var estadoAnterior = equipo.estado_equipo;
-            equipo.estado_equipo = "Mantenimiento";
-
-            // Poner asignación activa en mantenimiento
-            var asignacionActiva = equipo.Asignaciones
-                .FirstOrDefault(a => a.EstadoAsignacion == "Activo");
-            if (asignacionActiva != null)
-                asignacionActiva.EstadoAsignacion = "En mantenimiento";
-
-            var idStr  = HttpContext.Session.GetString("UsuarioId");
-            var nombre = HttpContext.Session.GetString("UsuarioNombre");
-            int? idUsuario = int.TryParse(idStr, out int uid) ? uid : null;
-
-            // Registrar en historial de componentes
-            _context.EquipoComponenteLogs.Add(new EquipoComponenteLog
-            {
-                IdEquipo      = idEquipo,
-                IdUsuario     = idUsuario,
-                NombreUsuario = nombre,
-                TipoEvento    = "Mantenimiento",
-                Componente    = "Estado",
-                ValorAnterior = estadoAnterior,
-                ValorNuevo    = "Mantenimiento",
-                Observaciones = observaciones,
-                FechaHora     = DateTime.Now
-            });
-
-            // Registrar en historial de asignaciones si había asignación activa
-            if (asignacionActiva != null)
-            {
-                var motivoMante = await _context.Motivos
-                    .FirstOrDefaultAsync(m => m.TipoMotivo == "Mantenimiento");
-                if (motivoMante == null)
-                {
-                    motivoMante = new Motivo { TipoMotivo = "Mantenimiento" };
-                    _context.Motivos.Add(motivoMante);
-                    await _context.SaveChangesAsync();
-                }
-
-                _context.Historiales.Add(new Historial
-                {
-                    IdAsignacion  = asignacionActiva.IdAsignacion,
-                    IdMotivo      = motivoMante.IdMotivo,
-                    Fecha         = DateTime.Now,
-                    Observaciones = observaciones ?? "Equipo enviado a mantenimiento"
-                });
-            }
-
-            await _context.SaveChangesAsync();
-
-            await _auditoriaService.RegistrarAsync("CambioEstado", "Equipo", idEquipo,
-                $"Inició mantenimiento equipo #{idEquipo} {equipo.marca} {equipo.modelo}");
-
-            await _notifService.NotificarAccionAsync("CambioEstado", "Equipo",
-                $"Equipo {equipo.marca} {equipo.modelo} en mantenimiento",
-                $"/Equipos/Details/{idEquipo}",
-                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq4) ? _eq4 : null);
-
-            TempData["Success"] = "Equipo enviado a mantenimiento.";
-            return RedirectToAction(nameof(Details), new { id = idEquipo });
-        }
-
-        // ── FINALIZAR MANTENIMIENTO POST ─────────────────────────
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> FinalizarMantenimiento(int idEquipo, string? observaciones)
-        {
-            var equipo = await _context.Equipos
-                .Include(e => e.Asignaciones)
-                .FirstOrDefaultAsync(e => e.idEquipo == idEquipo);
-            if (equipo == null) return NotFound();
-
-            // Reactivar asignación si estaba en mantenimiento
-            var asignacionMante = equipo.Asignaciones
-                .FirstOrDefault(a => a.EstadoAsignacion == "En mantenimiento");
-            if (asignacionMante != null)
-            {
-                asignacionMante.EstadoAsignacion = "Activo";
-                equipo.estado_equipo = "Asignado"; // tenía asignación → vuelve a Asignado
-
-                var motivoFin = await _context.Motivos
-                    .FirstOrDefaultAsync(m => m.TipoMotivo == "Fin mantenimiento");
-                if (motivoFin == null)
-                {
-                    motivoFin = new Motivo { TipoMotivo = "Fin mantenimiento" };
-                    _context.Motivos.Add(motivoFin);
-                    await _context.SaveChangesAsync();
-                }
-
-                _context.Historiales.Add(new Historial
-                {
-                    IdAsignacion  = asignacionMante.IdAsignacion,
-                    IdMotivo      = motivoFin.IdMotivo,
-                    Fecha         = DateTime.Now,
-                    Observaciones = observaciones ?? "Mantenimiento finalizado"
-                });
-            }
-            else
-            {
-                equipo.estado_equipo = "Activo"; // no tenía asignación → vuelve a Activo
-            }
-
-            var idStr  = HttpContext.Session.GetString("UsuarioId");
-            var nombre = HttpContext.Session.GetString("UsuarioNombre");
-            int? idUsuario = int.TryParse(idStr, out int uid) ? uid : null;
-
-            _context.EquipoComponenteLogs.Add(new EquipoComponenteLog
-            {
-                IdEquipo      = idEquipo,
-                IdUsuario     = idUsuario,
-                NombreUsuario = nombre,
-                TipoEvento    = "Mantenimiento",
-                Componente    = "Estado",
-                ValorAnterior = "Mantenimiento",
-                ValorNuevo    = asignacionMante != null ? "Asignado" : "Activo",
-                Observaciones = observaciones ?? "Mantenimiento finalizado",
-                FechaHora     = DateTime.Now
-            });
-
-            await _context.SaveChangesAsync();
-
-            await _auditoriaService.RegistrarAsync("CambioEstado", "Equipo", idEquipo,
-                $"Finalizó mantenimiento equipo #{idEquipo}");
-
-            await _notifService.NotificarAccionAsync("CambioEstado", "Equipo",
-                $"Mantenimiento finalizado — equipo #{idEquipo} volvió a Activo",
-                $"/Equipos/Details/{idEquipo}",
-                idUsuarioAccion: int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _eq5) ? _eq5 : null);
-
-            TempData["Success"] = asignacionMante != null ? "Mantenimiento finalizado. Equipo vuelto a Asignado." : "Mantenimiento finalizado. Equipo vuelto a Activo.";
             return RedirectToAction(nameof(Details), new { id = idEquipo });
         }
 
@@ -845,6 +700,16 @@ namespace PROYJHOME2026.Controllers
         // ════════════════════════════════════════════════════════════════
 
         // ── POST: Registrar evento en Bitácora ───────────────────
+        // Estados en los que el equipo sigue disponible/en uso normal.
+        private static readonly string[] EstadosDisponible = { "Activo", "Asignado" };
+
+        // Solo "Mantenimiento" PAUSA la asignación (reversible: cuando el
+        // equipo vuelve a estar disponible, se reactiva sola). Cualquier
+        // otro estado que saque al equipo de servicio (Malogrado,
+        // Defectuoso, En reparación, En revisión, Dado de baja...) CIERRA
+        // la asignación de verdad — igual que "Quitar asignación" manual.
+        private static readonly string[] EstadosDePausa = { "Mantenimiento" };
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RegistrarBitacora(
@@ -855,26 +720,105 @@ namespace PROYJHOME2026.Controllers
             bool esProgramado = false,
             string? observaciones = null)
         {
-            var equipo = await _context.Equipos.FindAsync(idEquipo);
+            var equipo = await _context.Equipos
+                .Include(e => e.Asignaciones)
+                .FirstOrDefaultAsync(e => e.idEquipo == idEquipo);
             if (equipo == null) return NotFound();
 
             var estadoAnterior = equipo.estado_equipo;
-
-            // Actualizar estado del equipo solo si NO es programado (futuro)
-            if (!esProgramado || fecha.Date <= DateTime.Today)
-            {
-                equipo.estado_equipo = estadoNuevo;
-            }
+            bool aplicaYa = !esProgramado || fecha.Date <= DateTime.Today;
 
             var nombreUsuario = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema";
             var idStr         = HttpContext.Session.GetString("UsuarioId");
             int? idUsuario    = int.TryParse(idStr, out int uid) ? uid : null;
 
+            string? avisoAsignacion = null;
+
+            if (aplicaYa)
+            {
+                if (!EstadosDisponible.Contains(estadoNuevo))
+                {
+                    // ── El equipo deja de estar disponible ──────────────
+                    equipo.estado_equipo = estadoNuevo;
+
+                    var asignacionActiva = equipo.Asignaciones
+                        .FirstOrDefault(a => a.EstadoAsignacion == "Activo");
+
+                    if (asignacionActiva != null)
+                    {
+                        bool esPausa = EstadosDePausa.Contains(estadoNuevo);
+
+                        asignacionActiva.EstadoAsignacion = esPausa ? "En mantenimiento" : "Inactivo";
+                        if (!esPausa) asignacionActiva.FechaDevolucion = fecha;
+
+                        avisoAsignacion = esPausa
+                            ? "La asignación quedó en pausa — se reactiva sola cuando el equipo vuelva a estar disponible."
+                            : "La asignación se cerró (el equipo quedó liberado del empleado).";
+
+                        var motivoObj = await _context.Motivos
+                            .FirstOrDefaultAsync(m => m.TipoMotivo == estadoNuevo);
+                        if (motivoObj == null)
+                        {
+                            motivoObj = new Motivo { TipoMotivo = estadoNuevo };
+                            _context.Motivos.Add(motivoObj);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        _context.Historiales.Add(new Historial
+                        {
+                            IdAsignacion  = asignacionActiva.IdAsignacion,
+                            IdMotivo      = motivoObj.IdMotivo,
+                            Fecha         = fecha,
+                            Observaciones = $"Equipo pasó a estado '{estadoNuevo}' — {motivo}".Trim()
+                        });
+                    }
+                }
+                else
+                {
+                    // ── El equipo vuelve a estar disponible. El estado final
+                    //    NO se toma literal del formulario: se calcula solo
+                    //    según si tenía una asignación en pausa o no. ──────
+                    var asignacionPausada = equipo.Asignaciones
+                        .FirstOrDefault(a => a.EstadoAsignacion == "En mantenimiento");
+
+                    if (asignacionPausada != null)
+                    {
+                        asignacionPausada.EstadoAsignacion = "Activo";
+                        equipo.estado_equipo = "Asignado";
+                        avisoAsignacion = "La asignación se reactivó automáticamente.";
+
+                        var motivoFin = await _context.Motivos
+                            .FirstOrDefaultAsync(m => m.TipoMotivo == "Fin mantenimiento");
+                        if (motivoFin == null)
+                        {
+                            motivoFin = new Motivo { TipoMotivo = "Fin mantenimiento" };
+                            _context.Motivos.Add(motivoFin);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        _context.Historiales.Add(new Historial
+                        {
+                            IdAsignacion  = asignacionPausada.IdAsignacion,
+                            IdMotivo      = motivoFin.IdMotivo,
+                            Fecha         = fecha,
+                            Observaciones = $"Equipo volvió a servicio — {motivo}".Trim()
+                        });
+                    }
+                    else
+                    {
+                        // No tenía ninguna asignación pausada: vuelve a
+                        // Activo simple (sin empleado), sin importar qué
+                        // haya seleccionado el formulario.
+                        equipo.estado_equipo = "Activo";
+                    }
+                }
+            }
+
             _context.EquipoBitacoras.Add(new EquipoBitacora
             {
                 IdEquipo       = idEquipo,
                 EstadoAnterior = estadoAnterior,
-                EstadoNuevo    = estadoNuevo,
+                EstadoNuevo    = aplicaYa ? equipo.estado_equipo : estadoNuevo,
                 Motivo         = motivo.Trim(),
                 Fecha          = fecha,
                 EsProgramado   = esProgramado,
@@ -886,25 +830,119 @@ namespace PROYJHOME2026.Controllers
 
             await _context.SaveChangesAsync();
 
-            await _auditoriaService.RegistrarAsync("Editar", "Equipo", idEquipo,
-                esProgramado
-                    ? $"Mantenimiento programado para {fecha:dd/MM/yyyy} — {motivo}"
-                    : $"Estado cambiado de '{estadoAnterior}' a '{estadoNuevo}' — {motivo}");
+            // NOTA: no se llama a _auditoriaService aquí a propósito — el evento
+            // ya queda registrado en EquipoBitacoras (y en Historiales si tocó
+            // la asignación), evitando duplicar el mismo evento en dos tablas.
 
             TempData["Success"] = esProgramado
                 ? $"Mantenimiento programado para el {fecha:dd/MM/yyyy}."
-                : "Evento registrado en la Bitácora.";
+                : avisoAsignacion != null
+                    ? $"Evento registrado en la Bitácora. {avisoAsignacion}"
+                    : "Evento registrado en la Bitácora.";
 
             return RedirectToAction(nameof(Details), new { id = idEquipo });
         }
 
+        // ── POST: Finalizar mantenimiento con un solo click ───────
+        // Botón directo para cuando el equipo está en "Mantenimiento":
+        // no hay que volver a entrar al formulario de Bitácora y elegir
+        // "Activo" a mano. Calcula solo si vuelve a "Asignado" (si tenía
+        // una asignación en pausa) o a "Activo" (si no tenía nadie).
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FinalizarMantenimiento(int idEquipo, string? observaciones)
+        {
+            var equipo = await _context.Equipos
+                .Include(e => e.Asignaciones)
+                .FirstOrDefaultAsync(e => e.idEquipo == idEquipo);
+            if (equipo == null) return NotFound();
+
+            if (equipo.estado_equipo != "Mantenimiento")
+            {
+                TempData["Error"] = "Este equipo no está en Mantenimiento.";
+                return RedirectToAction(nameof(Details), new { id = idEquipo });
+            }
+
+            var nombreUsuario = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema";
+            var idStr         = HttpContext.Session.GetString("UsuarioId");
+            int? idUsuario    = int.TryParse(idStr, out int uid) ? uid : null;
+            var fecha         = DateTime.Now;
+            var comentario    = string.IsNullOrWhiteSpace(observaciones)
+                ? "Mantenimiento finalizado" : observaciones.Trim();
+
+            var asignacionPausada = equipo.Asignaciones
+                .FirstOrDefault(a => a.EstadoAsignacion == "En mantenimiento");
+
+            if (asignacionPausada != null)
+            {
+                asignacionPausada.EstadoAsignacion = "Activo";
+                equipo.estado_equipo = "Asignado";
+
+                var motivoFin = await _context.Motivos
+                    .FirstOrDefaultAsync(m => m.TipoMotivo == "Fin mantenimiento");
+                if (motivoFin == null)
+                {
+                    motivoFin = new Motivo { TipoMotivo = "Fin mantenimiento" };
+                    _context.Motivos.Add(motivoFin);
+                    await _context.SaveChangesAsync();
+                }
+
+                _context.Historiales.Add(new Historial
+                {
+                    IdAsignacion  = asignacionPausada.IdAsignacion,
+                    IdMotivo      = motivoFin.IdMotivo,
+                    Fecha         = fecha,
+                    Observaciones = comentario
+                });
+            }
+            else
+            {
+                equipo.estado_equipo = "Activo";
+            }
+
+            // Cierra cualquier bitácora de mantenimiento pendiente de este equipo
+            var bitacoraPendiente = await _context.EquipoBitacoras
+                .Where(b => b.IdEquipo == idEquipo && b.EstadoNuevo == "Mantenimiento" && !b.Completado)
+                .OrderByDescending(b => b.Fecha)
+                .FirstOrDefaultAsync();
+            if (bitacoraPendiente != null)
+                bitacoraPendiente.Completado = true;
+
+            _context.EquipoBitacoras.Add(new EquipoBitacora
+            {
+                IdEquipo       = idEquipo,
+                EstadoAnterior = "Mantenimiento",
+                EstadoNuevo    = equipo.estado_equipo,
+                Motivo         = comentario,
+                Fecha          = fecha,
+                EsProgramado   = false,
+                Completado     = true,
+                RegistradoPor  = nombreUsuario,
+                IdUsuario      = idUsuario,
+                FechaRegistro  = DateTime.Now
+            });
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = asignacionPausada != null
+                ? "Mantenimiento finalizado. El equipo volvió a Asignado."
+                : "Mantenimiento finalizado. El equipo volvió a Activo.";
+
+            return RedirectToAction(nameof(Details), new { id = idEquipo });
+        }
+
+
         // ── POST: Marcar mantenimiento programado como completado ─
+        // "Completar" = el mantenimiento programado ya se ejecutó: el
+        // equipo pasa al estado que tenía programado. Mismo criterio que
+        // RegistrarBitacora: solo "Mantenimiento" pausa la asignación,
+        // el resto de estados no disponibles la cierra.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CompletarMantenimiento(int idBitacora)
         {
             var bitacora = await _context.EquipoBitacoras
-                .Include(b => b.Equipo)
+                .Include(b => b.Equipo).ThenInclude(e => e.Asignaciones)
                 .FirstOrDefaultAsync(b => b.IdBitacora == idBitacora);
 
             if (bitacora == null) return NotFound();
@@ -912,9 +950,23 @@ namespace PROYJHOME2026.Controllers
             bitacora.Completado      = true;
             bitacora.EsProgramado    = false;
 
-            // Actualizar estado del equipo al estado registrado
             if (bitacora.Equipo != null)
+            {
                 bitacora.Equipo.estado_equipo = bitacora.EstadoNuevo;
+
+                if (!EstadosDisponible.Contains(bitacora.EstadoNuevo))
+                {
+                    var asignacionActiva = bitacora.Equipo.Asignaciones
+                        .FirstOrDefault(a => a.EstadoAsignacion == "Activo");
+
+                    if (asignacionActiva != null)
+                    {
+                        bool esPausa = EstadosDePausa.Contains(bitacora.EstadoNuevo);
+                        asignacionActiva.EstadoAsignacion = esPausa ? "En mantenimiento" : "Inactivo";
+                        if (!esPausa) asignacionActiva.FechaDevolucion = bitacora.Fecha;
+                    }
+                }
+            }
 
             await _context.SaveChangesAsync();
 

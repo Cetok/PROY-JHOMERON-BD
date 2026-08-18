@@ -174,12 +174,9 @@
                                 @{
                                     var bc = e.estado_equipo switch {
                                         "Activo"        => "badge--verde",
-                                        "Asignado"      => "badge--azul",
+                                        "Asignado"      => "badge--celeste",
                                         "Mantenimiento" => "badge--amarillo",
-                                        "Devuelto"      => "badge--gris",
-                                        "Perdida"       => "badge--rojo",
-                                        "Rotura"        => "badge--rojo",
-                                        "Baja"          => "badge--rojo",
+                                        "Inactivo"      => "badge--rojo",
                                         _               => "badge--gris"
                                     };
                                 }
