@@ -407,51 +407,5 @@ namespace PROYJHOME2026.Controllers
             var nombre = titulo.Replace(" ", "_") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".pdf";
             return File(bytes, "application/pdf", nombre);
         }
-        private async Task<List<List<string>>> ObtenerFilasHistoriales(string? buscar, string? estado)
-        {
-            var query = _context.EquipoBitacoras
-                .Include(b => b.Equipo).ThenInclude(e => e.TipoEquipo)
-                .Where(b => !EstadosExcluidosHistorial.Contains(b.EstadoNuevo))
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(buscar))
-                query = query.Where(b =>
-                    (b.Motivo != null && b.Motivo.Contains(buscar)) ||
-                    (b.Equipo.marca   != null && b.Equipo.marca.Contains(buscar))   ||
-                    (b.Equipo.modelo  != null && b.Equipo.modelo.Contains(buscar))  ||
-                    (b.Equipo.NombrePc!= null && b.Equipo.NombrePc.Contains(buscar)));
-
-            if (!string.IsNullOrWhiteSpace(estado))
-                query = query.Where(b => b.EstadoNuevo == estado);
-
-            var items = await query.OrderByDescending(b => b.Fecha).ToListAsync();
-
-            return items.Select(b => new List<string> {
-                b.Equipo?.TipoEquipo?.tipo?.ToUpper().Contains("PC COMPLETO") == true
-                    ? (b.Equipo.NombrePc ?? "—")
-                    : $"{b.Equipo?.marca} {b.Equipo?.modelo}".Trim(),
-                b.EstadoAnterior ?? "—",
-                b.EstadoNuevo,
-                b.Motivo,
-                b.Fecha.ToString("dd/MM/yyyy"),
-                b.RegistradoPor ?? "—"
-            }).ToList();
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ExportarExcel(string? buscar, string? estado)
-        {
-            var columnas = new List<string> { "Equipo", "Estado anterior", "Estado nuevo", "Motivo", "Fecha", "Registrado por" };
-            var filas = await ObtenerFilasHistoriales(buscar, estado);
-            return GenerarCsv(columnas, filas, "Historial_Equipos");
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ExportarPdf(string? buscar, string? estado)
-        {
-            var columnas = new List<string> { "Equipo", "Estado anterior", "Estado nuevo", "Motivo", "Fecha", "Registrado por" };
-            var filas = await ObtenerFilasHistoriales(buscar, estado);
-            return GenerarPdf("Historial de Equipos", columnas, filas);
-        }
     }
 }

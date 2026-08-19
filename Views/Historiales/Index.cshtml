@@ -20,16 +20,6 @@
         <h1 class="page-header__title">Historial de equipos</h1>
         <p class="page-header__subtitle">@total registro(s) de bitácora — solo lectura</p>
     </div>
-    <div class="page-header__actions">
-        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Historial_Equipos', 'excel')" title="Exportar a Excel">
-            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            Excel
-        </button>
-        <button type="button" class="btn btn--secondary btn--sm" onclick="exportarTabla('Historial_Equipos', 'pdf')" title="Exportar a PDF">
-            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            PDF
-        </button>
-    </div>
 </div>
 
 <!-- FILTROS -->
@@ -180,30 +170,3 @@
         </div>
     }
 </div>
-
-@section Scripts {
-<script>
-function exportarTabla(titulo, tipo) {
-    var params = 'buscar='+encodeURIComponent(document.querySelector('[name="buscar"]')?.value||'')
-        +'&estado='+encodeURIComponent(document.querySelector('[name="estado"]')?.value||'');
-    var base = tipo === 'pdf' ? '/Historiales/ExportarPdf' : '/Historiales/ExportarExcel';
-    fetch(base + '?' + params)
-        .then(function(res) {
-            if (!res.ok) throw new Error('Error ' + res.status);
-            return res.blob();
-        })
-        .then(function(blob) {
-            var u = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = u;
-            a.download = titulo.replace(/ /g,'_') + '_' + new Date().toISOString().slice(0,10)
-                       + (tipo === 'pdf' ? '.pdf' : '.csv');
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(u);
-        })
-        .catch(function(e) { alert('Error al exportar: ' + e.message); });
-}
-</script>
-}

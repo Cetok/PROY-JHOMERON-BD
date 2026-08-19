@@ -207,7 +207,7 @@
 function exportarTabla(titulo, tipo) {
     var params = 'buscar='+encodeURIComponent(document.querySelector('[name="buscar"]')?.value||'')
         +'&estado='+encodeURIComponent(document.querySelector('[name="estado"]')?.value||'');
-    var base = tipo === 'pdf' ? '/Empleados/ExportarPdf' : '/Empleados/ExportarExcel';
+    var base = tipo === 'pdf' ? '/Carros/ExportarPdf' : '/Carros/ExportarExcel';
     fetch(base + '?' + params)
         .then(function(res) {
             if (!res.ok) throw new Error('Error ' + res.status);

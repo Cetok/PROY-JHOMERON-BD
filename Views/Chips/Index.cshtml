@@ -75,8 +75,9 @@
                                 </div>
                             </td>
                             <td>
-                                @if (asignado) { <span class="badge badge--celeste">Asignado</span> }
-                                else           { <span class="badge badge--verde">Disponible</span> }
+                                @if (c.Estado == "Inactivo") { <span class="badge badge--rojo">Inactivo</span> }
+                                else if (asignado)           { <span class="badge badge--celeste">Asignado</span> }
+                                else                          { <span class="badge badge--verde">Disponible</span> }
                             </td>
                             <td>
                                 <div style="display:flex; gap:6px; justify-content:center;">
@@ -119,7 +120,7 @@
 function exportarTabla(titulo, tipo) {
     var params = 'buscar='+encodeURIComponent(document.querySelector('[name="buscar"]')?.value||'')
         +'&estado='+encodeURIComponent(document.querySelector('[name="estado"]')?.value||'');
-    var base = tipo === 'pdf' ? '/Empleados/ExportarPdf' : '/Empleados/ExportarExcel';
+    var base = tipo === 'pdf' ? '/Chips/ExportarPdf' : '/Chips/ExportarExcel';
     fetch(base + '?' + params)
         .then(function(res) {
             if (!res.ok) throw new Error('Error ' + res.status);

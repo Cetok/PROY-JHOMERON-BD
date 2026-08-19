@@ -182,6 +182,21 @@ namespace PROYJHOME2026.Controllers
 
                 await _context.SaveChangesAsync();
 
+                if (asignacion.IdChip.HasValue)
+                {
+                    var empleadoChip = await _context.Empleados.FindAsync(asignacion.IdEmpleado);
+                    _context.ChipLogs.Add(new ChipLog
+                    {
+                        IdChip        = asignacion.IdChip.Value,
+                        TipoEvento    = "Asignado",
+                        Detalle       = $"Asignado a {empleadoChip?.nombre} {empleadoChip?.paterno} — equipo {equipoEstado?.marca} {equipoEstado?.modelo}",
+                        Fecha         = DateTime.Now,
+                        RegistradoPor = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema",
+                        IdUsuario     = int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _chipLog1) ? _chipLog1 : null
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
                 await _auditoriaService.RegistrarAsync("Crear", "Asignacion", asignacion.IdAsignacion,
                     $"Registró asignación #{asignacion.IdAsignacion} — Empleado {asignacion.IdEmpleado}, Equipo {asignacion.IdEquipo}");
                 await _notifService.NotificarAccionAsync("Creacion", "Asignacion",
@@ -1029,7 +1044,19 @@ namespace PROYJHOME2026.Controllers
 
             // 3. Liberar chip si tenía
             if (asignacion.Chip != null)
+            {
+                var empleadoLog = await _context.Empleados.FindAsync(asignacion.IdEmpleado);
+                _context.ChipLogs.Add(new ChipLog
+                {
+                    IdChip        = asignacion.Chip.IdChip,
+                    TipoEvento    = "Desasignado",
+                    Detalle       = $"Quitado de asignación con {empleadoLog?.nombre} {empleadoLog?.paterno} — equipo {asignacion.Equipo?.marca} {asignacion.Equipo?.modelo}. Chip queda disponible.",
+                    Fecha         = fecha,
+                    RegistradoPor = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema",
+                    IdUsuario     = int.TryParse(HttpContext.Session.GetString("UsuarioId"), out int _chipLog2) ? _chipLog2 : null
+                });
                 asignacion.IdChip = null;
+            }
 
             // 4. Registrar en Bitácora (Historiales) automáticamente
             if (idMotivoDesactivacion.HasValue)

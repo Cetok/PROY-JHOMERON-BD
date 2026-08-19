@@ -16,6 +16,7 @@ namespace PROYJHOME2026.Data
         public DbSet<Motivo> Motivos { get; set; }
         public DbSet<Historial> Historiales { get; set; }
         public DbSet<Chip> Chips { get; set; }
+        public DbSet<ChipLog> ChipLogs { get; set; }
         public DbSet<Asignacion> Asignaciones { get; set; }
         public DbSet<Carro> Carros { get; set; }
         public DbSet<Seguro> Seguros { get; set; }

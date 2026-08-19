@@ -74,6 +74,12 @@ namespace PROYJHOME2026.Controllers
 
             ViewBag.Asignaciones = asignaciones;
 
+            var logs = await _context.ChipLogs
+                .Where(l => l.IdChip == id)
+                .OrderByDescending(l => l.Fecha)
+                .ToListAsync();
+            ViewBag.Logs = logs;
+
             return View(chip);
         }
 
@@ -347,6 +353,72 @@ namespace PROYJHOME2026.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── INACTIVAR / DAR DE BAJA ───────────────────────────────
+        // El número deja de usarse. Si el chip estaba enganchado a una
+        // asignación activa (celular con empleado), se lo desengancha
+        // (Asignacion.IdChip = null) — la asignación del equipo sigue
+        // igual, solo pierde el chip. Todo queda en ChipLogs con fecha/hora.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Inactivar(int id, string? motivo)
+        {
+            var chip = await _context.Chips.FirstOrDefaultAsync(c => c.IdChip == id);
+            if (chip == null) return NotFound();
+
+            if (chip.Estado == "Inactivo")
+            {
+                TempData["Error"] = "Este chip ya está inactivo.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            var nombreUsuario = HttpContext.Session.GetString("UsuarioNombre") ?? "Sistema";
+            var idStr         = HttpContext.Session.GetString("UsuarioId");
+            int? idUsuario    = int.TryParse(idStr, out int uid) ? uid : null;
+            var fecha         = DateTime.Now;
+
+            // Si está enganchado a una asignación activa, se desengancha
+            var asignacionActiva = await _context.Asignaciones
+                .Include(a => a.Empleado)
+                .Include(a => a.Equipo)
+                .FirstOrDefaultAsync(a => a.IdChip == id && a.EstadoAsignacion == "Activo");
+
+            if (asignacionActiva != null)
+            {
+                var detalleDesasig = $"Desenganchado de {asignacionActiva.Empleado?.nombre} {asignacionActiva.Empleado?.paterno} — equipo {asignacionActiva.Equipo?.marca} {asignacionActiva.Equipo?.modelo}";
+                asignacionActiva.IdChip = null;
+
+                _context.ChipLogs.Add(new ChipLog
+                {
+                    IdChip        = id,
+                    TipoEvento    = "Desasignado",
+                    Detalle       = detalleDesasig,
+                    Fecha         = fecha,
+                    RegistradoPor = nombreUsuario,
+                    IdUsuario     = idUsuario
+                });
+            }
+
+            chip.Estado = "Inactivo";
+
+            _context.ChipLogs.Add(new ChipLog
+            {
+                IdChip        = id,
+                TipoEvento    = "Inactivo",
+                Detalle       = string.IsNullOrWhiteSpace(motivo) ? "Dado de baja" : motivo.Trim(),
+                Fecha         = fecha,
+                RegistradoPor = nombreUsuario,
+                IdUsuario     = idUsuario
+            });
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = asignacionActiva != null
+                ? $"Chip {chip.NumeroCelular} dado de baja. Se quitó del equipo que lo tenía asignado."
+                : $"Chip {chip.NumeroCelular} dado de baja.";
+
+            return RedirectToAction(nameof(Details), new { id });
         }
     }
 }

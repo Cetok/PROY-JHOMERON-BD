@@ -3,7 +3,9 @@
     ViewData["Title"] = "Detalle Chip";
     ViewData["Breadcrumb"] = "Chips / SIM / Detalle";
     var asignaciones = ViewBag.Asignaciones as List<PROYJHOME2026.Models.Asignacion> ?? new();
+    var logs         = ViewBag.Logs as List<PROYJHOME2026.Models.ChipLog> ?? new();
     bool estaAsignado = asignaciones.Any(a => a.EstadoAsignacion == "Activo");
+    bool inactivo     = Model.Estado == "Inactivo";
 }
 
 <div class="page-header">
@@ -13,13 +15,23 @@
         <p class="page-header__subtitle">ID: #@Model.IdChip</p>
     </div>
     <div class="page-header__actions">
-        <a asp-action="Edit" asp-route-id="@Model.IdChip" class="btn btn--celeste">
-            <svg viewBox="0 0 24 24">
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            Editar
-        </a>
+        @if (!inactivo)
+        {
+            <button type="button" class="btn btn--rojo"
+                    onclick="document.getElementById('form-inactivar').style.display = document.getElementById('form-inactivar').style.display === 'none' ? 'flex' : 'none'">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;">
+                    <circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>
+                </svg>
+                Dar de baja
+            </button>
+            <a asp-action="Edit" asp-route-id="@Model.IdChip" class="btn btn--celeste">
+                <svg viewBox="0 0 24 24">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Editar
+            </a>
+        }
         <a asp-action="Index" class="btn btn--secondary">
             <svg viewBox="0 0 24 24">
                 <line x1="19" y1="12" x2="5" y2="12" />
@@ -29,6 +41,40 @@
         </a>
     </div>
 </div>
+
+@if (!inactivo)
+{
+    <div id="form-inactivar" style="display:none; max-width:960px; margin-bottom:16px;">
+        <div class="card" style="border:1.5px solid var(--rojo-border); background:var(--rojo-light);">
+            <div style="font-weight:700; color:var(--rojo); margin-bottom:10px;">
+                ¿Dar de baja este chip?
+            </div>
+            <p style="font-size:0.85rem; color:var(--gris-700); margin-bottom:14px;">
+                El número @Model.NumeroCelular dejará de usarse.
+                @if (estaAsignado)
+                {
+                    <strong>Actualmente está asignado — se quitará automáticamente del equipo/empleado que lo tiene.</strong>
+                }
+            </p>
+            <form asp-action="Inactivar" method="post" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.IdChip" />
+                <div style="flex:1; min-width:220px;">
+                    <label class="form-label">Motivo (opcional)</label>
+                    <input type="text" name="motivo" class="form-control" placeholder="Ej: Número dado de baja por la operadora" maxlength="300" />
+                </div>
+                <button type="submit" class="btn btn--rojo btn--sm"
+                        onclick="return confirm('¿Confirmas dar de baja el chip @Model.NumeroCelular?')">
+                    Confirmar baja
+                </button>
+                <button type="button" class="btn btn--secondary btn--sm"
+                        onclick="document.getElementById('form-inactivar').style.display='none'">
+                    Cancelar
+                </button>
+            </form>
+        </div>
+    </div>
+}
 
 <div style="max-width:960px; display:flex; gap:16px; align-items:flex-start;">
 
@@ -51,7 +97,11 @@
                         @Model.NumeroCelular
                     </div>
                     <div style="margin-top:7px; display:flex; gap:6px; flex-wrap:wrap;">
-                        @if (estaAsignado)
+                        @if (inactivo)
+                        {
+                            <span class="badge badge--rojo">Inactivo / Dado de baja</span>
+                        }
+                        else if (estaAsignado)
                         {
                             <span class="badge badge--celeste">Actualmente asignado</span>
                         }
@@ -135,6 +185,60 @@
                             <div class="empty-state" style="padding:28px;">
                                 <div class="empty-state__title" style="font-size:0.9rem;">Sin asignaciones</div>
                                 <div class="empty-state__text">Este chip aún no ha sido asignado a ningún equipo.</div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Registro de eventos del chip -->
+                    <div class="card" style="padding:0; overflow:hidden;">
+                        <div
+                            style="padding:16px 20px; border-bottom:1px solid var(--gris-200); display:flex; align-items:center; justify-content:space-between;">
+                            <div>
+                                <div class="card__title">Registro de eventos</div>
+                                <div class="card__subtitle">Asignaciones, desasignaciones y bajas de este chip, con fecha y hora</div>
+                            </div>
+                            <span class="badge badge--gris">@logs.Count</span>
+                        </div>
+
+                        @if (logs.Any())
+                        {
+                            <div class="table-wrapper" style="border:none; border-radius:0;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha / Hora</th>
+                                            <th>Evento</th>
+                                            <th>Detalle</th>
+                                            <th>Usuario</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var l in logs)
+                                        {
+                                            var badgeLog = l.TipoEvento switch {
+                                                "Asignado"    => "badge--celeste",
+                                                "Desasignado" => "badge--amarillo",
+                                                "Inactivo"    => "badge--rojo",
+                                                _             => "badge--gris"
+                                            };
+                                            <tr>
+                                                <td style="font-size:0.78rem; color:var(--gris-500); white-space:nowrap;">
+                                                    @l.Fecha.ToString("dd/MM/yy HH:mm")
+                                                </td>
+                                                <td><span class="badge @badgeLog" style="font-size:0.7rem;">@l.TipoEvento</span></td>
+                                                <td style="font-size:0.82rem; color:var(--gris-700);">@(l.Detalle ?? "—")</td>
+                                                <td style="font-size:0.75rem; color:var(--gris-400);">@(l.RegistradoPor ?? "—")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state" style="padding:28px;">
+                                <div class="empty-state__title" style="font-size:0.9rem;">Sin eventos registrados</div>
+                                <div class="empty-state__text">Aún no hay asignaciones, desasignaciones ni bajas de este chip.</div>
                             </div>
                         }
                     </div>
